@@ -31,3 +31,7 @@ docker_tag_and_push_deploy_image() {
   docker tag ${REPONAME}-${ENVIRONMENT:-dev} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${REPONAME}-${ENVIRONMENT:-dev}
   docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${REPONAME}-${ENVIRONMENT:-dev}
 }
+
+docker_deploy_image() {
+  echo "Not yet implemented!!"
+}
