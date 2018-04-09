@@ -1,5 +1,11 @@
 #! /bin/bash
 
+### Install jq
+scriptdir=$(dirname "${0}")
+source ${scriptdir}/lib.bash
+
+install_jq
+
 ### jq is required
 if ! which jq >/dev/null 2>&1
 then

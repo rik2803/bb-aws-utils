@@ -6,6 +6,11 @@ install_awscli() {
   pip install awscli
 }
 
+install_jq() {
+  apt-get update
+  apt-get install -y jq
+}
+
 set_source_ecr_credentials() {
   echo "### Setting environment for AWS authentication for ECR source ###"
   AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID_ECR_SOURCE}"
