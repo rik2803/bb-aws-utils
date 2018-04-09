@@ -5,6 +5,7 @@ echo "### Starting $(basename "${0}") ###"
 scriptdir=$(dirname "${0}")
 source ${scriptdir}/lib.bash
 
+echo "### Start jq installation ###"
 install_jq
 
 ### jq is required
@@ -16,18 +17,16 @@ else
   echo "### jq is installed ###"
 fi
  
-[[ -z ${REMOTE_REPO_SLUG} ]] && { echo "REMOTE_REPO_SLUG is required"; exit 1; }
-[[ -z ${BB_USER} ]]          && { echo "BB_USER is required"; exit 1; }
-[[ -z ${BB_APP_PASSWORD} ]]  && { echo "BB_APP_PASSWORD is required"; exit 1; }
+[[ -z ${REMOTE_REPO_SLUG} ]]  && { echo "REMOTE_REPO_SLUG is required"; exit 1; }
+[[ -z ${REMOTE_REPO_OWNER} ]] && { echo "REMOTE_REPO_OWNER is required"; exit 1; }
+[[ -z ${BB_USER} ]]           && { echo "BB_USER is required"; exit 1; }
+[[ -z ${BB_APP_PASSWORD} ]]   && { echo "BB_APP_PASSWORD is required"; exit 1; }
 
-REPO_OWNER=${REMOTE_REPO_OWNER:=BITBUCKET_REPO_OWNER}
-REPO_SLUG=${REMOTE_REPO_SLUG:=THIS_ONE_IS_REQUIRED}
+export URL="https://api.bitbucket.org/2.0/repositories/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/pipelines/"
 
-export URL="https://api.bitbucket.org/2.0/repositories/${REPO_OWNER}/${REPO_SLUG}/pipelines/"
-
-echo "### REPO_OWNER: ${REPO_OWNER} ###"
-echo "### REPO_SLUG:  ${REPO_SLUG} ###"
-echo "### URL:        ${URL} ###"
+echo "### REMOTE_REPO_OWNER: ${REMOTE_REPO_OWNER} ###"
+echo "### REMOTE_REPO_SLUG:  ${REMOTE_REPO_SLUG} ###"
+echo "### URL:               ${URL} ###"
 
 CURLRESULT=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
                   ${URL} -d '{ "target": { "ref_type": "branch", "type": "pipeline_ref_target", "ref_name": "master" } }')
@@ -35,8 +34,6 @@ CURLRESULT=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type
 UUID=$(echo "${CURLRESULT}" | jq --raw-output '.uuid' | tr -d '\{\}')
 
 echo "UUID is ${UUID}"
-
-if 
 
 CONTINUE=1
 SLEEP=10

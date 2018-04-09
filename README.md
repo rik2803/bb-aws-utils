@@ -18,6 +18,5 @@ IMPORTANT: The script `sync_trigger_bb_build.bash` requires `jq`
 
 * `BB_USER`
 * `BB_APP_PASSWORD`: https://confluence.atlassian.com/bitbucket/app-passwords-828781300.html
-* `REMOTE_REPO_OWNER`: Defaults to `${BITBUCKET_REPO_OWNER}`. This is an environment
-  variable made available by BB.
+* `REMOTE_REPO_OWNER`
 * `REMOTE_REPO_SLUG`
