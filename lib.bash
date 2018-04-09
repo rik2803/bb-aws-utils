@@ -19,7 +19,7 @@ set_source_ecr_credentials() {
 docker_build_deploy_image() {
   echo "### Create Dockerfile ###"
   echo "FROM ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:latest" > Dockerfile
-  echo "### Start build og docker image ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} ###"
+  echo "### Start build of docker image ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} ###"
   docker build -t ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} .
 }
 
