@@ -1,5 +1,6 @@
 #! /bin/bash
 
+echo "### Starting $(basename "${0}") ###"
 ### Install jq
 scriptdir=$(dirname "${0}")
 source ${scriptdir}/lib.bash
@@ -11,6 +12,8 @@ if ! which jq >/dev/null 2>&1
 then
   echo "### jq is required ###"
   exit 1
+else
+  echo "### jq is installed ###"
 fi
  
 [[ -z ${REMOTE_REPO_SLUG} ]] && { echo "REMOTE_REPO_SLUG is required"; exit 1; }
@@ -22,12 +25,18 @@ REPO_SLUG=${REMOTE_REPO_SLUG:=THIS_ONE_IS_REQUIRED}
 
 export URL="https://api.bitbucket.org/2.0/repositories/${REPO_OWNER}/${REPO_SLUG}/pipelines/"
 
+echo "### REPO_OWNER: ${REPO_OWNER} ###"
+echo "### REPO_SLUG:  ${REPO_SLUG} ###"
+echo "### URL:        ${URL} ###"
+
 CURLRESULT=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
                   ${URL} -d '{ "target": { "ref_type": "branch", "type": "pipeline_ref_target", "ref_name": "master" } }')
 
 UUID=$(echo "${CURLRESULT}" | jq --raw-output '.uuid' | tr -d '\{\}')
 
 echo "UUID is ${UUID}"
+
+if 
 
 CONTINUE=1
 SLEEP=10
