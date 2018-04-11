@@ -46,5 +46,6 @@ docker_tag_and_push_deploy_image() {
 }
 
 docker_deploy_image() {
-  echo "### Not yet implemented!! ###"
+  echo "### Force update service ${ECS_SERVICE} on ECS cluster ${ECS_CLUSTER} in region ${AWS_REGION} ###"
+  aws ecs update-service --cluster ${ECS_CLUSTER} --force-new-deployment --service ${ECS_SERVICE} --region ${AWS_REGION:-eu-central-1}
 }
