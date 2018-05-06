@@ -11,12 +11,18 @@ install_jq() {
   apt-get install -y jq
 }
 
-set_source_ecr_credentials() {
-  echo "### Setting environment for AWS authentication for ECR source ###"
-  AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID_ECR_SOURCE}"
-  AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY_ECR_SOURCE}"
+set_credentials() {
+  access_key=${1}
+  secret_key=${2}
+  echo "### Setting environment for AWS authentication ###"
+  AWS_ACCESS_KEY_ID="${access_key}"
+  AWS_SECRET_ACCESS_KEY="${secret_key}"
   export AWS_ACCESS_KEY_ID
   export AWS_SECRET_ACCESS_KEY
+}
+
+set_source_ecr_credentials() {
+  set_credentials "${AWS_ACCESS_KEY_ID_ECR_SOURCE}" "${AWS_SECRET_ACCESS_KEY_ECR_SOURCE}"
   echo "### Logging in to AWS ECR source ###"
   eval $(aws ecr get-login --no-include-email --region ${AWS_REGION_SOURCE:-eu-central-1})
 }
@@ -29,11 +35,7 @@ docker_build_deploy_image() {
 }
 
 set_dest_ecr_credentials() {
-  echo "### Setting environment for AWS authentication for ECR target###"
-  AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID_ECR_TARGET}"
-  AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY_ECR_TARGET}"
-  export AWS_ACCESS_KEY_ID
-  export AWS_SECRET_ACCESS_KEY
+  set_credentials "${AWS_ACCESS_KEY_ID_ECR_TARGET}" "${AWS_SECRET_ACCESS_KEY_ECR_TARGET}"
   echo "### Logging in to AWS ECR target ###"
   eval $(aws ecr get-login --no-include-email --region ${AWS_REGION_TARGET:-eu-central-1})
 }
@@ -48,4 +50,50 @@ docker_tag_and_push_deploy_image() {
 docker_deploy_image() {
   echo "### Force update service ${ECS_SERVICE} on ECS cluster ${ECS_CLUSTER} in region ${AWS_REGION} ###"
   aws ecs update-service --cluster ${ECS_CLUSTER} --force-new-deployment --service ${ECS_SERVICE} --region ${AWS_REGION:-eu-central-1}
+}
+
+s3_deploy_apply_config_to_tree() {
+  # In all files under ${basedir}, replace all occurences of __VARNAME__ to the value of
+  # the environment variable CFG_VARNAME, for all envvars starting with CFG_
+  basedir=${1}
+
+  for VARNAME in ${!CFG_*}
+  do
+    SUBST_SRC="__${VARNAME##CFG_}__"
+    SUBST_VAL=$(eval echo \$${VARNAME})
+    echo "### Replacing all occurences of ${SUBST_SRC} to ${SUBST_VAL} in all files under ${basedir} ###"
+    find ${basedir} -type f | xargs sed -i "" "s|${SUBST_SRC}|${SUBST_VAL}|g"
+  done
+}
+
+s3_deploy_create_tar_and_upload_to_s3() {
+  tar -C ${PAYLOAD_LOCATION:-dist} -czvf ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz 
+  aws s3 cp ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz
+  aws s3 cp ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-last.tgz
+}
+
+s3_deploy_download_tar_and_prepare_for_deploy() {
+  aws s3 cp s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-last.tgz .
+  mkdir -p workdir
+  tar -C workdir -xzvf ${ARTIFACT_NAME}-last.tgz
+  s3_deploy_apply_config_to_tree workdir
+}
+
+s3_deploy_deploy() {
+  cd workdir
+  aws s3 cp --acl ${AWS_ACCESS_CONTROL:-private} --recursive . s3://${S3_DEST_BUCKET}/${S3_PREFIX}
+  cd -
+}
+
+s3_deploy() {
+  set_credentials "${AWS_ACCESS_KEY_ID_S3_SOURCE}" "${AWS_SECRET_ACCESS_KEY_S3_SOURCE}"
+  s3_deploy_download_tar_and_prepare_for_deploy
+  set_credentials "${AWS_ACCESS_KEY_ID_S3_TARGET}" "${AWS_SECRET_ACCESS_KEY_S3_TARGET}"
+  s3_deploy_deploy
+}
+
+s3_artifact() {
+  [[ -n ${BUILD_COMMAND} ]] && eval ${BUILD_COMMAND}
+  set_credentials "${AWS_ACCESS_KEY_ID_S3_TARGET}" "${AWS_SECRET_ACCESS_KEY_S3_TARGET}"
+  s3_deploy_create_tar_and_upload_to_s3
 }
