@@ -88,8 +88,8 @@ s3_deploy_download_tar_and_prepare_for_deploy() {
 
 s3_deploy_deploy() {
   cd workdir
-  echo "### Deploy the payload to s3://${S3_DEST_BUCKET}/${S3_PREFIX} with ACL ${AWS_ACCESS_CONTROL:-private} ###"
-  aws s3 cp --acl ${AWS_ACCESS_CONTROL:-private} --recursive . s3://${S3_DEST_BUCKET}/${S3_PREFIX}
+  echo "### Deploy the payload to s3://${S3_DEST_BUCKET}/${S3_PREFIX:-} with ACL ${AWS_ACCESS_CONTROL:-private} ###"
+  aws s3 cp --acl ${AWS_ACCESS_CONTROL:-private} --recursive . s3://${S3_DEST_BUCKET}/${S3_PREFIX:-}
   cd -
 }
 
@@ -105,8 +105,13 @@ s3_deploy() {
 
 s3_artifact() {
   echo "### Run the build command (${BUILD_COMMAND:-No build command}) ###"
+  create_npmrc
   [[ -n ${BUILD_COMMAND} ]] && eval ${BUILD_COMMAND}
   echo "### Set AWS credentials for artifact upload (AWS_ACCESS_KEY_ID_S3_TARGET and AWS_SECRET_ACCESS_KEY_S3_TARGET) ###"
   set_credentials "${AWS_ACCESS_KEY_ID_S3_TARGET}" "${AWS_SECRET_ACCESS_KEY_S3_TARGET}"
   s3_deploy_create_tar_and_upload_to_s3
 }
+
+create_npmrc() {
+  echo "### Create ~/.npmrc file for NPMJS authentication ###"
+  echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN:-NA}" > ~/.npmrc
