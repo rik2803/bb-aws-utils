@@ -115,3 +115,4 @@ s3_artifact() {
 create_npmrc() {
   echo "### Create ~/.npmrc file for NPMJS authentication ###"
   echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN:-NA}" > ~/.npmrc
+}
