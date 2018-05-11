@@ -31,7 +31,7 @@ docker_build_deploy_image() {
   echo "### Create Dockerfile ###"
   echo "FROM ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:latest" > Dockerfile
   echo "### Start build of docker image ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} ###"
-  docker build -t ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} .
+  docker build --build-arg="BITBUCKET_COMMIT=${BITBUCKET_COMMIT:-NA}" -t ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} .
 }
 
 set_dest_ecr_credentials() {
@@ -67,7 +67,7 @@ s3_deploy_apply_config_to_tree() {
 }
 
 s3_deploy_create_tar_and_upload_to_s3() {
-  echo "### Ccreate tarfile ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz from all files in ${PAYLOAD_LOCATION:-dist} ###"
+  echo "### Create tarfile ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz from all files in ${PAYLOAD_LOCATION:-dist} ###"
   tar -C ${PAYLOAD_LOCATION:-dist} -czvf ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz .
   echo "### Copy ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz to S3 bucket ${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz ###"
   aws s3 cp ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz
