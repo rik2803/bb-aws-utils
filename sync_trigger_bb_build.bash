@@ -25,6 +25,10 @@ fi
 ### Construct remote repo HTTPS URL
 REMOTE_REPO_URL="git@bitbucket.org:${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}.git"
 
+### git config
+git config --global user.email "bitbucketpipeline@ixor.be"
+git config --global user.name "Bitbucket Pipeline"
+
 echo "### Trying to clone ${REMOTE_REPO_URL} into remote_repo ###"
 git clone ${REMOTE_REPO_URL} remote_repo || { echo "### Error cloning ${REMOTE_REPO_URL} ###"; exit 1; }
 echo "### Update the TAG file in the repo ###"
