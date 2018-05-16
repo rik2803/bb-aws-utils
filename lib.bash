@@ -29,8 +29,8 @@ set_source_ecr_credentials() {
 
 docker_build_deploy_image() {
   echo "### Create Dockerfile ###"
-  echo "FROM ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:latest" > Dockerfile
-  echo "### Start build of docker image ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} ###"
+  echo "FROM ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}" > Dockerfile
+  echo "### Start build of docker image ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} based on the artefact image with tar ${TAG:-latest} ###"
   docker build --build-arg="BITBUCKET_COMMIT=${BITBUCKET_COMMIT:-NA}" -t ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} .
 }
 
