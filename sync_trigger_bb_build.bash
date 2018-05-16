@@ -27,10 +27,11 @@ REMOTE_REPO_URL="git@bitbucket.org:${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}.git"
 
 echo "### Trying to clone ${REMOTE_REPO_URL} into remote_repo ###"
 git clone ${REMOTE_REPO_URL} remote_repo || { echo "### Error cloning ${REMOTE_REPO_URL} ###"; exit 1; }
-echo "### Update the TAG file in the repor ###"
+echo "### Update the TAG file in the repo ###"
 echo "${BITBUCKET_COMMIT}" > remote_repo/TAG
 cd remote_repo
-git commit -m 'Update TAG with source repo commit hash' TAG || { echo "### Error committing TAG ###"; exit 1; }
+git add TAG
+git commit -m 'Update TAG with source repo commit hash' || { echo "### Error committing TAG ###"; exit 1; }
 git push || { echo "### Error pushing to ${REMOTE_REPO_URL} ###"; exit 1; }
 cd -
 
