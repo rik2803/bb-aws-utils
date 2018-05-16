@@ -24,7 +24,6 @@ fi
 
 ### Construct remote repo HTTPS URL
 REMOTE_REPO_URL="git@bitbucket.org:${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}.git"
-(umask 077; echo ${SSHKEY} | base64 --decode > ~/.ssh/id_rsa)
 
 echo "### Trying to clone ${REMOTE_REPO_URL} into remote_repo ###"
 git clone ${REMOTE_REPO_URL} remote_repo || { echo "### Error cloning ${REMOTE_REPO_URL} ###"; exit 1; }
