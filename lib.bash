@@ -28,6 +28,10 @@ set_source_ecr_credentials() {
 }
 
 docker_build_deploy_image() {
+  echo "### Determine the TAG to use for the docker pull from the file named TAG ###"
+  export TAG="latest"
+  [[ -e TAG ]] && TAG=$(cat TAG)
+
   echo "### Create Dockerfile ###"
   echo "FROM ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}" > Dockerfile
   echo "### Start build of docker image ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} based on the artefact image with tar ${TAG:-latest} ###"
