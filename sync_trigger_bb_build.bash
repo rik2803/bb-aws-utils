@@ -23,7 +23,7 @@ fi
 [[ -z ${BB_APP_PASSWORD} ]]   && { echo "BB_APP_PASSWORD is required"; exit 1; }
 
 ### Construct remote repo HTTPS URL
-REMOTE_REPO_URL="https://${BB_USER}:${BB_APP_PASSWORD}@bitbucket.org/${REMOTE_REPO_OWNER}/${REMOTE_REPO_OWNER}"
+REMOTE_REPO_URL="https://${BB_USER}:${BB_APP_PASSWORD}@bitbucket.org/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}"
 
 echo "### Trying to clone ${REMOTE_REPO_URL} into remote_repo ###"
 git clone ${REMOTE_REPO_URL} remote_repo || { echo "### Error cloning ${REMOTE_REPO_URL} ###"; exit 1; }
