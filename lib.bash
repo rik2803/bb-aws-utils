@@ -103,14 +103,14 @@ start_pipeline_for_remote_repo() {
   RESULT="na"
   CURLRESULT="NA"
   
-  echo "### Monitoring remote pipeline with UUID ${UUID} ###"
+  echo "### Monitoring remote pipeline with UUID ${UUID} with interval ${SLEEP} ###"
   while [[ ${CONTINUE} = 1 ]]
   do
     sleep ${SLEEP}
     CURLRESULT=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' ${URL}\\{${UUID}\\})
     STATE=$(echo ${CURLRESULT} | jq --raw-output '.state.name')
   
-    echo " ### Pipeline with UUID ${UUID} is in state ${STATE} ###"
+    echo "  ### Pipeline is in state ${STATE} ###"
   
     if [[ ${STATE} == "COMPLETED" ]]
     then
@@ -119,7 +119,7 @@ start_pipeline_for_remote_repo() {
   done
   
   RESULT=$(echo ${CURLRESULT} | jq --raw-output '.state.result.name')
-  echo " ### Pipeline result is ${RESULT} ###"
+  echo "### Pipeline result is ${RESULT} ###"
 
   RETURNVALUE="${RESULT}"
 }
