@@ -72,8 +72,12 @@ create_TAG_file_in_remote_url() {
   ### If 2 pipelines run on same commit, the TAG file will not change
   if ! git diff-index --quiet HEAD --
   then
+    echo "### TAG file was updated, committing and pushing the change ###"
     git commit -m 'Update TAG with source repo commit hash' || { echo "### Error committing TAG ###"; exit 1; }
     git push || { echo "### Error pushing to ${REMOTE_REPO_URL} ###"; exit 1; }
+  else
+    echo "### TAG file was unchanged, because the pipeline for this commit has been run before. ###"
+    echo "### No further (git) actions required.                                                ###"
   fi
 
   cd -
