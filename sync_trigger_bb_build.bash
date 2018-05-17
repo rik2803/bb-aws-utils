@@ -14,6 +14,7 @@ install_jq
 
 echo "### Show what is in ~/.ssh ###"
 ls -lR ~/.ssh
+cat ~/.ssh/config
 
 create_TAG_file_in_remote_url
 

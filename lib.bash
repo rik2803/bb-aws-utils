@@ -59,8 +59,13 @@ create_TAG_file_in_remote_url() {
   echo "${BITBUCKET_COMMIT}" > remote_repo/TAG
   cd remote_repo
   git add TAG
-  git commit -m 'Update TAG with source repo commit hash' || { echo "### Error committing TAG ###"; exit 1; }
-  git push || { echo "### Error pushing to ${REMOTE_REPO_URL} ###"; exit 1; }
+  ### If 2 pipelines run on same commit, the TAG file will not change
+  if [[ git diff-index --quiet HEAD -- ]]
+  then
+    git commit -m 'Update TAG with source repo commit hash' || { echo "### Error committing TAG ###"; exit 1; }
+    git push || { echo "### Error pushing to ${REMOTE_REPO_URL} ###"; exit 1; }
+  fi
+
   cd -
 }
 
