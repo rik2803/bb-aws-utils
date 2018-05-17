@@ -7,8 +7,102 @@ install_awscli() {
 }
 
 install_jq() {
+  echo "### Start jq installation ###"
   apt-get update
   apt-get install -y jq
+
+  ### jq is required
+  if ! which jq >/dev/null 2>&1
+  then
+    echo "### jq is required ###"
+    exit 1
+  else
+    echo "### jq is installed ###"
+  fi
+}
+
+repo_git_url() {
+  echo "git@bitbucket.org:${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}.git"
+}
+
+create_TAG_file_in_remote_url() {
+  # To make sure the deploy pipeline uses the correct docker image tag,
+  # this functions:
+  #   - clones the remote repo
+  #   - creates or updates a file named TAG in the root of the repo
+  #   - the TAG file contains the commit hash of the SW git repo commit
+  #   - adds, commits ans pushes the changes
+  # The pipeline of the config repo will then use the content of the file
+  # to determine the tag of the docker image to pull and use to create
+  # the deploy image.
+  #
+  # This requires that pipeline to have a SSH key:
+  #   bb -> repo -> settings -> pipelines -> SSH keys
+  #
+  # That ssh key should be granted read/write permissions to the repo
+  # to be cloned, changed, committed and pushed, and will be available
+  # as ~/.ssh/id_rsa 
+
+  
+  ### Construct remote repo HTTPS URL
+  REMOTE_REPO_URL=$(repo_git_url)
+
+  echo "### Remote repo URL is ${REMOTE_REPO_URL} ###"
+  
+  ### git config
+  git config --global user.email "bitbucketpipeline@ixor.be"
+  git config --global user.name "Bitbucket Pipeline"
+  
+  echo "### Trying to clone ${REMOTE_REPO_URL} into remote_repo ###"
+  git clone ${REMOTE_REPO_URL} remote_repo || { echo "### Error cloning ${REMOTE_REPO_URL} ###"; exit 1; }
+  echo "### Update the TAG file in the repo ###"
+  echo "${BITBUCKET_COMMIT}" > remote_repo/TAG
+  cd remote_repo
+  git add TAG
+  git commit -m 'Update TAG with source repo commit hash' || { echo "### Error committing TAG ###"; exit 1; }
+  git push || { echo "### Error pushing to ${REMOTE_REPO_URL} ###"; exit 1; }
+  cd -
+}
+
+start_pipeline_for_remote_repo() {
+  export URL="https://api.bitbucket.org/2.0/repositories/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/pipelines/"
+  
+  echo "### REMOTE_REPO_OWNER: ${REMOTE_REPO_OWNER} ###"
+  echo "### REMOTE_REPO_SLUG:  ${REMOTE_REPO_SLUG} ###"
+  echo "### URL:               ${URL} ###"
+  
+  CURLRESULT=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
+                    ${URL} -d '{ "target": { "ref_type": "branch", "type": "pipeline_ref_target", "ref_name": "master" } }')
+  
+  UUID=$(echo "${CURLRESULT}" | jq --raw-output '.uuid' | tr -d '\{\}')
+  
+  echo "### Remote pipeline is started and has UUID is ${UUID} ###"
+  
+  CONTINUE=1
+  SLEEP=10
+  STATE="NA"
+  RESULT="na"
+  CURLRESULT="NA"
+  
+  echo "### Monitoring remote pipeline with UUID ${UUID} ###"
+  while [[ ${CONTINUE} = 1 ]]
+  do
+    sleep ${SLEEP}
+    CURLRESULT=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' ${URL}\\{${UUID}\\})
+    STATE=$(echo ${CURLRESULT} | jq --raw-output '.state.name')
+  
+    echo " ### Pipeline with UUID ${UUID} is in state ${STATE} ###"
+  
+    if [[ ${STATE} == "COMPLETED" ]]
+    then
+      CONTINUE=0
+    fi
+  done
+  
+  RESULT=$(echo ${CURLRESULT} | jq --raw-output '.state.result.name')
+  echo " ### Pipeline result is ${RESULT} ###"
+
+  RETURNVALUE="${RESULT}"
 }
 
 set_credentials() {
