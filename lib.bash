@@ -43,7 +43,17 @@ create_TAG_file_in_remote_url() {
   # to be cloned, changed, committed and pushed, and will be available
   # as ~/.ssh/id_rsa 
 
-  
+  ### It's useless to do this if no SSHKEY is configured in the pipeline.
+  if [[ ! -e /opt/atlassian/pipelines/agent/data/id_rsa ]]  
+  then
+    echo "### ERROR: No SSH Key is configured in the pipeline, and this is required ###"
+    echo "###        to be able to add/update the TAG file in the remote (config)   ###"
+    echo "###        repository.                                                    ###"
+    echo "###        Add a key to the repository and try again.                     ###"
+    echo "###            bb -> repo -> settings -> pipelines -> SSH keys            ###"
+    exit 1
+  fi
+ 
   ### Construct remote repo HTTPS URL
   REMOTE_REPO_URL=$(repo_git_url)
 

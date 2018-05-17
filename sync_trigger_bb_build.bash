@@ -12,10 +12,6 @@ install_jq
 [[ -z ${BB_USER} ]]           && { echo "BB_USER is required"; exit 1; }
 [[ -z ${BB_APP_PASSWORD} ]]   && { echo "BB_APP_PASSWORD is required"; exit 1; }
 
-echo "### Show what is in ~/.ssh ###"
-ls -lR ~/.ssh
-cat ~/.ssh/config
-
 create_TAG_file_in_remote_url
 
 start_pipeline_for_remote_repo
