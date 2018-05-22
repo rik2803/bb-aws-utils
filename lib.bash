@@ -64,6 +64,7 @@ create_TAG_file_in_remote_url() {
   git config --global user.name "Bitbucket Pipeline"
   
   echo "### Trying to clone ${REMOTE_REPO_URL} into remote_repo ###"
+  rm -rf remote_repo
   git clone ${REMOTE_REPO_URL} remote_repo || { echo "### Error cloning ${REMOTE_REPO_URL} ###"; exit 1; }
   echo "### Update the TAG file in the repo ###"
   echo "${BITBUCKET_COMMIT}" > remote_repo/TAG
