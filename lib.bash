@@ -99,7 +99,7 @@ start_pipeline_for_remote_repo() {
   
   echo "### Remote pipeline is started and has UUID is ${UUID} ###"
   echo "### Link to the remote pipeline result is: ###"
-  echo "###   //https://bitbucket.org/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/addon/pipelines/home#!/results/${BUILDNUMBER} ###"
+  echo "###   https://bitbucket.org/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/addon/pipelines/home#!/results/${BUILDNUMBER} ###"
   
   CONTINUE=1
   SLEEP=10
