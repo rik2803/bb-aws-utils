@@ -1,7 +1,7 @@
 install_awscli() {
-  apt-get update
-  apt-get install -y python-dev
-  curl -O https://bootstrap.pypa.io/get-pip.py
+  apt-get update	
+  apt-get install -y python-dev	
+  curl -O https://bootstrap.pypa.io/get-pip.py	
   python get-pip.py
   pip install awscli
 }
@@ -151,6 +151,11 @@ set_source_ecr_credentials() {
   eval $(aws ecr get-login --no-include-email --region ${AWS_REGION_SOURCE:-eu-central-1})
 }
 
+docker_build_application_image() {
+  echo "### Start build of docker image ${DOCKER_IMAGE} ###"
+  docker build -t ${DOCKER_IMAGE} .
+}
+
 docker_build_deploy_image() {
   echo "### Determine the TAG to use for the docker pull from the file named TAG ###"
   export TAG="latest"
@@ -173,6 +178,13 @@ docker_tag_and_push_deploy_image() {
   docker tag ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}-${ENVIRONMENT:-dev}
   echo "### Pushing docker image ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} to ECR ###"
   docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}-${ENVIRONMENT:-dev}
+}
+
+docker_tag_and_push_application_image() {
+  echo "### Tagging docker image ${DOCKER_IMAGE} ###"
+  docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
+  echo "### Pushing docker image ${DOCKER_IMAGE} to ECR ###"
+  docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
 }
 
 docker_deploy_image() {
