@@ -90,9 +90,16 @@ start_pipeline_for_remote_repo() {
   echo "### REMOTE_REPO_OWNER: ${REMOTE_REPO_OWNER} ###"
   echo "### REMOTE_REPO_SLUG:  ${REMOTE_REPO_SLUG} ###"
   echo "### URL:               ${URL} ###"
+
+  echo "### Pipeline Target Ref Type: ${TARGET_REF_TYPE:-branch} ###"
+  echo "### Pipeline Target Ref Name: ${TARGET_REF_NAME:-master} ###"
   
+  cat > /curldata << EOF
+{ "target": { "ref_type": "${TARGET_REF_TYPE:-branch}", "type": "pipeline_ref_target", "ref_name": "${TARGET_REF_NAME:-master}" } }
+EOF
+
   CURLRESULT=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
-                    ${URL} -d '{ "target": { "ref_type": "branch", "type": "pipeline_ref_target", "ref_name": "master" } }')
+                    ${URL} -d '@/curldata')
   
   UUID=$(echo "${CURLRESULT}" | jq --raw-output '.uuid' | tr -d '\{\}')
   BUILDNUMBER=$(echo "${CURLRESULT}" | jq --raw-output '.build_number')
