@@ -81,23 +81,36 @@ create_TAG_file_in_remote_url() {
     echo "### No further (git) actions required.                                                ###"
   fi
 
+  REMOTE_REPO_COMMIT_HASH=$(git rev-parse HEAD)
+  echo "### Full commit hash of remote repo is ${REMOTE_REPO_COMMIT_HASH} ###"
   cd -
 }
 
 start_pipeline_for_remote_repo() {
+  REMOTE_REPO_COMMIT_HASH=${1}
+
   export URL="https://api.bitbucket.org/2.0/repositories/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/pipelines/"
   
-  echo "### REMOTE_REPO_OWNER: ${REMOTE_REPO_OWNER} ###"
-  echo "### REMOTE_REPO_SLUG:  ${REMOTE_REPO_SLUG} ###"
-  echo "### URL:               ${URL} ###"
-
-  echo "### Pipeline Target Ref Type: ${TARGET_REF_TYPE:-branch} ###"
-  echo "### Pipeline Target Ref Name: ${TARGET_REF_NAME:-master} ###"
+  echo "### REMOTE_REPO_OWNER:       ${REMOTE_REPO_OWNER} ###"
+  echo "### REMOTE_REPO_SLUG:        ${REMOTE_REPO_SLUG} ###"
+  echo "### URL:                     ${URL} ###"
+  echo "### REMOTE_REPO_COMMIT_HASH: ${REMOTE_REPO_COMMIT_HASH} ###"
   
-  cat > /curldata << EOF
-{ "target": { "ref_type": "${TARGET_REF_TYPE:-branch}", "type": "pipeline_ref_target", "ref_name": "${TARGET_REF_NAME:-master}" } }
+  echo > /curldata << EOF
+{
+  "target": {
+    "commit": {
+      "hash":"${REMOTE_REPO_COMMIT_HASH}",
+        "type":"commit"
+      },
+    "selector": {
+      "type":"custom",
+      "pattern":"build_and_deploy"
+    },
+    "type":"pipeline_commit_target"
+  }
+}
 EOF
-
   CURLRESULT=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
                     ${URL} -d '@/curldata')
   
