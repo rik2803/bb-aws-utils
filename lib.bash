@@ -176,6 +176,8 @@ set_source_ecr_credentials() {
 }
 
 docker_build_application_image() {
+  echo "### Docker info ###"
+  docker info
   echo "### Start build of docker image ${DOCKER_IMAGE} ###"
   docker build -t ${DOCKER_IMAGE} .
 }
