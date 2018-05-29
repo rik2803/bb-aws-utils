@@ -121,6 +121,10 @@ EOF
   then
     echo "### ERROR: An error occured when triggering the pipeline ###"
     echo "###        for ${REMOTE_REPO_SLUG} ###"
+    echo "### Curl data and return object follow ###"
+    cat /curldata
+    echo "###"
+    echo "${CURLRESULT}" | jq
     exit 1
   fi
 
