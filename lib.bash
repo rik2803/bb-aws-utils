@@ -1,7 +1,7 @@
 install_awscli() {
-  apt-get update	
-  apt-get install -y python-dev	
-  curl -O https://bootstrap.pypa.io/get-pip.py	
+  apt-get update
+  apt-get install -y python-dev
+  curl -O https://bootstrap.pypa.io/get-pip.py
   python get-pip.py
   pip install awscli
 }
@@ -101,8 +101,8 @@ start_pipeline_for_remote_repo() {
   "target": {
     "commit": {
       "hash":"${REMOTE_REPO_COMMIT_HASH}",
-        "type":"commit"
-      },
+      "type":"commit"
+    },
     "selector": {
       "type":"custom",
       "pattern":"build_and_deploy"
@@ -117,6 +117,13 @@ EOF
   UUID=$(echo "${CURLRESULT}" | jq --raw-output '.uuid' | tr -d '\{\}')
   BUILDNUMBER=$(echo "${CURLRESULT}" | jq --raw-output '.build_number')
   
+  if [[ ${UUID} = "null" ]]
+  then
+    echo "### ERROR: An error occured when triggering the pipeline ###"
+    echo "###        for ${REMOTE_REPO_SLUG} ###"
+    exit 1
+  fi
+
   echo "### Remote pipeline is started and has UUID is ${UUID} ###"
   echo "### Link to the remote pipeline result is: ###"
   echo "###   https://bitbucket.org/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/addon/pipelines/home#!/results/${BUILDNUMBER} ###"
