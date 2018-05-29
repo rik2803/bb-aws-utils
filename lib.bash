@@ -96,7 +96,7 @@ start_pipeline_for_remote_repo() {
   echo "### URL:                     ${URL} ###"
   echo "### REMOTE_REPO_COMMIT_HASH: ${REMOTE_REPO_COMMIT_HASH} ###"
   
-  echo > /curldata << EOF
+  cat > /curldata << EOF
 {
   "target": {
     "commit": {
@@ -124,7 +124,7 @@ EOF
     echo "### Curl data and return object follow ###"
     cat /curldata
     echo "###"
-    echo "${CURLRESULT}" | jq
+    echo "${CURLRESULT}" | jq .
     exit 1
   fi
 
