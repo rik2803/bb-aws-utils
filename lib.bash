@@ -207,8 +207,10 @@ docker_tag_and_push_deploy_image() {
 docker_tag_and_push_application_image() {
   echo "### Tagging docker image ${DOCKER_IMAGE} ###"
   docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
+  docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
   echo "### Pushing docker image ${DOCKER_IMAGE} to ECR ###"
   docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
+  docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
 }
 
 docker_deploy_image() {
