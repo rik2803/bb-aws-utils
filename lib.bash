@@ -1,20 +1,26 @@
+run_log_and_exit_on_failure() {
+  echo "### Starting ${1}"
+  if ${1} 
+  then
+    echo "### ${1} successfully executed"
+  else
+    echo "### ERROR: ${1} failed, exiting ..."
+    exit 1
+  fi
+}
+
 install_awscli() {
-  echo "### apt-get update"
-  apt-get update || echo "### FAILED"
-  echo "### apt-get install -y python-dev"
-  apt-get install -y python-dev || echo "### FAILED"
-  echo "### curl -O https://bootstrap.pypa.io/get-pip.py"
-  curl -O https://bootstrap.pypa.io/get-pip.py || echo "### FAILED"
-  echo "### python get-pip.py"
-  python get-pip.py || echo "### FAILED"
-  echo "### pip install awscli"
-  pip install awscli || echo "### FAILED"
+  run_log_and_exit_on_failure "apt-get update"
+  run_log_and_exit_on_failure "apt-get install -y python-dev"
+  run_log_and_exit_on_failure "curl -O https://bootstrap.pypa.io/get-pip.py"
+  run_log_and_exit_on_failure "python get-pip.py"
+  run_log_and_exit_on_failure "pip install awscli"
 }
 
 install_jq() {
   echo "### Start jq installation ###"
-  apt-get update
-  apt-get install -y jq
+  run_log_and_exit_on_failure "apt-get update"
+  run_log_and_exit_on_failure "apt-get install -y jq"
 
   ### jq is required
   if ! which jq >/dev/null 2>&1
