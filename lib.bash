@@ -1,9 +1,14 @@
 install_awscli() {
-  apt-get update
-  apt-get install -y python-dev
-  curl -O https://bootstrap.pypa.io/get-pip.py
-  python get-pip.py
-  pip install awscli
+  echo "### apt-get update"
+  apt-get update || echo "### FAILED"
+  echo "### apt-get install -y python-dev"
+  apt-get install -y python-dev || echo "### FAILED"
+  echo "### curl -O https://bootstrap.pypa.io/get-pip.py"
+  curl -O https://bootstrap.pypa.io/get-pip.py || echo "### FAILED"
+  echo "### python get-pip.py"
+  python get-pip.py || echo "### FAILED"
+  echo "### pip install awscli"
+  pip install awscli || echo "### FAILED"
 }
 
 install_jq() {
