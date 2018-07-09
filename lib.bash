@@ -193,6 +193,7 @@ set_source_ecr_credentials() {
 }
 
 docker_build() {
+  install_awscli
   eval $(aws ecr get-login --no-include-email --region ${AWS_REGION_SOURCE:-eu-central-1})
   ### The Dockerfile is supposed to be in a subdir docker of the repo
   cd /${BITBUCKET_REPO_SLUG}/docker
