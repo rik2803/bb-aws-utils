@@ -318,7 +318,7 @@ s3_lambda_build_and_push() {
   run_log_and_exit_on_failure "rm -rf .git"
 
   echo "### Zip the Lambda code and dependencies"
-  run_log_and_exit_on_failure "zip -x bb* -r ${LAMBDA_FUNCTION_NAME}.zip *"
+  run_log_and_exit_on_failure "zip -x 'bb*' -r ${LAMBDA_FUNCTION_NAME}.zip *"
 
   echo "### Push the zipped file to S3 bucket ${S3_DEST_BUCKET}"
   set_credentials "${AWS_ACCESS_KEY_ID}" "${AWS_SECRET_ACCESS_KEY}"
