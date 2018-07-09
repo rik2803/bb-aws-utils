@@ -314,6 +314,9 @@ s3_lambda_build_and_push() {
     fi
   fi
 
+  echo "### Remove .git"
+  run_log_and_exit_on_failure "rm -rf .git"
+
   echo "### Zip the Lambda code and dependencies"
   run_log_and_exit_on_failure "zip -r ${LAMBDA_FUNCTION_NAME}.zip *"
 
