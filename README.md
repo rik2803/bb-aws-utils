@@ -73,8 +73,23 @@ The BB pipeline build requires these pipeline environment variables:
 
 #### For `nodejs`
 
-```
+As mentioned earlier, the evnironment can be set in `bitbucket-pipelines.yml` or in the BB Pipeline settings. To easily set configure a repository for BB Pipelines, checkout [this GitHub repository](https://github.com/rik2803/bb-pipeline-setup).
 
+```
+image: node:8
+pipelines:
+  custom:
+    build_lambda_function_package_and_publish_to_s3:
+      - step:
+          name: Build the lambda function package publish to S3
+          caches:
+            - node
+          script:
+            - git clone https://github.com/rik2803/bb-docker-aws-utils.git
+            - source bb-docker-aws-utils/lib.bash
+            - export S3_DEST_BUCKET=ixortooling-prd-s3-lambda-function-store
+            - export LAMBDA_FUNCTION_NAME=sns-to-google-chat
+            - s3_lambda_build_and_push
 ```
 
 
