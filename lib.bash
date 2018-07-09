@@ -196,7 +196,7 @@ docker_build() {
   install_awscli
   eval $(aws ecr get-login --no-include-email --region ${AWS_REGION_SOURCE:-eu-central-1})
   ### The Dockerfile is supposed to be in a subdir docker of the repo
-  cd /${BITBUCKET_REPO_SLUG}/docker
+  cd /${BITBUCKET_CLONE_DIR}/docker
 
   echo "### Start build of docker image ${DOCKER_IMAGE} ###"
   docker build -t ${DOCKER_IMAGE} .
