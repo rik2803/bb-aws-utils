@@ -192,6 +192,19 @@ set_source_ecr_credentials() {
   eval $(aws ecr get-login --no-include-email --region ${AWS_REGION_SOURCE:-eu-central-1})
 }
 
+docker_build() {
+  eval $(aws ecr get-login --no-include-email --region ${AWS_REGION_SOURCE:-eu-central-1})
+  ### The Dockerfile is supposed to be in a subdir docker of the repo
+  cd /${BITBUCKET_REPO_SLUG}/docker
+
+  echo "### Start build of docker image ${DOCKER_IMAGE} ###"
+  docker build -t ${DOCKER_IMAGE} .
+  echo "### Tagging docker image ${DOCKER_IMAGE}-${BITBUCKET_COMMIT:-NA} ###"
+  docker tag ${DOCKER_IMAGE}-${BITBUCKET_COMMIT:-NA} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}-${BITBUCKET_COMMIT:-NA}
+  echo "### Pushing docker image ${DOCKER_IMAGE}-${BITBUCKET_COMMIT:-NA} to ECR ###"
+  docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}-${BITBUCKET_COMMIT:-NA}
+}
+
 docker_build_application_image() {
   echo "### Docker info ###"
   docker info
