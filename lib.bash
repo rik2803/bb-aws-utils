@@ -291,6 +291,37 @@ s3_deploy() {
   s3_deploy_deploy
 }
 
+s3_lambda_build_and_push() {
+  export CI=false
+  install_awscli
+  run_log_and_exit_on_failure "apt-get install -y zip"
+
+  ### Node
+  if [[ ${LAMBDA_RUNTIME} = nodejs* ]]
+  then
+    if [[ -f package.json ]]
+    then
+      npm install
+    fi
+  fi
+
+  ### Python
+  if [[ ${LAMBDA_RUNTIME} = python* ]]
+  then
+    if [[ -f requirements.txt ]]
+    then
+      run_log_and_exit_on_failure "pip install -r requirements.txt --target ."
+    fi
+  fi
+
+  echo "### Zip the Lambda code and dependencies"
+  run_log_and_exit_on_failure "zip -r ${LAMBDA_FUNCTION_NAME}.zip *"
+
+  echo "### Push the zipped file to S3 bucket ${S3_DEST_BUCKET}"
+  set_credentials "${AWS_ACCESS_KEY_ID}" "${AWS_SECRET_ACCESS_KEY}"
+  run_log_and_exit_on_failure "aws s3 cp --acl private ${LAMBDA_FUNCTION_NAME}.zip s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}.zip"
+}
+
 s3_artifact() {
   echo "### Run the build command (${BUILD_COMMAND:-No build command}) ###"
   create_npmrc
