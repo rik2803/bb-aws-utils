@@ -17,6 +17,12 @@ install_awscli() {
   run_log_and_exit_on_failure "pip install awscli"
 }
 
+install_maven2() {
+  echo "### Start maven2 installation ###"
+  run_log_and_exit_on_failure "apt-get update"
+  run_log_and_exit_on_failure "apt-get install -y maven2"
+}
+
 install_jq() {
   echo "### Start jq installation ###"
   run_log_and_exit_on_failure "apt-get update"
