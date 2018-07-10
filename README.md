@@ -60,7 +60,17 @@ The BB pipeline build requires these pipeline environment variables:
 #### `python` specific actions
 
 * If libraries need to be installed, create a `requirements.txt` file in the root of your
-  project. The dependencies will be installed by the pipeline
+  project. The dependencies will be installed by the pipeline.
+* The Lambda function file should be called `lambda.py` or referenced by the
+  environment variable `LAMBDA_FUNCTION_FILE`
+
+#### `nodejs` specific actions
+
+* If libraries need to be installed, create a `package.json` file in the root of your
+  project. The dependencies will be installed with `npm i` by the pipeline if this
+  file exists.
+* The Lambda function file should be called `index.js` or referenced by the
+  environment variable `LAMBDA_FUNCTION_FILE`
 
 ### A `bitbucket-pipelines.yml` example
 
