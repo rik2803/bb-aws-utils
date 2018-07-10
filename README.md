@@ -1,4 +1,4 @@
-# `bb-docker-aws-utils` - Bash functions to build and deploy docker images from a BitBucket pipeline
+# `bb-aws-utils` - Bash functions to build and deploy docker images from a BitBucket pipeline
 
 ## What these functions can be used for
 
