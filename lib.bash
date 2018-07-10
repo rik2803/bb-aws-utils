@@ -314,7 +314,7 @@ s3_lambda_build_and_push() {
   run_log_and_exit_on_failure "mkdir /builddir"
 
   ### Node
-  if [[ ${LAMBDA_RUNTIME} = nodejs* ]]
+  if [[ ${LAMBDA_RUNTIME} = node* ]]
   then
     run_log_and_exit_on_failure "mv ${LAMBDA_FUNCTION_FILE:-index.js} /builddir"
     if [[ -f package.json ]]
