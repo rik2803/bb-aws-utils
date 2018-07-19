@@ -255,8 +255,8 @@ docker_deploy_image() {
   if [[ -n ${CW_ALARM_SUBSTR} ]]
   then
     echo "### Disable all CloudWatch alarm actions to avoid panic reactions ###"
-    CW_ALARMS=$(aws cloudwatch describe-alarms --query "MetricAlarms[*]|[?contains(AlarmName, '${CW_ALARM_SUBSTR}')].AlarmName" --output text)
-    aws cloudwatch disable-alarm-actions --alarm-names ${CW_ALARMS:-NoneFound}
+    CW_ALARMS=$(aws cloudwatch describe-alarms --region ${AWS_REGION:-eu-central-1} --query "MetricAlarms[*]|[?contains(AlarmName, '${CW_ALARM_SUBSTR}')].AlarmName" --output text)
+    aws cloudwatch disable-alarm-actions --region ${AWS_REGION:-eu-central-1} --alarm-names ${CW_ALARMS:-NoneFound}
   fi
 
   echo "### Force update service ${ECS_SERVICE} on ECS cluster ${ECS_CLUSTER} in region ${AWS_REGION} ###"
@@ -273,7 +273,7 @@ docker_deploy_image() {
     echo "###    30 seconds remaining  ###"
     sleep 30
     echo "### Enable all CloudWatch alarm actions to guarantee the services being monitored ###"
-    aws cloudwatch enable-alarm-actions --alarm-names ${CW_ALARMS:-NoneFound}
+    aws cloudwatch enable-alarm-actions --region ${AWS_REGION:-eu-central-1} --alarm-names ${CW_ALARMS:-NoneFound}
   fi
 }
 
