@@ -252,8 +252,29 @@ docker_tag_and_push_application_image() {
 }
 
 docker_deploy_image() {
+  if [[ -n ${CW_ALARM_SUBSTR} ]]
+  then
+    echo "### Disable all CloudWatch alarm actions to avoid panic reactions ###"
+    CW_ALARMS=$(aws cloudwatch describe-alarms --query "MetricAlarms[*]|[?contains(AlarmName, '${CW_ALARM_SUBSTR}')].AlarmName" --output text)
+    aws cloudwatch disable-alarm-actions --alarm-names ${CW_ALARMS:-NoneFound}
+  fi
+
   echo "### Force update service ${ECS_SERVICE} on ECS cluster ${ECS_CLUSTER} in region ${AWS_REGION} ###"
   aws ecs update-service --cluster ${ECS_CLUSTER} --force-new-deployment --service ${ECS_SERVICE} --region ${AWS_REGION:-eu-central-1}
+
+  if [[ -n ${CW_ALARM_SUBSTR} ]]
+  then
+    echo "### Allow the service to stabilize before re-enabling alarms (120 seconds)  ###"
+    sleep 30
+    echo "###    90 seconds remaining  ###"
+    sleep 30
+    echo "###    60 seconds remaining  ###"
+    sleep 30
+    echo "###    30 seconds remaining  ###"
+    sleep 30
+    echo "### Enable all CloudWatch alarm actions to guarantee the services being monitored ###"
+    aws cloudwatch enable-alarm-actions --alarm-names ${CW_ALARMS:-NoneFound}
+  fi
 }
 
 s3_deploy_apply_config_to_tree() {

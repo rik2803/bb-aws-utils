@@ -36,6 +36,81 @@ IMPORTANT: The script `sync_trigger_bb_build.bash` requires `jq`
 * `REMOTE_REPO_OWNER`
 * `REMOTE_REPO_SLUG`
 
+## Build a docker deploy image and deploy to AWS ECS Cluster Service
+
+What this does:
+
+* First pipeline step:
+  * use the credentials `AWS_ACCESS_KEY_ID_ECR_SOURCE` and
+    `AWS_SECRET_ACCESS_KEY_ECR_SOURCE` to login to the source ECR
+  * build a new docker image _FROM_ the image
+    `${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}`
+    where `${TAG}` is the content of the file `TAG`
+  * use the credentials `AWS_ACCESS_KEY_ID_ECR_TARGET` and
+    `AWS_SECRET_ACCESS_KEY_ECR_TARGET` to login to the target ECR
+  * Tag the new image and push it to `${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}-${ENVIRONMENT:-dev}`
+* Second pipeline step
+  * Disable the alarms that contain the string in the variable `${CW_ALARM_SUBSTR}`
+    (skip this step if the variable is not set)
+  * Run following command to forcibly update (this will pull the latest image from the task's definition) of the
+    service:
+
+```
+aws ecs update-service --cluster ${ECS_CLUSTER} --force-new-deployment --service ${ECS_SERVICE} --region ${AWS_REGION:-eu-central-1}
+``` 
+
+  * And finally wait 120 seconds for the update to finish and enable the _CloudWatch_ alarms (skip this step if the variable  `CW_ALARM_SUBSTR` is not set)
+
+### Example BB pipeline file
+
+```yaml
+image: python:3.6
+
+pipelines:
+  custom:
+    build_and_deploy:
+      - step:
+          name: Build and push Docker deploy image
+          script:
+            - git clone https://github.com/rik2803/bb-aws-utils.git
+            - export AWS_REGION=eu-central-1
+            - export AWS_ACCOUNTID_SRC=123456789012
+            - export AWS_ACCOUNTID_TARGET=210987654321
+            - export ECS_CLUSTER=my-ecs-cluster
+            - export ECS_SERVICE=my-service
+            - export ENVIRONMENT=dev
+            - export DOCKER_IMAGE=my/service-image
+            - bb-aws-utils/build-and-push-docker-image.bash
+      - step:
+          name: Deploy latest version of image
+          script:
+            - git clone https://github.com/rik2803/bb-aws-utils.git
+            - export AWS_REGION=eu-central-1
+            - export ECS_CLUSTER=my-ecs-cluster
+            - export ECS_SERVICE=my-service
+            - export ENVIRONMENT=dev
+            - export DOCKER_IMAGE=my/service-image
+            - export CW_ALARM_SUBSTR=MyServiceAlarm
+            - bb-aws-utils/deploy-docker-image.bash
+options:
+  docker: true
+```
+
+### Environment
+* `AWS_ACCESS_KEY_ID_ECR_SOURCE` and `AWS_SECRET_ACCESS_KEY_ECR_SOURCE`: Credentials for the
+  source ECR where the docker image is based upon.
+* `AWS_ACCOUNTID_SRC`: AccountID where the source ECR is hosted
+* `AWS_ACCESS_KEY_ID_ECR_TARGET` and `AWS_SECRET_ACCESS_KEY_ECR_TARGET`: Credentials for the
+  destinatino ECR in the account of the environment where the service is running
+* `AWS_ACCOUNTID_TARGET`: AccountID where the destination ECR is hosted
+* `AWS_REGION`: The region (optional, default is `eu-central-1`)
+* `ECS_CLUSTER`: The name of the cluster where the service to update is running
+* `ECS_SERVICE`: The name of the service to update
+* `ENVIRONMENT`: The environment (`dev`, `prd`, ...)
+* `DOCKER_IMAGE`: The name of the docker image, without the tag
+* `CW_ALARM_SUBSTR`: Determines the _CloudWatch_ alarms that will be paused during
+  deployment of the service
+
 ## Package a Lambda function
 
 ### How
