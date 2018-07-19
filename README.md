@@ -57,6 +57,14 @@ The BB pipeline build requires these pipeline environment variables:
 * `AWS_ACCESS_KEY_ID`: Credentials with write access to `S3_DEST_BUCKET`
 * `AWS_SECRET_ACCESS_KEY`: Credentials with write access to `S3_DEST_BUCKET`
 
+The result of a succeeded pipeline run is:
+
+* A S3 object named `${LAMBDA_FUNCTION_NAME}.zip` on the bucket `S3_DEST_BUCKET`
+* A S3 object named `${LAMBDA_FUNCTION_NAME}-${BITBUCKET_COMMIT}.zip` on the bucket `S3_DEST_BUCKET`
+
+It is adviced to use the S3 object that has the commit string in its name, to have a form of version management.
+
+
 #### `python` specific actions
 
 * If libraries need to be installed, create a `requirements.txt` file in the root of your
