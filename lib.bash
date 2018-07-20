@@ -366,6 +366,7 @@ s3_lambda_build_and_push() {
 }
 
 s3_artifact() {
+  install_awscli
   echo "### Run the build command (${BUILD_COMMAND:-No build command}) ###"
   create_npmrc
   [[ -n ${BUILD_COMMAND} ]] && eval ${BUILD_COMMAND}
