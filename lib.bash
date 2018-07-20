@@ -319,6 +319,7 @@ s3_deploy_deploy() {
 }
 
 s3_deploy() {
+  install_awscli
   echo "### Set AWS credentials for artifact download (AWS_ACCESS_KEY_ID_S3_SOURCE and AWS_SECRET_ACCESS_KEY_S3_SOURCE) ###"
   set_credentials "${AWS_ACCESS_KEY_ID_S3_SOURCE}" "${AWS_SECRET_ACCESS_KEY_S3_SOURCE}"
   s3_deploy_download_tar_and_prepare_for_deploy
