@@ -412,5 +412,6 @@ s3_build_once_deploy_once() {
   echo "### Set AWS credentials for deploy (AWS_ACCESS_KEY_ID_S3_TARGET and AWS_SECRET_ACCESS_KEY_S3_TARGET) ###"
   set_credentials "${AWS_ACCESS_KEY_ID_S3_TARGET}" "${AWS_SECRET_ACCESS_KEY_S3_TARGET}"
   echo "### Start the deploy ###"
+  install_awscli
   s3_deploy_deploy ${PAYLOAD_LOCATION}
 }
