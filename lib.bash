@@ -73,11 +73,10 @@ create_TAG_file_in_remote_url() {
  
   ### Construct remote repo HTTPS URL
   REMOTE_REPO_URL=$(repo_git_url)
-
   echo "### Remote repo URL is ${REMOTE_REPO_URL} ###"
   
   ### git config
-  git config --global user.email "bitbucketpipeline@ixor.be"
+  git config --global user.email "bitbucketpipeline@wherever.com"
   git config --global user.name "Bitbucket Pipeline"
   
   echo "### Trying to clone ${REMOTE_REPO_URL} into remote_repo ###"
@@ -302,7 +301,8 @@ s3_deploy_create_tar_and_upload_to_s3() {
 
 s3_deploy_download_tar_and_prepare_for_deploy() {
   echo "### Download artifact ${ARTIFACT_NAME}-last.tgz from s3://${S3_ARTIFACT_BUCKET} ###"
-  aws s3 cp s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-last.tgz .
+  aws s3 cp s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-last.tgz .BUILD_COMMAND
+  ###   * 
   echo "### Create workdir ###"
   mkdir -p workdir
   echo "### Untar the artifact file into the workdir ###"
@@ -312,7 +312,7 @@ s3_deploy_download_tar_and_prepare_for_deploy() {
 }
 
 s3_deploy_deploy() {
-  cd workdir
+  cd ${1:-workdir}
   echo "### Deploy the payload to s3://${S3_DEST_BUCKET}/${S3_PREFIX:-} with ACL ${AWS_ACCESS_CONTROL:-private} ###"
   aws s3 cp --acl ${AWS_ACCESS_CONTROL:-private} --recursive . s3://${S3_DEST_BUCKET}/${S3_PREFIX:-}
   cd -
@@ -379,4 +379,38 @@ s3_artifact() {
 create_npmrc() {
   echo "### Create ~/.npmrc file for NPMJS authentication ###"
   echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN:-NA}" > ~/.npmrc
+}
+
+clone_repo() {
+  ### Construct remote repo HTTPS URL
+  REMOTE_REPO_URL=$(repo_git_url)
+
+  echo "### Remote repo URL is ${REMOTE_REPO_URL} ###"
+
+  ### git config
+  git config --global user.email "bitbucketpipeline@wherever.com"
+  git config --global user.name "Bitbucket Pipeline"
+
+  echo "### Trying to clone ${REMOTE_REPO_URL} into remote_repo ###"
+  rm -rf remote_repo
+  git clone --single-branch -b ${REMOTE_REPO_BRANCH:-master} ${REMOTE_REPO_URL} remote_repo || { echo "### Error cloning ${REMOTE_REPO_URL} ###"; exit 1; }
+}
+
+s3_build_once_deploy_once() {
+  ### This is for legacy stuff and Q&D pipeline migrations
+  ###   * clone a repository REMOTE_REPO_SLUG for REMOTE_REPO_OWNER and branch REMOTE_REPO_BRANCH )default is master)
+  ###   * run the BUILD_COMMAND
+  ###   * copy all files in PAYLOAD_LOCATION (default is dist) to s3://${S3_DEST_BUCKET}/${S3_PREFIX:-} with ACL ${AWS_ACCESS_CONTROL:-private}
+  ### For S3 authentication: AWS_ACCESS_KEY_ID_S3_TARGET and AWS_SECRET_ACCESS_KEY_S3_TARGET
+  ### Use SSH private key to be able to clone the repository
+
+  clone_repo
+  ### clone_repo clones in the remote_repo directory
+  run_log_and_exit_on_failure "cd remote_repo"
+  run_log_and_exit_on_failure "${BUILD_COMMAND}"
+
+  echo "### Set AWS credentials for deploy (AWS_ACCESS_KEY_ID_S3_TARGET and AWS_SECRET_ACCESS_KEY_S3_TARGET) ###"
+  set_credentials "${AWS_ACCESS_KEY_ID_S3_TARGET}" "${AWS_SECRET_ACCESS_KEY_S3_TARGET}"
+  echo "### Start the deploy ###"
+  s3_deploy_deploy ${PAYLOAD_LOCATION}
 }
