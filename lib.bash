@@ -1,6 +1,6 @@
 run_log_and_exit_on_failure() {
   echo "### Starting ${1}"
-  if ${1} 
+  if eval "${1}"
   then
     echo "### ${1} successfully executed"
   else
