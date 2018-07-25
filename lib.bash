@@ -1,3 +1,5 @@
+AWSCLI_INSTALLED=0
+
 run_log_and_exit_on_failure() {
   echo "### Starting ${1}"
   if eval "${1}"
@@ -10,11 +12,17 @@ run_log_and_exit_on_failure() {
 }
 
 install_awscli() {
-  run_log_and_exit_on_failure "apt-get update"
-  run_log_and_exit_on_failure "apt-get install -y python-dev"
-  run_log_and_exit_on_failure "curl -O https://bootstrap.pypa.io/get-pip.py"
-  run_log_and_exit_on_failure "python get-pip.py"
-  run_log_and_exit_on_failure "pip install awscli"
+  if [[ ${AWSCLI_INSTALLED} -eq 0 ]]
+  then
+    run_log_and_exit_on_failure "apt-get update"
+    run_log_and_exit_on_failure "apt-get install -y python-dev"
+    run_log_and_exit_on_failure "curl -O https://bootstrap.pypa.io/get-pip.py"
+    run_log_and_exit_on_failure "python get-pip.py"
+    run_log_and_exit_on_failure "pip install awscli"
+    AWSCLI_INSTALLED=1
+  else
+    echo "### awscli already installed ###"
+  fi
 }
 
 install_maven2() {
@@ -396,11 +404,21 @@ clone_repo() {
   git clone --single-branch -b ${REMOTE_REPO_BRANCH:-master} ${REMOTE_REPO_URL} remote_repo || { echo "### Error cloning ${REMOTE_REPO_URL} ###"; exit 1; }
 }
 
+s3_cloudfront_invalidate() {
+  if [[ -n ${CLOUDFRONT_DISTRIBUTION_ID} ]]
+  then
+    run_log_and_exit_on_failure "aws cloudfront create-invalidation --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} --paths '/*'"
+  else
+    echo "### WARNING: Skippinf cloudfront invalidation because CLOUDFRONT_DISTRIBUTION_ID is not set ###"
+  fi
+}
+
 s3_build_once_deploy_once() {
   ### This is for legacy stuff and Q&D pipeline migrations
   ###   * clone a repository REMOTE_REPO_SLUG for REMOTE_REPO_OWNER and branch REMOTE_REPO_BRANCH )default is master)
   ###   * run the BUILD_COMMAND
   ###   * copy all files in PAYLOAD_LOCATION (default is dist) to s3://${S3_DEST_BUCKET}/${S3_PREFIX:-} with ACL ${AWS_ACCESS_CONTROL:-private}
+  ###   * invalidate the CloudFront Distribution CLOUDFRONT_DISTRIBUTION_ID
   ### For S3 authentication: AWS_ACCESS_KEY_ID_S3_TARGET and AWS_SECRET_ACCESS_KEY_S3_TARGET
   ### Use SSH private key to be able to clone the repository
 
@@ -414,4 +432,5 @@ s3_build_once_deploy_once() {
   echo "### Start the deploy ###"
   install_awscli
   s3_deploy_deploy ${PAYLOAD_LOCATION}
+  s3_cloudfront_invalidate
 }
