@@ -309,7 +309,7 @@ s3_deploy_create_tar_and_upload_to_s3() {
 
 s3_deploy_download_tar_and_prepare_for_deploy() {
   echo "### Download artifact ${ARTIFACT_NAME}-last.tgz from s3://${S3_ARTIFACT_BUCKET} ###"
-  aws s3 cp s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-last.tgz .BUILD_COMMAND
+  aws s3 cp s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-last.tgz .
   ###   * 
   echo "### Create workdir ###"
   mkdir -p workdir
