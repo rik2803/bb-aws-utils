@@ -115,6 +115,7 @@ create_TAG_file_in_remote_url() {
 
 start_pipeline_for_remote_repo() {
   REMOTE_REPO_COMMIT_HASH=${1}
+  PATTERN=${2:-build_and_deploy}
 
   export URL="https://api.bitbucket.org/2.0/repositories/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/pipelines/"
   
@@ -132,7 +133,7 @@ start_pipeline_for_remote_repo() {
     },
     "selector": {
       "type":"custom",
-      "pattern":"build_and_deploy"
+      "pattern":"${PATTERN}"
     },
     "type":"pipeline_commit_target"
   }
