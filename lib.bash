@@ -1,4 +1,6 @@
 AWSCLI_INSTALLED=0
+CW_ALARMS_DISABLED=0
+CW_ALARMS=NA
 
 run_log_and_exit_on_failure() {
   echo "### Starting ${1}"
@@ -6,6 +8,7 @@ run_log_and_exit_on_failure() {
   then
     echo "### ${1} successfully executed"
   else
+    _enable_cw_alarms
     echo "### ERROR: ${1} failed, exiting ..."
     exit 1
   fi
@@ -233,6 +236,25 @@ docker_build_deploy_image() {
   _docker_build ${DOCKER_IMAGE}-${ENVIRONMENT:-dev}
 }
 
+
+_disable_cw_alarms() {
+  CW_ALARMS=$(aws cloudwatch describe-alarms --region ${AWS_REGION:-eu-central-1} --query "MetricAlarms[*]|[?contains(AlarmName, '${CW_ALARM_SUBSTR}')].AlarmName" --output text)
+  if aws cloudwatch disable-alarm-actions --region ${AWS_REGION:-eu-central-1} --alarm-names ${CW_ALARMS:-NoneFound}
+  then
+    CW_ALARMS_DISABLED=1
+  fi
+}
+
+_enable_cw_alarms() {
+  if [[ ${CW_ALARMS_DISABLED} -eq 1 ]]
+  then
+    if aws cloudwatch enable-alarm-actions --region ${AWS_REGION:-eu-central-1} --alarm-names ${CW_ALARMS:-NoneFound}
+    then
+      CW_ALARMS_DISABLED=0
+    fi
+  fi
+}
+
 _docker_build() {
   image_name=${1:-${DOCKER_IMAGE}}
   echo "### Start build of docker image ${DOCKER_IMAGE} ###"
@@ -271,12 +293,11 @@ docker_deploy_image() {
   if [[ -n ${CW_ALARM_SUBSTR} ]]
   then
     echo "### Disable all CloudWatch alarm actions to avoid panic reactions ###"
-    CW_ALARMS=$(aws cloudwatch describe-alarms --region ${AWS_REGION:-eu-central-1} --query "MetricAlarms[*]|[?contains(AlarmName, '${CW_ALARM_SUBSTR}')].AlarmName" --output text)
-    aws cloudwatch disable-alarm-actions --region ${AWS_REGION:-eu-central-1} --alarm-names ${CW_ALARMS:-NoneFound}
+    _disable_cw_alarms
   fi
 
   echo "### Force update service ${ECS_SERVICE} on ECS cluster ${ECS_CLUSTER} in region ${AWS_REGION} ###"
-  aws ecs update-service --cluster ${ECS_CLUSTER} --force-new-deployment --service ${ECS_SERVICE} --region ${AWS_REGION:-eu-central-1}
+  run_log_and_exit_on_failure "aws ecs update-service --cluster ${ECS_CLUSTER} --force-new-deployment --service ${ECS_SERVICE} --region ${AWS_REGION:-eu-central-1}"
 
   if [[ -n ${CW_ALARM_SUBSTR} ]]
   then
@@ -289,7 +310,7 @@ docker_deploy_image() {
     echo "###    30 seconds remaining  ###"
     sleep 30
     echo "### Enable all CloudWatch alarm actions to guarantee the services being monitored ###"
-    aws cloudwatch enable-alarm-actions --region ${AWS_REGION:-eu-central-1} --alarm-names ${CW_ALARMS:-NoneFound}
+    _enable_cw_alarms
   fi
 }
 
