@@ -233,36 +233,14 @@ docker_build_deploy_image() {
 
   echo "### Create Dockerfile ###"
   echo "FROM ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}" > Dockerfile
-  echo "### Start build of docker image ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} based on the artefact image with tar ${TAG:-latest} ###"
-  _docker_build ${DOCKER_IMAGE}-${ENVIRONMENT:-dev}
-}
-
-
-_disable_cw_alarms() {
-  CW_ALARMS=$(aws cloudwatch describe-alarms --region ${AWS_REGION:-eu-central-1} --query "MetricAlarms[*]|[?contains(AlarmName, '${CW_ALARM_SUBSTR}')].AlarmName" --output text)
-  if aws cloudwatch disable-alarm-actions --region ${AWS_REGION:-eu-central-1} --alarm-names ${CW_ALARMS:-NoneFound}
+  if [[ -n ${DOCKER_IMAGE_TARGET} ]] 
   then
-    CW_ALARMS_DISABLED=1
+    echo "### Start build of docker image ${DOCKER_IMAGE_TARGET}-${ENVIRONMENT:-dev} based on the artefact image with tag ${TAG:-latest} ###"
+    _docker_build ${DOCKER_IMAGE_TARGET}-${ENVIRONMENT:-dev}
+  else
+    echo "### Start build of docker image ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} based on the artefact image with tag ${TAG:-latest} ###"
+    _docker_build ${DOCKER_IMAGE}-${ENVIRONMENT:-dev}
   fi
-}
-
-_enable_cw_alarms() {
-  if [[ ${CW_ALARMS_DISABLED} -eq 1 ]]
-  then
-    if aws cloudwatch enable-alarm-actions --region ${AWS_REGION:-eu-central-1} --alarm-names ${CW_ALARMS:-NoneFound}
-    then
-      CW_ALARMS_DISABLED=0
-    fi
-  fi
-}
-
-_docker_build() {
-  image_name=${1:-${DOCKER_IMAGE}}
-  echo "### Start build of docker image ${DOCKER_IMAGE} ###"
-  docker build --build-arg="BITBUCKET_COMMIT=${BITBUCKET_COMMIT:-NA}" \
-               --build-arg="BITBUCKET_REPO_SLUG=${BITBUCKET_REPO_SLUG:-NA}" \
-               --build-arg="BITBUCKET_REPO_OWNER=${BITBUCKET_REPO_OWNER:-NA}" \
-               -t ${image_name} .
 }
 
 set_dest_ecr_credentials() {
@@ -282,12 +260,22 @@ docker_tag_and_push_deploy_image() {
 }
 
 docker_tag_and_push_application_image() {
-  echo "### Tagging docker image ${DOCKER_IMAGE} ###"
-  docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
-  docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
-  echo "### Pushing docker image ${DOCKER_IMAGE} to ECR ###"
-  docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
-  docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
+  if [[ -n ${DOCKER_IMAGE_TARGET} ]] 
+  then
+    echo "### Tagging docker image ${DOCKER_IMAGE_TARGET} ###"
+    docker tag ${DOCKER_IMAGE_TARGET} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE_TARGET}
+    docker tag ${DOCKER_IMAGE_TARGET} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE_TARGET}:${BITBUCKET_COMMIT}
+    echo "### Pushing docker image ${DOCKER_IMAGE_TARGET} to ECR ###"
+    docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE_TARGET}
+    docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE_TARGET}:${BITBUCKET_COMMIT}
+  else
+    echo "### Tagging docker image ${DOCKER_IMAGE} ###"
+    docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
+    docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
+    echo "### Pushing docker image ${DOCKER_IMAGE} to ECR ###"
+    docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
+    docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
+  fi
 }
 
 docker_deploy_image() {
@@ -465,3 +453,35 @@ s3_build_once_deploy_once() {
   s3_deploy_deploy ${PAYLOAD_LOCATION}
   s3_cloudfront_invalidate
 }
+
+#####################
+### Private functions
+
+_disable_cw_alarms() {
+  CW_ALARMS=$(aws cloudwatch describe-alarms --region ${AWS_REGION:-eu-central-1} --query "MetricAlarms[*]|[?contains(AlarmName, '${CW_ALARM_SUBSTR}')].AlarmName" --output text)
+  if aws cloudwatch disable-alarm-actions --region ${AWS_REGION:-eu-central-1} --alarm-names ${CW_ALARMS:-NoneFound}
+  then
+    CW_ALARMS_DISABLED=1
+  fi
+}
+
+_enable_cw_alarms() {
+  if [[ ${CW_ALARMS_DISABLED} -eq 1 ]]
+  then
+    if aws cloudwatch enable-alarm-actions --region ${AWS_REGION:-eu-central-1} --alarm-names ${CW_ALARMS:-NoneFound}
+    then
+      CW_ALARMS_DISABLED=0
+    fi
+  fi
+}
+
+_docker_build() {
+  image_name=${1:-${DOCKER_IMAGE}}
+
+  echo "### Start build of docker image ${DOCKER_IMAGE} ###"
+  docker build --build-arg="BITBUCKET_COMMIT=${BITBUCKET_COMMIT:-NA}" \
+               --build-arg="BITBUCKET_REPO_SLUG=${BITBUCKET_REPO_SLUG:-NA}" \
+               --build-arg="BITBUCKET_REPO_OWNER=${BITBUCKET_REPO_OWNER:-NA}" \
+               -t ${image_name} .
+}
+
