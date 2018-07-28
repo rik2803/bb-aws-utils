@@ -206,7 +206,7 @@ docker_build() {
   cd /${BITBUCKET_CLONE_DIR}/docker
 
   echo "### Start build of docker image ${DOCKER_IMAGE} ###"
-  docker build -t ${DOCKER_IMAGE} .
+  _docker_build ${DOCKER_IMAGE}
   echo "### Tagging docker image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} ###"
   docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
   docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
@@ -219,7 +219,7 @@ docker_build_application_image() {
   echo "### Docker info ###"
   docker info
   echo "### Start build of docker image ${DOCKER_IMAGE} ###"
-  docker build -t ${DOCKER_IMAGE} .
+  _docker_build ${DOCKER_IMAGE}
 }
 
 docker_build_deploy_image() {
@@ -230,7 +230,16 @@ docker_build_deploy_image() {
   echo "### Create Dockerfile ###"
   echo "FROM ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}" > Dockerfile
   echo "### Start build of docker image ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} based on the artefact image with tar ${TAG:-latest} ###"
-  docker build --build-arg="BITBUCKET_COMMIT=${BITBUCKET_COMMIT:-NA}" -t ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} .
+  _docker_build ${DOCKER_IMAGE}-${ENVIRONMENT:-dev}
+}
+
+_docker_build() {
+  image_name=${1:-${DOCKER_IMAGE}}
+  echo "### Start build of docker image ${DOCKER_IMAGE} ###"
+  docker build --build-arg="BITBUCKET_COMMIT=${BITBUCKET_COMMIT:-NA}" \
+               --build-arg="BITBUCKET_REPO_SLUG=${BITBUCKET_REPO_SLUG:-NA}" \
+               --build-arg="BITBUCKET_REPO_OWNER=${BITBUCKET_REPO_OWNER:-NA}" \
+               -t ${image_name} .
 }
 
 set_dest_ecr_credentials() {
