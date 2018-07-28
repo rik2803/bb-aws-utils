@@ -253,29 +253,27 @@ set_dest_ecr_credentials() {
 }
 
 docker_tag_and_push_deploy_image() {
-  echo "### Tagging docker image ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} ###"
-  docker tag ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}-${ENVIRONMENT:-dev}
-  echo "### Pushing docker image ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} to ECR ###"
-  docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}-${ENVIRONMENT:-dev}
+  if [[ -n ${DOCKER_IMAGE_TARGET} ]] 
+  then
+    echo "### Tagging docker image ${DOCKER_IMAGE_TARGET}-${ENVIRONMENT:-dev} ###"
+    docker tag ${DOCKER_IMAGE_TARGET}-${ENVIRONMENT:-dev} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE_TARGET}-${ENVIRONMENT:-dev}
+    echo "### Pushing docker image ${DOCKER_IMAGE_TARGET}-${ENVIRONMENT:-dev} to ECR ###"
+    docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE_TARGET}-${ENVIRONMENT:-dev}
+  else
+    echo "### Tagging docker image ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} ###"
+    docker tag ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}-${ENVIRONMENT:-dev}
+    echo "### Pushing docker image ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} to ECR ###"
+    docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}-${ENVIRONMENT:-dev}
+fi
 }
 
 docker_tag_and_push_application_image() {
-  if [[ -n ${DOCKER_IMAGE_TARGET} ]] 
-  then
-    echo "### Tagging docker image ${DOCKER_IMAGE_TARGET} ###"
-    docker tag ${DOCKER_IMAGE_TARGET} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE_TARGET}
-    docker tag ${DOCKER_IMAGE_TARGET} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE_TARGET}:${BITBUCKET_COMMIT}
-    echo "### Pushing docker image ${DOCKER_IMAGE_TARGET} to ECR ###"
-    docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE_TARGET}
-    docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE_TARGET}:${BITBUCKET_COMMIT}
-  else
-    echo "### Tagging docker image ${DOCKER_IMAGE} ###"
-    docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
-    docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
-    echo "### Pushing docker image ${DOCKER_IMAGE} to ECR ###"
-    docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
-    docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
-  fi
+  echo "### Tagging docker image ${DOCKER_IMAGE} ###"
+  docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
+  docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
+  echo "### Pushing docker image ${DOCKER_IMAGE} to ECR ###"
+  docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
+  docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
 }
 
 docker_deploy_image() {
