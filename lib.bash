@@ -217,6 +217,8 @@ docker_build() {
   echo "### Pushing docker image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} to ECR ###"
   docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
   docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
+
+  cd -
 }
 
 docker_build_application_image() {
@@ -384,6 +386,7 @@ s3_lambda_build_and_push() {
   echo "### Zip the Lambda code and dependencies"
   run_log_and_exit_on_failure "cd /builddir"
   run_log_and_exit_on_failure "zip -r /${LAMBDA_FUNCTION_NAME}.zip *"
+  run_log_and_exit_on_failure "cd -"
 
   echo "### Push the zipped file to S3 bucket ${S3_DEST_BUCKET}"
   set_credentials "${AWS_ACCESS_KEY_ID}" "${AWS_SECRET_ACCESS_KEY}"
@@ -450,6 +453,8 @@ s3_build_once_deploy_once() {
   install_awscli
   s3_deploy_deploy ${PAYLOAD_LOCATION}
   s3_cloudfront_invalidate
+
+  run_log_and_exit_on_failure "cd -"
 }
 
 #####################
