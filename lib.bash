@@ -365,18 +365,18 @@ s3_lambda_build_and_push() {
   ### Node
   if [[ ${LAMBDA_RUNTIME} = nodejs* ]]
   then
-    [[ -e ${LAMBDA_FUNCTION_FILE:-index.js} ]] || run_log_and_exit_on_failure "mv -f ${LAMBDA_FUNCTION_FILE:-index.js} /builddir"
+    [[ -e ${LAMBDA_FUNCTION_FILE:-index.js} ]] && run_log_and_exit_on_failure "mv -f ${LAMBDA_FUNCTION_FILE:-index.js} /builddir"
     if [[ -f package.json ]]
     then
       run_log_and_exit_on_failure "npm install"
-      [[ -e node_modules ]] || run_log_and_exit_on_failure "mv -f node_modules /builddir"
+      [[ -e node_modules ]] && run_log_and_exit_on_failure "mv -f node_modules /builddir"
     fi
   fi
 
   ### Python
   if [[ ${LAMBDA_RUNTIME} = python* ]]
   then
-    [[ -e ${LAMBDA_FUNCTION_FILE:-lambda.py} ]] || run_log_and_exit_on_failure "mv -f ${LAMBDA_FUNCTION_FILE:-lambda.py} /builddir"
+    [[ -e ${LAMBDA_FUNCTION_FILE:-lambda.py} ]] && run_log_and_exit_on_failure "mv -f ${LAMBDA_FUNCTION_FILE:-lambda.py} /builddir"
     if [[ -f requirements.txt ]]
     then
       run_log_and_exit_on_failure "pip install -r requirements.txt --target /builddir"
