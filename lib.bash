@@ -358,7 +358,7 @@ s3_lambda_build_and_push() {
   export CI=false
   install_awscli
   run_log_and_exit_on_failure "apt-get install -y zip"
-  run_log_and_exit_on_failure "mkdir /builddir"
+  run_log_and_exit_on_failure "mkdir -p /builddir"
 
   ### Node
   if [[ ${LAMBDA_RUNTIME} = nodejs* ]]
