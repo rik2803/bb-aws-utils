@@ -69,10 +69,10 @@ create_TAG_file_in_remote_url() {
   #
   # That ssh key should be granted read/write permissions to the repo
   # to be cloned, changed, committed and pushed, and will be available
-  # as ~/.ssh/id_rsa 
+  # as ~/.ssh/id_rsa
 
   ### It's useless to do this if no SSHKEY is configured in the pipeline.
-  if [[ ! -e /opt/atlassian/pipelines/agent/data/id_rsa ]]  
+  if [[ ! -e /opt/atlassian/pipelines/agent/data/id_rsa ]]
   then
     echo "### ERROR: No SSH Key is configured in the pipeline, and this is required ###"
     echo "###        to be able to add/update the TAG file in the remote (config)   ###"
@@ -81,15 +81,15 @@ create_TAG_file_in_remote_url() {
     echo "###            bb -> repo -> settings -> pipelines -> SSH keys            ###"
     exit 1
   fi
- 
+
   ### Construct remote repo HTTPS URL
   REMOTE_REPO_URL=$(repo_git_url)
   echo "### Remote repo URL is ${REMOTE_REPO_URL} ###"
-  
+
   ### git config
   git config --global user.email "bitbucketpipeline@wherever.com"
   git config --global user.name "Bitbucket Pipeline"
-  
+
   echo "### Trying to clone ${REMOTE_REPO_URL} into remote_repo ###"
   rm -rf remote_repo
   git clone ${REMOTE_REPO_URL} remote_repo || { echo "### Error cloning ${REMOTE_REPO_URL} ###"; exit 1; }
@@ -118,12 +118,12 @@ start_pipeline_for_remote_repo() {
   PATTERN=${2:-build_and_deploy}
 
   export URL="https://api.bitbucket.org/2.0/repositories/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/pipelines/"
-  
+
   echo "### REMOTE_REPO_OWNER:       ${REMOTE_REPO_OWNER} ###"
   echo "### REMOTE_REPO_SLUG:        ${REMOTE_REPO_SLUG} ###"
   echo "### URL:                     ${URL} ###"
   echo "### REMOTE_REPO_COMMIT_HASH: ${REMOTE_REPO_COMMIT_HASH} ###"
-  
+
   cat > /curldata << EOF
 {
   "target": {
@@ -141,10 +141,10 @@ start_pipeline_for_remote_repo() {
 EOF
   CURLRESULT=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
                     ${URL} -d '@/curldata')
-  
+
   UUID=$(echo "${CURLRESULT}" | jq --raw-output '.uuid' | tr -d '\{\}')
   BUILDNUMBER=$(echo "${CURLRESULT}" | jq --raw-output '.build_number')
-  
+
   if [[ ${UUID} = "null" ]]
   then
     echo "### ERROR: An error occured when triggering the pipeline ###"
@@ -159,28 +159,28 @@ EOF
   echo "### Remote pipeline is started and has UUID is ${UUID} ###"
   echo "### Link to the remote pipeline result is: ###"
   echo "###   https://bitbucket.org/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/addon/pipelines/home#!/results/${BUILDNUMBER} ###"
-  
+
   CONTINUE=1
   SLEEP=10
   STATE="NA"
   RESULT="na"
   CURLRESULT="NA"
-  
+
   echo "### Monitoring remote pipeline with UUID ${UUID} with interval ${SLEEP} ###"
   while [[ ${CONTINUE} = 1 ]]
   do
     sleep ${SLEEP}
     CURLRESULT=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' ${URL}\\{${UUID}\\})
     STATE=$(echo ${CURLRESULT} | jq --raw-output '.state.name')
-  
+
     echo "  ### Pipeline is in state ${STATE} ###"
-  
+
     if [[ ${STATE} == "COMPLETED" ]]
     then
       CONTINUE=0
     fi
   done
-  
+
   RESULT=$(echo ${CURLRESULT} | jq --raw-output '.state.result.name')
   echo "### Pipeline result is ${RESULT} ###"
 
@@ -235,7 +235,7 @@ docker_build_deploy_image() {
 
   echo "### Create Dockerfile ###"
   echo "FROM ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}" > Dockerfile
-  if [[ -n ${DOCKER_IMAGE_TARGET} ]] 
+  if [[ -n ${DOCKER_IMAGE_TARGET} ]]
   then
     echo "### Start build of docker image ${DOCKER_IMAGE_TARGET}-${ENVIRONMENT:-dev} based on the artefact image with tag ${TAG:-latest} ###"
     _docker_build ${DOCKER_IMAGE_TARGET}-${ENVIRONMENT:-dev}
@@ -255,7 +255,7 @@ set_dest_ecr_credentials() {
 }
 
 docker_tag_and_push_deploy_image() {
-  if [[ -n ${DOCKER_IMAGE_TARGET} ]] 
+  if [[ -n ${DOCKER_IMAGE_TARGET} ]]
   then
     echo "### Tagging docker image ${DOCKER_IMAGE_TARGET}-${ENVIRONMENT:-dev} ###"
     docker tag ${DOCKER_IMAGE_TARGET}-${ENVIRONMENT:-dev} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE_TARGET}-${ENVIRONMENT:-dev}
@@ -329,7 +329,7 @@ s3_deploy_create_tar_and_upload_to_s3() {
 s3_deploy_download_tar_and_prepare_for_deploy() {
   echo "### Download artifact ${ARTIFACT_NAME}-last.tgz from s3://${S3_ARTIFACT_BUCKET} ###"
   aws s3 cp s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-last.tgz .
-  ###   * 
+  ###   *
   echo "### Create workdir ###"
   mkdir -p workdir
   echo "### Untar the artifact file into the workdir ###"
@@ -487,4 +487,3 @@ _docker_build() {
                --build-arg="BITBUCKET_REPO_OWNER=${BITBUCKET_REPO_OWNER:-NA}" \
                -t ${image_name} .
 }
-
