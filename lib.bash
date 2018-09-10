@@ -420,8 +420,12 @@ clone_repo() {
   git config --global user.name "Bitbucket Pipeline"
 
   echo "### Trying to clone ${REMOTE_REPO_URL} into remote_repo ###"
-  rm -rf remote_repo
-  git clone --single-branch -b ${REMOTE_REPO_BRANCH:-master} ${REMOTE_REPO_URL} remote_repo || { echo "### Error cloning ${REMOTE_REPO_URL} ###"; exit 1; }
+  run_log_and_exit_on_failure "rm -rf remote_repo"
+  run_log_and_exit_on_failure "git clone --single-branch -b ${REMOTE_REPO_BRANCH:-master} ${REMOTE_REPO_URL} remote_repo"
+  
+  run_log_and_exit_on_failure "cd remote_repo"
+  run_log_and_exit_on_failure "git checkout $(cat ../TAG)"
+  run_log_and_exit_on_failure "cd -" 
 }
 
 s3_cloudfront_invalidate() {
@@ -429,7 +433,7 @@ s3_cloudfront_invalidate() {
   then
     run_log_and_exit_on_failure "aws cloudfront create-invalidation --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} --paths '/*'"
   else
-    echo "### WARNING: Skippinf cloudfront invalidation because CLOUDFRONT_DISTRIBUTION_ID is not set ###"
+    echo "### WARNING: Skipping cloudfront invalidation because CLOUDFRONT_DISTRIBUTION_ID is not set ###"
   fi
 }
 
