@@ -209,14 +209,22 @@ docker_build() {
   ### The Dockerfile is supposed to be in a subdir docker of the repo
   cd /${BITBUCKET_CLONE_DIR}/docker
 
-  echo "### Start build of docker image ${DOCKER_IMAGE} ###"
-  _docker_build ${DOCKER_IMAGE}
-  echo "### Tagging docker image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} ###"
-  docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
-  docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
-  echo "### Pushing docker image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} to ECR ###"
-  docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
-  docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
+  echo "### TODO - Check if the docker image with the current ${BITBUCKET_COMMIT} tag already exists"
+  aws ecr list-images --repository-name ${DOCKER_IMAGE} --query "imageIds[*].imageTag" --output text | grep -q ${BITBUCKET_COMMIT}
+  if [[ $? -eq 1 ]]
+  then
+    echo "### The image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} dit not already exist, building it ###" 
+    echo "### Start build of docker image ${DOCKER_IMAGE} ###"
+    _docker_build ${DOCKER_IMAGE}
+    echo "### Tagging docker image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} ###"
+    docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
+    docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
+    echo "### Pushing docker image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} to ECR ###"
+    docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
+    docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
+  else
+    echo "### The image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} already exists, skipping image recreation to save time and resources ###"
+  fi
 
   cd -
 }
