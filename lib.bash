@@ -209,11 +209,9 @@ docker_build() {
   ### The Dockerfile is supposed to be in a subdir docker of the repo
   cd /${BITBUCKET_CLONE_DIR}/docker
 
-  set -x 
-
   echo "### Check if the docker image with the current ${BITBUCKET_COMMIT} tag already exists"
-  aws ecr list-images --region ${AWS_REGION_SOURCE:-eu-central-1} --repository-name ${DOCKER_IMAGE} --query "imageIds[*].imageTag" --output text | grep -q ${BITBUCKET_COMMIT}
-  if [[ $? -eq 1 ]]
+  RESULT=$(aws ecr list-images --region ${AWS_REGION_SOURCE:-eu-central-1} --repository-name ${DOCKER_IMAGE} --query "imageIds[*].imageTag" --output text | grep ${BITBUCKET_COMMIT})
+  if [[ -z ${RESULT} ]]
   then
     echo "### The image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} dit not already exist, building it ###" 
     echo "### Start build of docker image ${DOCKER_IMAGE} ###"
