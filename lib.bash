@@ -209,10 +209,10 @@ docker_build() {
   ### The Dockerfile is supposed to be in a subdir docker of the repo
   cd /${BITBUCKET_CLONE_DIR}/docker
 
-  echo "### Check if the docker image with the current ${BITBUCKET_COMMIT} tag already exists"
-  RESULT=$(aws ecr list-images --region ${AWS_REGION_SOURCE:-eu-central-1} --repository-name ${DOCKER_IMAGE} --query "imageIds[*].imageTag" --output text | grep ${BITBUCKET_COMMIT})
-  if [[ -z ${RESULT} ]]
-  then
+#  echo "### Check if the docker image with the current ${BITBUCKET_COMMIT} tag already exists"
+#  RESULT=$(aws ecr list-images --region ${AWS_REGION_SOURCE:-eu-central-1} --repository-name ${DOCKER_IMAGE} --query "imageIds[*].imageTag" --output text | grep ${BITBUCKET_COMMIT})
+#  if [[ -z ${RESULT} ]]
+#  then
     echo "### The image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} dit not already exist, building it ###" 
     echo "### Start build of docker image ${DOCKER_IMAGE} ###"
     _docker_build ${DOCKER_IMAGE}
@@ -222,9 +222,9 @@ docker_build() {
     echo "### Pushing docker image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} to ECR ###"
     docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
     docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
-  else
-    echo "### The image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} already exists, skipping image recreation to save time and resources ###"
-  fi
+#  else
+#    echo "### The image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} already exists, skipping image recreation to save time and resources ###"
+#  fi
 
   cd -
 }
