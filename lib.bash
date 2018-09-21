@@ -347,6 +347,7 @@ s3_deploy_download_tar_and_prepare_for_deploy() {
 }
 
 s3_deploy_deploy() {
+  install_awscli
   cd ${1:-workdir}
   echo "### Deploy the payload to s3://${S3_DEST_BUCKET}/${S3_PREFIX:-} with ACL ${AWS_ACCESS_CONTROL:-private} ###"
   aws s3 cp --acl ${AWS_ACCESS_CONTROL:-private} --recursive . s3://${S3_DEST_BUCKET}/${S3_PREFIX:-}
