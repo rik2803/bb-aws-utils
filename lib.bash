@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 AWSCLI_INSTALLED=0
 CW_ALARMS_DISABLED=0
 CW_ALARMS=NA
@@ -207,7 +209,18 @@ docker_build() {
   install_awscli
   eval $(aws ecr get-login --no-include-email --region ${AWS_REGION_SOURCE:-eu-central-1})
   ### The Dockerfile is supposed to be in a subdir docker of the repo
-  cd /${BITBUCKET_CLONE_DIR}/docker
+  MYDIR=$(pwd)
+  if [[ -e /${BITBUCKET_CLONE_DIR}/docker/Dockerfile ]]
+  then
+    cd /${BITBUCKET_CLONE_DIR}/docker
+  elif [[ -e /${BITBUCKET_CLONE_DIR}/Dockerfile ]]
+  then
+    cd /${BITBUCKET_CLONE_DIR}
+  else
+    echo "### ERROR - No dockerfile found where expected (/${BITBUCKET_CLONE_DIR}/docker/Dockerfile or ###"
+    echo "### /${BITBUCKET_CLONE_DIR}/Dockerfile. Exiting ..."
+    exit 1
+   fi
 
 #  echo "### Check if the docker image with the current ${BITBUCKET_COMMIT} tag already exists"
 #  RESULT=$(aws ecr list-images --region ${AWS_REGION_SOURCE:-eu-central-1} --repository-name ${DOCKER_IMAGE} --query "imageIds[*].imageTag" --output text | grep ${BITBUCKET_COMMIT})
@@ -219,14 +232,23 @@ docker_build() {
     echo "### Tagging docker image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} ###"
     docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
     docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
+
     echo "### Pushing docker image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} to ECR ###"
     docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
     docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
+
+    if [[ -n ${BITBUCKET_TAG} ]] && [[ -n ${RC_PREFIX} ]] && [[ ${BITBUCKET_TAG} = ${RC_PREFIX}* ]]
+    then
+      echo "### Building a release candidate, also add the ${BITBUCKET_TAG} tag on the docker image ###"
+      docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_TAG}
+      docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_TAG}
+    fi
+
 #  else
 #    echo "### The image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} already exists, skipping image recreation to save time and resources ###"
 #  fi
 
-  cd -
+  cd ${MYDIR}
 }
 
 docker_build_application_image() {
@@ -234,23 +256,6 @@ docker_build_application_image() {
   docker info
   echo "### Start build of docker image ${DOCKER_IMAGE} ###"
   _docker_build ${DOCKER_IMAGE}
-}
-
-docker_build_deploy_image() {
-  echo "### Determine the TAG to use for the docker pull from the file named TAG ###"
-  export TAG="latest"
-  [[ -e TAG ]] && TAG=$(cat TAG)
-
-  echo "### Create Dockerfile ###"
-  echo "FROM ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}" > Dockerfile
-  if [[ -n ${DOCKER_IMAGE_TARGET} ]]
-  then
-    echo "### Start build of docker image ${DOCKER_IMAGE_TARGET}-${ENVIRONMENT:-dev} based on the artefact image with tag ${TAG:-latest} ###"
-    _docker_build ${DOCKER_IMAGE_TARGET}-${ENVIRONMENT:-dev}
-  else
-    echo "### Start build of docker image ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} based on the artefact image with tag ${TAG:-latest} ###"
-    _docker_build ${DOCKER_IMAGE}-${ENVIRONMENT:-dev}
-  fi
 }
 
 set_dest_ecr_credentials() {
@@ -262,19 +267,51 @@ set_dest_ecr_credentials() {
   eval $(aws ecr get-login --no-include-email --region ${AWS_REGION_TARGET:-eu-central-1})
 }
 
-docker_tag_and_push_deploy_image() {
+docker_build_deploy_image() {
+  echo "### Determine the TAG to use for the docker pull from the file named TAG ###"
+  export TAG="latest"
+
+  echo "### Create deploy Dockerfile ###"
+  echo "###    - use the content of the TAG file as the label for the docker image"
+  echo "###      to build FROM, unless ...."
+  echo "###    - REL_PREFIX is defined and RC_PREFIX is defined and the BITBUCKET_TAG"
+  echo "###      being built starts with REL_REFIX. This indicates a production"
+  echo "###      build that should use the corresponding ACC build (with a RC tag)"
+
+  if [[ -n ${BITBUCKET_TAG} ]] && [[ -n ${RC_PREFIX} ]] && [[ -n ${REL_PREFIX} ]] && [[ ${BITBUCKET_TAG} = ${REL_PREFIX}* ]]
+  then
+    TAG=${RC_PREFIX}${BITBUCKET_TAG##${REL_PREFIX}}
+  else
+    [[ -e TAG ]] && TAG=$(cat TAG)
+  fi
+
+  echo "FROM ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}" > Dockerfile
+
+  IMAGE=${DOCKER_IMAGE}
+
   if [[ -n ${DOCKER_IMAGE_TARGET} ]]
   then
-    echo "### Tagging docker image ${DOCKER_IMAGE_TARGET}-${ENVIRONMENT:-dev} ###"
-    docker tag ${DOCKER_IMAGE_TARGET}-${ENVIRONMENT:-dev} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE_TARGET}-${ENVIRONMENT:-dev}
-    echo "### Pushing docker image ${DOCKER_IMAGE_TARGET}-${ENVIRONMENT:-dev} to ECR ###"
-    docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE_TARGET}-${ENVIRONMENT:-dev}
-  else
-    echo "### Tagging docker image ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} ###"
-    docker tag ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}-${ENVIRONMENT:-dev}
-    echo "### Pushing docker image ${DOCKER_IMAGE}-${ENVIRONMENT:-dev} to ECR ###"
-    docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}-${ENVIRONMENT:-dev}
-fi
+    ### Possibility to override target image
+    IMAGE=${DOCKER_IMAGE_TARGET}
+  fi
+
+  echo "### Start build of docker image ${IMAGE}-${ENVIRONMENT:-dev} based on the artefact image with tag ${TAG:-latest} ###"
+  _docker_build ${IMAGE}-${ENVIRONMENT:-dev}
+}
+
+docker_tag_and_push_deploy_image() {
+  IMAGE=${DOCKER_IMAGE}
+
+  if [[ -n ${DOCKER_IMAGE_TARGET} ]]
+  then
+    ### Possibility to override target image
+    IMAGE=${DOCKER_IMAGE_TARGET}
+  fi
+
+  echo "### Tagging docker image ${IMAGE}-${ENVIRONMENT:-dev} ###"
+  docker tag ${IMAGE}-${ENVIRONMENT:-dev} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${IMAGE}-${ENVIRONMENT:-dev}
+  echo "### Pushing docker image ${IMAGE}-${ENVIRONMENT:-dev} to ECR ###"
+  docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${IMAGE}-${ENVIRONMENT:-dev}
 }
 
 docker_tag_and_push_application_image() {
