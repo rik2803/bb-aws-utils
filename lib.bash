@@ -270,6 +270,11 @@ docker_build_deploy_image() {
   echo "###      being built starts with REL_REFIX. This indicates a production"
   echo "###      build that should use the corresponding ACC build (with a RC tag)"
 
+  echo "### REL_PREFIX:       ${REL_PREFIX:-NA} ###"
+  echo "### RC_PREFIX:        ${RC_PREFIX:-NA} ###"
+  echo "### BITBUCKET_TAG:    ${BITBUCKET_TAG:-NA} ###"
+  echo "### BITBUCKET_COMMIT: ${BITBUCKET_COMMIT:-NA} ###"
+
   if [[ -n ${BITBUCKET_TAG} ]] && [[ -n ${RC_PREFIX} ]] && [[ -n ${REL_PREFIX} ]] && [[ ${BITBUCKET_TAG} = ${REL_PREFIX}* ]]
   then
     TAG=${RC_PREFIX}${BITBUCKET_TAG##${REL_PREFIX}}
