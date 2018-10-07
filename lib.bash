@@ -222,31 +222,23 @@ docker_build() {
     exit 1
    fi
 
-#  echo "### Check if the docker image with the current ${BITBUCKET_COMMIT} tag already exists"
-#  RESULT=$(aws ecr list-images --region ${AWS_REGION_SOURCE:-eu-central-1} --repository-name ${DOCKER_IMAGE} --query "imageIds[*].imageTag" --output text | grep ${BITBUCKET_COMMIT})
-#  if [[ -z ${RESULT} ]]
-#  then
-    echo "### The image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} dit not already exist, building it ###" 
-    echo "### Start build of docker image ${DOCKER_IMAGE} ###"
-    _docker_build ${DOCKER_IMAGE}
-    echo "### Tagging docker image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} ###"
-    docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
-    docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
+  echo "### The image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} dit not already exist, building it ###"
+  echo "### Start build of docker image ${DOCKER_IMAGE} ###"
+  _docker_build ${DOCKER_IMAGE}
+  echo "### Tagging docker image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} ###"
+  docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
+  docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
 
-    echo "### Pushing docker image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} to ECR ###"
-    docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
-    docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
+  echo "### Pushing docker image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} to ECR ###"
+  docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
+  docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
 
-    if [[ -n ${BITBUCKET_TAG} ]] && [[ -n ${RC_PREFIX} ]] && [[ ${BITBUCKET_TAG} = ${RC_PREFIX}* ]]
-    then
-      echo "### Building a release candidate, also add the ${BITBUCKET_TAG} tag on the docker image ###"
-      docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_TAG}
-      docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_TAG}
-    fi
-
-#  else
-#    echo "### The image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} already exists, skipping image recreation to save time and resources ###"
-#  fi
+  if [[ -n ${BITBUCKET_TAG} ]] && [[ -n ${RC_PREFIX} ]] && [[ ${BITBUCKET_TAG} = ${RC_PREFIX}* ]]
+  then
+    echo "### Building a release candidate, also add the ${BITBUCKET_TAG} tag on the docker image ###"
+    docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_TAG}
+    docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_TAG}
+  fi
 
   cd ${MYDIR}
 }
@@ -281,8 +273,10 @@ docker_build_deploy_image() {
   if [[ -n ${BITBUCKET_TAG} ]] && [[ -n ${RC_PREFIX} ]] && [[ -n ${REL_PREFIX} ]] && [[ ${BITBUCKET_TAG} = ${REL_PREFIX}* ]]
   then
     TAG=${RC_PREFIX}${BITBUCKET_TAG##${REL_PREFIX}}
+    echo "### Building a release, use the release candidate artefact image with tag ${TAG} ###"
   else
     [[ -e TAG ]] && TAG=$(cat TAG)
+    echo "### Not a release build, use artefact image with tag ${TAG} ###"
   fi
 
   echo "FROM ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}" > Dockerfile
