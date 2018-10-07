@@ -110,6 +110,15 @@ create_TAG_file_in_remote_url() {
     echo "### No further (git) actions required.                                                ###"
   fi
 
+  ### If this build is triggered by a git tag, also put the tag on the config repo
+  if [[ -n ${BITBUCKET_TAG} ]]
+  then
+    echo "### This build is triggered by a tag, also put the tag ${BITBUCKET_TAG} on the config repo ###"
+    echo "### ${REMOTE_REPO_URL} ###"
+    git tag ${BITBUCKET_TAG}
+    git push --tags
+  fi
+
   REMOTE_REPO_COMMIT_HASH=$(git rev-parse HEAD)
   echo "### Full commit hash of remote repo is ${REMOTE_REPO_COMMIT_HASH} ###"
   cd -
