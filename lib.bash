@@ -224,11 +224,13 @@ monitor_running_pipeline() {
   CURLRESULT="NA"
 
   echo "### Monitoring remote pipeline with UUID ${UUID} with interval ${SLEEP} ###"
+  echo "### JQ_EXPRESSION: ${JQ_EXPRESSION} ###"
+
   while [[ ${CONTINUE} = 1 ]]
   do
     sleep ${SLEEP}
     CURLRESULT=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' ${URL}\\{${UUID}\\})
-    STATE=$(echo ${CURLRESULT} | jq --raw-output ${JQ_EXPRESSION})
+    STATE=$(echo ${CURLRESULT} | jq --raw-output "${JQ_EXPRESSION}")
 
     echo "  ### Pipeline is in state ${STATE} ###"
 
