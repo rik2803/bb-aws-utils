@@ -14,6 +14,12 @@ install_jq
 
 create_TAG_file_in_remote_url
 
-start_pipeline_for_remote_repo ${REMOTE_REPO_COMMIT_HASH} ${2:-build_and_deploy}
+if [[ -n ${ONLY_MONITOR_REMOTE_PIPELINE} ]] && [[ ${ONLY_MONITOR_REMOTE_PIPELINE} -eq 1 ]]
+then
+  monitor_automatic_remote_pipeline_start
+else
+  start_pipeline_for_remote_repo ${REMOTE_REPO_COMMIT_HASH} ${2:-build_and_deploy}
+fi
+
 [[ ${RETURNVALUE} == "SUCCESSFUL" ]] && exit 0
 exit 1

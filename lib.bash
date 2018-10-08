@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 AWSCLI_INSTALLED=0
+JQ_INSTALLED=0
 CW_ALARMS_DISABLED=0
 CW_ALARMS=NA
 
@@ -37,17 +38,22 @@ install_maven2() {
 }
 
 install_jq() {
-  echo "### Start jq installation ###"
-  run_log_and_exit_on_failure "apt-get update"
-  run_log_and_exit_on_failure "apt-get install -y jq"
-
-  ### jq is required
-  if ! which jq >/dev/null 2>&1
+  if [[ ${AWSCLI_INSTALLED} -eq 0 ]]
   then
+    echo "### Start jq installation ###"
+    run_log_and_exit_on_failure "apt-get update"
+    run_log_and_exit_on_failure "apt-get install -y jq"
+
+    ### jq is required
+    if ! which jq >/dev/null 2>&1
+    then
     echo "### jq is required ###"
     exit 1
-  else
+    else
     echo "### jq is installed ###"
+    fi
+  else
+    echo "### jq already installed ###"
   fi
 }
 
@@ -124,12 +130,41 @@ create_TAG_file_in_remote_url() {
   cd -
 }
 
+monitor_automatic_remote_pipeline_start() {
+  ### This function is used to monitor the pipeline build that was automatically triggered
+  ### by a commit or by adding a tag in create_TAG_file_in_remote_url. This is a requirement
+  ### to make release candidate/release process work.
+  ### The choice between starting the remote pipeline build or monitoring the remote
+  ### pipeline build is made by setting the environment variable MONITOR_REMOTE_PIPELINE:
+  ###    - envvar ONLY_MONITOR_REMOTE_PIPELINE is set and has value 1: use this function
+  ###    - envvar ONLY_MONITOR_REMOTE_PIPELINE is not set or has value 0: trigger the remote
+  ###      pipelind
+  ### That envvar is evaluated in the script sync_trigger_bb_build.bash script
+
+  export URL="https://api.bitbucket.org/2.0/repositories/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/pipelines/?pagelen=1&sort=-created_on"
+
+
+  echo "### Waiting 30 seconds to allow the branch or tag triggered build to start ###"
+  sleep 30
+
+  echo "### Retrieve information about the most recent remote pipeline ###"
+  CURLRESULT=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' ${URL})
+
+  UUID=$(echo ${CURLRESULT} | jq --raw-output '.values[0].uuid' | tr -d '\{\}')
+  BUILD_NUMBER=$(echo ${CURLRESULT} | jq --raw-output '.values[0].build_number' | tr -d '\{\}')
+
+  monitor_running_pipeline
+}
+
 start_pipeline_for_remote_repo() {
+  ### See comments in monitor_automatic_remote_pipeline_start
+
   REMOTE_REPO_COMMIT_HASH=${1}
   PATTERN=${2:-build_and_deploy}
 
   export URL="https://api.bitbucket.org/2.0/repositories/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/pipelines/"
 
+  echo ""
   echo "### REMOTE_REPO_OWNER:       ${REMOTE_REPO_OWNER} ###"
   echo "### REMOTE_REPO_SLUG:        ${REMOTE_REPO_SLUG} ###"
   echo "### URL:                     ${URL} ###"
@@ -166,6 +201,11 @@ EOF
     echo "${CURLRESULT}" | jq .
     exit 1
   fi
+
+  monitor_running_pipeline
+}
+
+monitor_running_pipeline() {
 
   echo "### Remote pipeline is started and has UUID is ${UUID} ###"
   echo "### Link to the remote pipeline result is: ###"
