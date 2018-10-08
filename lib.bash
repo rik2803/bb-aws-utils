@@ -150,10 +150,8 @@ monitor_automatic_remote_pipeline_start() {
   echo "### Retrieve information about the most recent remote pipeline ###"
   CURLRESULT=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' ${URL})
 
-  echo ${CURLRESULT} | jq --raw-output '.values[0]'
-
   UUID=$(echo ${CURLRESULT} | jq --raw-output '.values[0].uuid' | tr -d '\{\}')
-  BUILD_NUMBER=$(echo ${CURLRESULT} | jq --raw-output '.values[0].build_number' | tr -d '\{\}')
+  BUILDNUMBER=$(echo ${CURLRESULT} | jq --raw-output '.values[0].build_number' | tr -d '\{\}')
 
   monitor_running_pipeline '.values[0].state.name'
 }
