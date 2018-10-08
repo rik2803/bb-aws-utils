@@ -153,7 +153,7 @@ monitor_automatic_remote_pipeline_start() {
   UUID=$(echo ${CURLRESULT} | jq --raw-output '.values[0].uuid' | tr -d '\{\}')
   BUILDNUMBER=$(echo ${CURLRESULT} | jq --raw-output '.values[0].build_number' | tr -d '\{\}')
 
-  monitor_running_pipeline '.values[0].state.name'
+  monitor_running_pipeline
 }
 
 start_pipeline_for_remote_repo() {
@@ -203,13 +203,10 @@ EOF
     exit 1
   fi
 
-  monitor_running_pipeline '.state.name'
+  monitor_running_pipeline
 }
 
 monitor_running_pipeline() {
-
-  JQ_EXPRESSION=${1:-.state.name}
-  JQ_EXPRESSION=".state.name"
 
   URL="https://api.bitbucket.org/2.0/repositories/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/pipelines/"
 
@@ -227,15 +224,12 @@ monitor_running_pipeline() {
   CURLRESULT="NA"
 
   echo "### Monitoring remote pipeline with UUID ${UUID} with interval ${SLEEP} ###"
-  echo "### JQ_EXPRESSION: ${JQ_EXPRESSION} ###"
 
   while [[ ${CONTINUE} = 1 ]]
   do
     sleep ${SLEEP}
     CURLRESULT=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' ${URL}\\{${UUID}\\})
-    STATE=$(echo ${CURLRESULT} | jq --raw-output "${JQ_EXPRESSION}")
-
-    echo ${CURLRESULT} | jq .
+    STATE=$(echo ${CURLRESULT} | jq --raw-output ".state.name")
 
     echo "  ### Pipeline is in state ${STATE} ###"
 
