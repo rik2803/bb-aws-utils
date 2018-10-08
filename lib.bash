@@ -153,7 +153,7 @@ monitor_automatic_remote_pipeline_start() {
   UUID=$(echo ${CURLRESULT} | jq --raw-output '.values[0].uuid' | tr -d '\{\}')
   BUILD_NUMBER=$(echo ${CURLRESULT} | jq --raw-output '.values[0].build_number' | tr -d '\{\}')
 
-  monitor_running_pipeline
+  monitor_running_pipeline '.values[0].state.name'
 }
 
 start_pipeline_for_remote_repo() {
@@ -202,10 +202,12 @@ EOF
     exit 1
   fi
 
-  monitor_running_pipeline
+  monitor_running_pipeline '.state.name'
 }
 
 monitor_running_pipeline() {
+
+  JQ_EXPRESSION=${1:-.state.name}
 
   echo "### Remote pipeline is started and has UUID is ${UUID} ###"
   echo "### Link to the remote pipeline result is: ###"
@@ -222,7 +224,7 @@ monitor_running_pipeline() {
   do
     sleep ${SLEEP}
     CURLRESULT=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' ${URL}\\{${UUID}\\})
-    STATE=$(echo ${CURLRESULT} | jq --raw-output '.state.name')
+    STATE=$(echo ${CURLRESULT} | jq --raw-output ${JQ_EXPRESSION})
 
     echo "  ### Pipeline is in state ${STATE} ###"
 
