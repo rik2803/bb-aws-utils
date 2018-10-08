@@ -162,7 +162,7 @@ start_pipeline_for_remote_repo() {
   REMOTE_REPO_COMMIT_HASH=${1}
   PATTERN=${2:-build_and_deploy}
 
-  export URL="https://api.bitbucket.org/2.0/repositories/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/pipelines/"
+  URL="https://api.bitbucket.org/2.0/repositories/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/pipelines/"
 
   echo ""
   echo "### REMOTE_REPO_OWNER:       ${REMOTE_REPO_OWNER} ###"
@@ -210,6 +210,8 @@ monitor_running_pipeline() {
 
   JQ_EXPRESSION=${1:-.state.name}
   JQ_EXPRESSION=".state.name"
+
+  URL="https://api.bitbucket.org/2.0/repositories/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/pipelines/"
 
   echo "### Remote pipeline is started and has UUID is ${UUID} ###"
   echo "### Build UUID: ${UUID} ###"
