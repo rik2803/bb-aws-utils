@@ -150,6 +150,8 @@ monitor_automatic_remote_pipeline_start() {
   echo "### Retrieve information about the most recent remote pipeline ###"
   CURLRESULT=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' ${URL})
 
+  echo ${CURLRESULT} | jq --raw-output '.values[0]'
+
   UUID=$(echo ${CURLRESULT} | jq --raw-output '.values[0].uuid' | tr -d '\{\}')
   BUILD_NUMBER=$(echo ${CURLRESULT} | jq --raw-output '.values[0].build_number' | tr -d '\{\}')
 
@@ -188,6 +190,7 @@ EOF
   CURLRESULT=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
                     ${URL} -d '@/curldata')
 
+
   UUID=$(echo "${CURLRESULT}" | jq --raw-output '.uuid' | tr -d '\{\}')
   BUILDNUMBER=$(echo "${CURLRESULT}" | jq --raw-output '.build_number')
 
@@ -210,6 +213,9 @@ monitor_running_pipeline() {
   JQ_EXPRESSION=${1:-.state.name}
 
   echo "### Remote pipeline is started and has UUID is ${UUID} ###"
+  echo "### Build UUID: ${UUID} ###"
+  echo "### Build Number: ${BUILDNUMBER} ###"
+  echo ""
   echo "### Link to the remote pipeline result is: ###"
   echo "###   https://bitbucket.org/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/addon/pipelines/home#!/results/${BUILDNUMBER} ###"
 
