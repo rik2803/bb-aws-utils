@@ -209,6 +209,7 @@ EOF
 monitor_running_pipeline() {
 
   JQ_EXPRESSION=${1:-.state.name}
+  JQ_EXPRESSION=".state.name"
 
   echo "### Remote pipeline is started and has UUID is ${UUID} ###"
   echo "### Build UUID: ${UUID} ###"
@@ -231,6 +232,8 @@ monitor_running_pipeline() {
     sleep ${SLEEP}
     CURLRESULT=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' ${URL}\\{${UUID}\\})
     STATE=$(echo ${CURLRESULT} | jq --raw-output "${JQ_EXPRESSION}")
+
+    echo ${CURLRESULT} | jq
 
     echo "  ### Pipeline is in state ${STATE} ###"
 
@@ -279,7 +282,6 @@ docker_build() {
     exit 1
    fi
 
-  echo "### The image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} dit not already exist, building it ###"
   echo "### Start build of docker image ${DOCKER_IMAGE} ###"
   _docker_build ${DOCKER_IMAGE}
   echo "### Tagging docker image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} ###"
