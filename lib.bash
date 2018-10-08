@@ -233,7 +233,7 @@ monitor_running_pipeline() {
     CURLRESULT=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' ${URL}\\{${UUID}\\})
     STATE=$(echo ${CURLRESULT} | jq --raw-output "${JQ_EXPRESSION}")
 
-    echo ${CURLRESULT} | jq
+    echo ${CURLRESULT} | jq .
 
     echo "  ### Pipeline is in state ${STATE} ###"
 
