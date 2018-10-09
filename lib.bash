@@ -144,8 +144,30 @@ monitor_automatic_remote_pipeline_start() {
   export URL="https://api.bitbucket.org/2.0/repositories/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/pipelines/?pagelen=1&sort=-created_on"
 
 
-  echo "### Waiting 30 seconds to allow the branch or tag triggered build to start ###"
-  sleep 30
+  typeset -i MAX_TRIES=30
+  typeset -i CUR_TRIES=0
+
+  while [[ 1 -eq 1 ]]
+  do
+    if [[ ${CUR_TRIES} -eq ${MAX_TRIES} ]]
+    then
+      echo "### ERROR - Quit waiting for remote pipeline to start, exiting ... ###"
+      #exit 1
+    fi
+
+    ### Get latest remote build info until status is pending, that indicates a newly started build
+    STATE=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' ${URL} | jq --raw-output '.values[0].state.name')
+    if [[ ${STATE} == PENDING ]] || [[ ${STATE == IN_PROGRESS ]]
+    then
+      echo "### INFO - Remote pipeline is in PENDING state, continue to monitor it ###"
+      break
+    else
+      echo "### INFO - Remote pipeline state is ${STATE}, probably not a recent build, wait ###"
+      echo "###        until state is PENDING or IN_PROGRESS ..."
+      sleep 2
+    fi
+    let CUR_TRIES=CUR_TRIES+1
+  done
 
   echo "### Retrieve information about the most recent remote pipeline ###"
   CURLRESULT=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' ${URL})
@@ -185,6 +207,7 @@ start_pipeline_for_remote_repo() {
   }
 }
 EOF
+
   CURLRESULT=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
                     ${URL} -d '@/curldata')
 
