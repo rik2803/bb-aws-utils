@@ -157,7 +157,7 @@ monitor_automatic_remote_pipeline_start() {
 
     ### Get latest remote build info until status is pending, that indicates a newly started build
     STATE=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' ${URL} | jq --raw-output '.values[0].state.name')
-    if [[ ${STATE} == PENDING ]] || [[ ${STATE == IN_PROGRESS ]]
+    if [[ ${STATE} == PENDING ]] || [[ ${STATE} == IN_PROGRESS ]]
     then
       echo "### INFO - Remote pipeline is in PENDING state, continue to monitor it ###"
       break
