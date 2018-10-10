@@ -152,7 +152,7 @@ monitor_automatic_remote_pipeline_start() {
     if [[ ${CUR_TRIES} -eq ${MAX_TRIES} ]]
     then
       echo "### ERROR - Quit waiting for remote pipeline to start, exiting ... ###"
-      #exit 1
+      exit 1
     fi
 
     ### Get latest remote build info until status is pending, that indicates a newly started build
