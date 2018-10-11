@@ -90,6 +90,11 @@ create_TAG_file_in_remote_url() {
     exit 1
   fi
 
+  echo "### REL_PREFIX:       ${REL_PREFIX:-NA} ###"
+  echo "### RC_PREFIX:        ${RC_PREFIX:-NA} ###"
+  echo "### BITBUCKET_TAG:    ${BITBUCKET_TAG:-NA} ###"
+  echo "### BITBUCKET_COMMIT: ${BITBUCKET_COMMIT:-NA} ###"
+
   ### Construct remote repo HTTPS URL
   REMOTE_REPO_URL=$(repo_git_url)
   echo "### Remote repo URL is ${REMOTE_REPO_URL} ###"
@@ -101,10 +106,13 @@ create_TAG_file_in_remote_url() {
   echo "### Trying to clone ${REMOTE_REPO_URL} into remote_repo ###"
   rm -rf remote_repo
   git clone ${REMOTE_REPO_URL} remote_repo || { echo "### Error cloning ${REMOTE_REPO_URL} ###"; exit 1; }
+
+  run_log_and_exit_on_failure "cd remote_repo"
+
   echo "### Update the TAG file in the repo ###"
-  echo "${BITBUCKET_COMMIT}" > remote_repo/TAG
-  cd remote_repo
+  echo "${BITBUCKET_COMMIT}" > TAG
   git add TAG
+
   ### If 2 pipelines run on same commit, the TAG file will not change
   if ! git diff-index --quiet HEAD --
   then
@@ -127,7 +135,8 @@ create_TAG_file_in_remote_url() {
 
   REMOTE_REPO_COMMIT_HASH=$(git rev-parse HEAD)
   echo "### Full commit hash of remote repo is ${REMOTE_REPO_COMMIT_HASH} ###"
-  cd -
+
+  run_log_and_exit_on_failure "cd -"
 }
 
 monitor_automatic_remote_pipeline_start() {
@@ -545,9 +554,17 @@ clone_repo() {
   echo "### Trying to clone ${REMOTE_REPO_URL} into remote_repo ###"
   run_log_and_exit_on_failure "rm -rf remote_repo"
   run_log_and_exit_on_failure "git clone --single-branch -b ${REMOTE_REPO_BRANCH:-master} ${REMOTE_REPO_URL} remote_repo"
-  
+
   run_log_and_exit_on_failure "cd remote_repo"
-  run_log_and_exit_on_failure "git checkout $(cat ../TAG)"
+  if [[ -n ${BITBUCKET_TAG} ]]
+  then
+    echo "### Build is triggered by a tag, checkout the remote repos tag ${BITBUCKET_TAG} ###"
+    echo "### instead of commit hash in the TAG file. ###"
+    run_log_and_exit_on_failure "git checkout ${BITBUCKET_TAG}"
+  else
+    run_log_and_exit_on_failure "git checkout $(cat ../TAG)"
+  fi
+
   run_log_and_exit_on_failure "cd -" 
 }
 
