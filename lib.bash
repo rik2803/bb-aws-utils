@@ -538,11 +538,11 @@ s3_lambda_build_and_push() {
   then
     echo "### Push the jar to the S3 bucket ${S3_DEST_BUCKET} ###"
     set_credentials "${AWS_ACCESS_KEY_ID}" "${AWS_SECRET_ACCESS_KEY}"
-    run_log_and_exit_on_failure "aws s3 cp --acl private ${JAR_PATH:-.}/${JAR_FILE} s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}"
-    run_log_and_exit_on_failure "aws s3 cp --acl private ${JAR_PATH:-.}/${JAR_FILE} s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}-${BITBUCKET_COMMIT}"
+    run_log_and_exit_on_failure "aws s3 cp --acl private ${JAR_PATH:-.}/${JAR_FILE} s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}.jar"
+    run_log_and_exit_on_failure "aws s3 cp --acl private ${JAR_PATH:-.}/${JAR_FILE} s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}-${BITBUCKET_COMMIT}.jar"
     if [[ -n ${BITBUCKET_TAG} ]]
     then
-      run_log_and_exit_on_failure "aws s3 cp --acl private ${JAR_PATH:-.}/${JAR_FILE} s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}-${BITBUCKET_TAG}"
+      run_log_and_exit_on_failure "aws s3 cp --acl private ${JAR_PATH:-.}/${JAR_FILE} s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}-${BITBUCKET_TAG}.jar"
     fi
   else
     echo "### Zip the Lambda code and dependencies ###"
