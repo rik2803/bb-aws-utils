@@ -489,10 +489,28 @@ s3_deploy() {
 }
 
 s3_lambda_build_and_push() {
+
+  ### Required for all types of Lambda build
+  [[ -z ${S3_DEST_BUCKET} ]]        && { echo "### S3_DEST_BUCKET envvar is required ###"; exit 1; }
+  [[ -z ${AWS_ACCESS_KEY_ID} ]]     && { echo "### AWS_ACCESS_KEY_ID envvar is required ###"; exit 1; }
+  [[ -z ${AWS_SECRET_ACCESS_KEY} ]] && { echo "### AWS_SECRET_ACCESS_KEY envvar is required ###"; exit 1; }
+  [[ -z ${LAMBDA_RUNTIME} ]]        && { echo "### LAMBDA_RUNTIME envvar is required ###"; exit 1; }
+  [[ -z ${LAMBDA_FUNCTION_NAME} ]]  && { echo "### LAMBDA_FUNCTION_NAME envvar is required ###"; exit 1; }
+
+  ### Setup
   export CI=false
   install_awscli
   run_log_and_exit_on_failure "apt-get install -y zip"
   run_log_and_exit_on_failure "mkdir -p /builddir"
+
+  ### Java8
+  if [[ ${LAMBDA_RUNTIME} = java* ]]
+  then
+    ### These envvars are required, exit 1 if not
+    [[ -z ${JAR_FILE} ]]       && { echo "### JAR_FILE envvar is required ###"; exit 1; }
+    [[ -z ${BUILD_COMMAND} ]]  && { echo "### BUILD_COMMAND envvar is required ###"; exit 1; }
+    run_log_and_exit_on_failure "${BUILD_COMMAND}"
+  fi
 
   ### Node
   if [[ ${LAMBDA_RUNTIME} = nodejs* ]]
@@ -515,15 +533,32 @@ s3_lambda_build_and_push() {
     fi
   fi
 
-  echo "### Zip the Lambda code and dependencies"
-  run_log_and_exit_on_failure "cd /builddir"
-  run_log_and_exit_on_failure "zip -r /${LAMBDA_FUNCTION_NAME}.zip *"
-  run_log_and_exit_on_failure "cd -"
+  ### Upload the Lambda artifact to S3
+  if [[ ${LAMBDA_RUNTIME} = java* ]]
+  then
+    echo "### Push the jar to the S3 bucket ${S3_DEST_BUCKET} ###"
+    set_credentials "${AWS_ACCESS_KEY_ID}" "${AWS_SECRET_ACCESS_KEY}"
+    run_log_and_exit_on_failure "aws s3 cp --acl private ${JAR_PATH:-.}/${JAR_FILE} s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}"
+    run_log_and_exit_on_failure "aws s3 cp --acl private ${JAR_PATH:-.}/${JAR_FILE} s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}-${BITBUCKET_COMMIT}"
+    if [[ -n ${BITBUCKET_TAG} ]]
+    then
+      run_log_and_exit_on_failure "aws s3 cp --acl private ${JAR_PATH:-.}/${JAR_FILE} s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}-${BITBUCKET_TAG}"
+    fi
+  else
+    echo "### Zip the Lambda code and dependencies ###"
+    run_log_and_exit_on_failure "cd /builddir"
+    run_log_and_exit_on_failure "zip -r /${LAMBDA_FUNCTION_NAME}.zip *"
+    run_log_and_exit_on_failure "cd -"
 
-  echo "### Push the zipped file to S3 bucket ${S3_DEST_BUCKET}"
-  set_credentials "${AWS_ACCESS_KEY_ID}" "${AWS_SECRET_ACCESS_KEY}"
-  run_log_and_exit_on_failure "aws s3 cp --acl private /${LAMBDA_FUNCTION_NAME}.zip s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}.zip"
-  run_log_and_exit_on_failure "aws s3 cp --acl private /${LAMBDA_FUNCTION_NAME}.zip s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}-${BITBUCKET_COMMIT}.zip"
+    echo "### Push the zipped file to S3 bucket ${S3_DEST_BUCKET} ###"
+    set_credentials "${AWS_ACCESS_KEY_ID}" "${AWS_SECRET_ACCESS_KEY}"
+    run_log_and_exit_on_failure "aws s3 cp --acl private /${LAMBDA_FUNCTION_NAME}.zip s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}.zip"
+    run_log_and_exit_on_failure "aws s3 cp --acl private /${LAMBDA_FUNCTION_NAME}.zip s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}-${BITBUCKET_COMMIT}.zip"
+    if [[ -n ${BITBUCKET_TAG} ]]
+    then
+      run_log_and_exit_on_failure "aws s3 cp --acl private /${LAMBDA_FUNCTION_NAME}.zip s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}-${BITBUCKET_TAG}.zip"
+    fi
+  fi
 }
 
 s3_artifact() {
