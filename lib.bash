@@ -294,6 +294,10 @@ set_source_ecr_credentials() {
 }
 
 docker_build() {
+
+  ### Use AWS_ECR_ACCOUNTID if AWS_ACCOUNTID_TARGET is not defined
+  [[ -z ${AWS_ACCOUNTID_TARGET} ]] && AWS_ACCOUNTID_TARGET=${AWS_ECR_ACCOUNTID}
+
   install_awscli
   eval $(aws ecr get-login --no-include-email --region ${AWS_REGION_SOURCE:-eu-central-1})
   ### The Dockerfile is supposed to be in a subdir docker of the repo
@@ -600,7 +604,7 @@ clone_repo() {
     run_log_and_exit_on_failure "git checkout $(cat ../TAG)"
   fi
 
-  run_log_and_exit_on_failure "cd -" 
+  run_log_and_exit_on_failure "cd -"
 }
 
 s3_cloudfront_invalidate() {
