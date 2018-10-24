@@ -302,6 +302,7 @@ docker_build() {
     AWS_ACCOUNTID_TARGET=${AWS_ECR_ACCOUNTID}
   else
     echo "### ${FUNCNAME[0]} - AWS_ACCOUNTID_TARGET set, using it (${AWS_ACCOUNTID_TARGET}) ###"
+  fi
 
   install_awscli
   eval $(aws ecr get-login --no-include-email --region ${AWS_REGION_SOURCE:-eu-central-1})
