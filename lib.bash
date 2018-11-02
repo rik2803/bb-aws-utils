@@ -150,6 +150,7 @@ monitor_automatic_remote_pipeline_start() {
   ###      pipelind
   ### That envvar is evaluated in the script sync_trigger_bb_build.bash script
 
+  echo "### ${FUNCNAME[0]} - INFO - Entering ${FUNCNAME[0]} ###"
   export URL="https://api.bitbucket.org/2.0/repositories/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/pipelines/?pagelen=1&sort=-created_on"
 
 
@@ -189,6 +190,8 @@ monitor_automatic_remote_pipeline_start() {
 
 start_pipeline_for_remote_repo() {
   ### See comments in monitor_automatic_remote_pipeline_start
+
+  echo "### ${FUNCNAME[0]} - INFO - Entering ${FUNCNAME[0]} ###"
 
   REMOTE_REPO_COMMIT_HASH=${1}
   PATTERN=${2:-build_and_deploy}
