@@ -468,13 +468,16 @@ s3_deploy_create_tar_and_upload_to_s3() {
 }
 
 s3_deploy_download_tar_and_prepare_for_deploy() {
-  echo "### ${FUNCNAME[0]} - Download artifact ${ARTIFACT_NAME}-last.tgz from s3://${S3_ARTIFACT_BUCKET} ###"
-  aws s3 cp s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-last.tgz .
+  TAG="last"
+  [[ -e TAG ]] && TAG=$(cat TAG)
+
+  echo "### ${FUNCNAME[0]} - Download artifact ${ARTIFACT_NAME}-${TAG}.tgz from s3://${S3_ARTIFACT_BUCKET} ###"
+  aws s3 cp s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${TAG}.tgz .
   ###   *
   echo "### ${FUNCNAME[0]} - Create workdir ###"
   mkdir -p workdir
   echo "### ${FUNCNAME[0]} - Untar the artifact file into the workdir ###"
-  tar -C workdir -xzvf ${ARTIFACT_NAME}-last.tgz
+  tar -C workdir -xzvf ${ARTIFACT_NAME}-${TAG}.tgz
   echo "### ${FUNCNAME[0]} - Start applying the config to the untarred files ###"
   s3_deploy_apply_config_to_tree workdir
 }
@@ -496,6 +499,7 @@ s3_deploy() {
   s3_deploy_download_tar_and_prepare_for_deploy
   echo "### ${FUNCNAME[0]} - Start the deploy ###"
   s3_deploy_deploy
+  s3_cloudfront_invalidate
 }
 
 s3_lambda_build_and_push() {
@@ -574,8 +578,11 @@ s3_lambda_build_and_push() {
 s3_artifact() {
   install_awscli
   echo "### ${FUNCNAME[0]} - Run the build command (${BUILD_COMMAND:-No build command}) ###"
-  create_npmrc
-  [[ -n ${BUILD_COMMAND} ]] && eval ${BUILD_COMMAND}
+  if [[ -n ${BUILD_COMMAND} ]]
+  then
+    create_npmrc
+    eval ${BUILD_COMMAND}
+  fi
   echo "### ${FUNCNAME[0]} - Set AWS credentials for artifact upload (AWS_ACCESS_KEY_ID_S3_TARGET and AWS_SECRET_ACCESS_KEY_S3_TARGET) ###"
   set_credentials "${AWS_ACCESS_KEY_ID_S3_TARGET}" "${AWS_SECRET_ACCESS_KEY_S3_TARGET}"
   s3_deploy_create_tar_and_upload_to_s3
