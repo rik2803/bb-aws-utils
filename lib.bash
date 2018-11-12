@@ -334,12 +334,6 @@ docker_build() {
   echo "### ${FUNCNAME[0]} - Start build of docker image ${DOCKER_IMAGE} ###"
   _docker_build ${DOCKER_IMAGE}
 
-  if [[ $? -ne 0 ]]
-  then
-    echo "### ${FUNCNAME[0]} - An error occured while building ${DOCKER_IMAGE}. Exiting ... ###"
-    exit 1
-  fi
-
   echo "### ${FUNCNAME[0]} - Tagging docker image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} ###"
   docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
   docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
@@ -700,4 +694,11 @@ _docker_build() {
                --build-arg="BITBUCKET_REPO_SLUG=${BITBUCKET_REPO_SLUG:-NA}" \
                --build-arg="BITBUCKET_REPO_OWNER=${BITBUCKET_REPO_OWNER:-NA}" \
                -t ${image_name} .
+
+  if [[ $? -ne 0 ]]
+  then
+    echo "### ${FUNCNAME[0]} - An error occured while building ${DOCKER_IMAGE}. Exiting ... ###"
+    exit 1
+  fi
+
 }
