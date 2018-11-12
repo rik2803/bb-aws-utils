@@ -297,6 +297,14 @@ set_source_ecr_credentials() {
 }
 
 docker_build() {
+  ### Use ths function to build a docker artefact image from a source code repository
+
+  ### Check for required parameters
+  [[ -z ${AWS_ACCOUNTID_TARGET} ]]   && [[ -z ${AWS_ECR_ACCOUNTID} ]] \
+    && { echo "### ${FUNCNAME[0]} - One of AWS_ACCOUNTID_TARGET or AWS_ECR_ACCOUNTID is required ###"; exit 1; }
+  [[ -z ${DOCKER_IMAGE} ]]           && { echo "### ${FUNCNAME[0]} - DOCKER_IMAGE is required ###"; exit 1; }
+  [[ -z ${AWS_ACCESS_KEY_ID} ]]      && { echo "### ${FUNCNAME[0]} - AWS_ACCESS_KEY_ID is required ###"; exit 1; }
+  [[ -z ${AWS_iSECRET_ACCESS_KEY} ]] && { echo "### ${FUNCNAME[0]} - AWS_SECRET_ACCESS_KEY is required ###"; exit 1; }
 
   ### Use AWS_ECR_ACCOUNTID if AWS_ACCOUNTID_TARGET is not defined
   if [[ -z ${AWS_ACCOUNTID_TARGET} ]]
@@ -325,6 +333,13 @@ docker_build() {
 
   echo "### ${FUNCNAME[0]} - Start build of docker image ${DOCKER_IMAGE} ###"
   _docker_build ${DOCKER_IMAGE}
+
+  if [[ $? -ne 0 ]]
+  then
+    echo "### ${FUNCNAME[0]} - An error occured while building ${DOCKER_IMAGE}. Exiting ... ###"
+    exit 1
+  fi
+
   echo "### ${FUNCNAME[0]} - Tagging docker image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} ###"
   docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
   docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
