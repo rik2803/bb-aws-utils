@@ -122,6 +122,20 @@ create_TAG_file_in_remote_url() {
   else
     echo "### ${FUNCNAME[0]} - TAG file was unchanged, because the pipeline for this commit has been run before. ###"
     echo "### ${FUNCNAME[0]} - No further (git) actions required.                                                ###"
+    if [[ -n ${ONLY_MONITOR_REMOTE_PIPELINE} ]] && [[ ${ONLY_MONITOR_REMOTE_PIPELINE} -eq 1 ]]
+    then
+      ### In this situation, a commit to the remote repository should trigger the build,
+      ### but since the TAG file was not changed, a build will not be triggered, and the
+      ### monitor_automatic_remote_pipeline_start will monitor a build that will never start.
+      ### Exiting here with a clear message is better than continuing with something that
+      ### will eventually fail anyway.
+      _print_error_banner
+      echo "### ${FUNCNAME[0]} - ERROR - Running this build twice for the same commit will not trigger the   ###"
+      echo "### ${FUNCNAME[0]}           build of the pipeline for ${REMOTE_REPO_URL}. In this case, it is   ###"
+      echo "### ${FUNCNAME[0]}           better to start the pipeline for ${REMOTE_REPO_URL} manually.       ###"
+      echo "### ${FUNCNAME[0]}           This is a situation that should normally not occur.                 ###"
+      exit 1
+    fi
   fi
 
   ### If this build is triggered by a git tag, also put the tag on the config repo
@@ -700,5 +714,14 @@ _docker_build() {
     echo "### ${FUNCNAME[0]} - An error occured while building ${DOCKER_IMAGE}. Exiting ... ###"
     exit 1
   fi
+}
 
+_print_error_banner() {
+  echo '  ______ _____  _____   ____  _____  '
+  echo ' |  ____|  __ \|  __ \ / __ \|  __ \ '
+  echo ' | |__  | |__) | |__) | |  | | |__) |'
+  echo ' |  __| |  _  /|  _  /| |  | |  _  / '
+  echo ' | |____| | \ \| | \ \| |__| | | \ \ '
+  echo ' |______|_|  \_\_|  \_\\____/|_|  \_\'
+  echo '                                     '
 }
