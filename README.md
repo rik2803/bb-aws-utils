@@ -20,7 +20,7 @@ The environment can be defined in 2 places:
 * `AWS_SECRET_ACCESS_KEY_ECR_SOURCE`
 * `AWS_REGION_SOURCE`: Optional, default is `eu-central-1`
 * `AWS_ACCESS_KEY_ID_ECR_TARGET`
-* `AWS_SECRET_ACCESS_KEY_ECR_TARGET`: **Must be seccret**
+* `AWS_SECRET_ACCESS_KEY_ECR_TARGET`: **Must be secret**
 * `AWS_REGION_TARGET`: Optional, default is `eu-central-1`
 * `DOCKER_IMAGE`
 
@@ -36,24 +36,116 @@ IMPORTANT: The script `sync_trigger_bb_build.bash` requires `jq`
 * `REMOTE_REPO_OWNER`
 * `REMOTE_REPO_SLUG`
 
+## The `docker_build` function
+
+Use this function to build a docker artefact image from a source code repository.
+
+The scipt looks for the file `Dockerfile` in these locations:
+
+* `/${BITBUCKET_CLONE_DIR}/Dockerfile`
+* `/${BITBUCKET_CLONE_DIR}/docker/Dockerfile`
+
+The complete list of environment variables:
+
+* `AWS_ACCOUNT_ID_TARGET`: Also tries `AWS_ECR_ACCOUNTID` if
+  `AWS_ACCESS_KEY_ID_S3_TARGET` is not set.
+* `AWS_ACCESS_KEY_ID`
+* `AWS_SECRET_ACCESS_KEY`
+* `DOCKER_IMAGE`
+
+The image will be available as:
+
+* `${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:latest`
+* `${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}`
+* `${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_TAG}` if it is a tag triggered build and `${RC_PREFIX}`
+  is defined and `[[ ${BITBUCKET_TAG} = ${RC_PREFIX}* ]]`
+  
+
+## The `s3_artifact` function
+
+The function `s3_artifact` runs an optional command `BUILD_COMMAND` on the
+repository, creates a tarball containing the results and copies the tarball
+to a S3 Bucket using AWS credentials defined by `AWS_ACCESS_KEY_ID_S3_TARGET`
+and `AWS_SECRET_ACCESS_KEY_S3_TARGET`.
+
+The complete list of environment variables:
+
+* `AWS_ACCESS_KEY_ID_S3_TARGET`
+* `AWS_SECRET_ACCESS_KEY_S3_TARGET`
+* `BUILD_COMMAND`: Optional command to build the artifact
+* `ARTIFACT_NAME`
+* `PAYLOAD_LOCATION`
+* `S3_ARTIFACT_BUCKET`
+
+The artifact will be available as:
+
+* `s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-last.tgz`
+* `s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz`
+
+## The `s3_deploy` function
+
+Artifacts that were created using `s3_artifact` can be deployed using `s3_deploy`.
+
+The function:
+
+* Downloads an artifact tar file from `S3_ARTIFACT_BUCKET`
+* Unpacks the tar file in a `workdir` directory
+* (optional) Replaces `__VARNAME__` placeholders with the value of
+  `CFG_${VARNAME}` in all files in `workdir`
+* Recursively copies the content of `workdir` to `S3_DEST_BUCKET`
+* (optional) Invalidates the CloudFront distribution if
+  `CLOUDFRONT_DISTRIBUTION_ID` is defined
+  
+An overview of all allowed environment variables:
+
+* `AWS_ACCESS_KEY_ID_S3_SOURCE`: AWS read-only credentials for the bucket
+  that contains the artifact file
+* `AWS_SECRET_ACCESS_KEY_S3_SOURCE`: AWS read-only credentials for the bucket
+  that contains the artifact file
+* `S3_ARTIFACT_BUCKET`: Name of the bucket that contains the artifact file
+* `ARTIFACT_NAME`: Basename of the artifact. Will get `-last.tgz` suffix (default)
+  or `-${TAG}.tgz` suffix (if file `TAG` exists `${TAG}`'s content is used to
+  set the value of `${TAG}`)
+* `AWS_ACCESS_KEY_ID_S3_TARGET`: AWS read-write credentials for the bucket that will
+  receive the files
+* `AWS_SECRET_ACCESS_KEY_S3_TARGET`: AWS read-write credentials for the bucket
+  that will receive the files
+* `S3_DEST_BUCKET`: Name of the destination bucket
+* `S3_PREFIX` (**optional**): Prefix to be used for the copy, the default is
+  no prefix (empty string)
+* `AWS_ACCESS_CONTROL` (**optional**): ACL permissions to set on the destination files.
+  Default is `private`, allowed values can be consulted [here](https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl).
+* `CFG_*` (**optional**): All variables starting with `CFG_` can be used to configure
+  the files in the budld artifact. How this works:
+  * Imagine the variable `CFG_BACKEND_URL` with value `https://mybackend.acme.com`
+  * All files under `workdir` (where the tarball is unpacked) will be scanned for
+    the string `__BACKEND_URL__`.
+  * Every occurence of `__BACKEND_URL__` will be replaced with the string
+    `https://mybackend.acme.com`
+* `CLOUDFRONT_DISTRIBUTION_ID` (**optional**): When this variable is defined, the
+  _CloudFront_ distribution with that name will be invalidated.
+
 ## Build a docker deploy image and deploy to AWS ECS Cluster Service
+
+The scripts are:
+
+* `bb-aws-utils/build-and-push-docker-image.bash`
+* `bb-aws-utils/deploy-docker-image.bash`
 
 What this does:
 
-* First pipeline step:
-  * use the credentials `AWS_ACCESS_KEY_ID_ECR_SOURCE` and
-    `AWS_SECRET_ACCESS_KEY_ECR_SOURCE` to login to the source ECR
-  * build a new docker image _FROM_ the image
-    `${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}`
-    where `${TAG}` is the content of the file `TAG`
-  * use the credentials `AWS_ACCESS_KEY_ID_ECR_TARGET` and
-    `AWS_SECRET_ACCESS_KEY_ECR_TARGET` to login to the target ECR
-  * Tag the new image and push it to `${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}-${ENVIRONMENT:-dev}`
-* Second pipeline step
-  * Disable the alarms that contain the string in the variable `${CW_ALARM_SUBSTR}`
-    (skip this step if the variable is not set)
-  * Run following command to forcibly update (this will pull the latest image from the task's definition) of the
-    service:
+* use the credentials `AWS_ACCESS_KEY_ID_ECR_SOURCE` and
+  `AWS_SECRET_ACCESS_KEY_ECR_SOURCE` to login to the source ECR
+* build a new docker image _FROM_ the image
+  `${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/{DOCKER_IMAGE}:${TAG:-latest}`
+  where `${TAG}` is the content of the file `TAG`
+* use the credentials `AWS_ACCESS_KEY_ID_ECR_TARGET` and
+  `AWS_SECRET_ACCESS_KEY_ECR_TARGET` to login to the target ECR
+* Tag the new image and push it to `${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}-${ENVIRONMENT:-dev}`
+* Disable the alarms that contain the string in the variable `${CW_ALARM_SUBSTR}`
+  (skip this step if the variable is not set)
+* Run following command to forcibly update (this will pull the latest image from the
+  task's definition) of the service:
 
 ```
 aws ecs update-service --cluster ${ECS_CLUSTER} --force-new-deployment --service ${ECS_SERVICE} --region ${AWS_REGION:-eu-central-1}
@@ -70,7 +162,7 @@ pipelines:
   custom:
     build_and_deploy:
       - step:
-          name: Build and push Docker deploy image
+          name: Build and push Docker deploy image and start deploy
           script:
             - git clone https://github.com/rik2803/bb-aws-utils.git
             - export AWS_REGION=eu-central-1
@@ -81,15 +173,6 @@ pipelines:
             - export ENVIRONMENT=dev
             - export DOCKER_IMAGE=my/service-image
             - bb-aws-utils/build-and-push-docker-image.bash
-      - step:
-          name: Deploy latest version of image
-          script:
-            - git clone https://github.com/rik2803/bb-aws-utils.git
-            - export AWS_REGION=eu-central-1
-            - export ECS_CLUSTER=my-ecs-cluster
-            - export ECS_SERVICE=my-service
-            - export ENVIRONMENT=dev
-            - export DOCKER_IMAGE=my/service-image
             - export CW_ALARM_SUBSTR=MyServiceAlarm
             - bb-aws-utils/deploy-docker-image.bash
 options:
