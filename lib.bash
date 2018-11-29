@@ -410,7 +410,9 @@ docker_build_deploy_image() {
 
   ### Check if required image exists in the repository
   install_jq
-  cat ~/.docker/config.json | jq --arg experimental enabled '. + {experimental: $experimental}'
+  cat ~/.docker/config.json | jq --arg experimental enabled '. + {experimental: $experimental}' > ~/.docker/config.json
+  run_log_and_exit_on_failure "cat ~/.docker/config.json"
+  
   #if ! docker manifest inspect ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest} >/dev/null 2>&1
   if ! docker manifest inspect ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}
   then
