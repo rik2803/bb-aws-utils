@@ -38,7 +38,7 @@ install_maven2() {
 }
 
 install_jq() {
-  if [[ ${AWSCLI_INSTALLED} -eq 0 ]]
+  if [[ ${JQ_INSTALLED} -eq 0 ]]
   then
     echo "### ${FUNCNAME[0]} - Start jq installation ###"
     run_log_and_exit_on_failure "apt-get update"
@@ -47,10 +47,11 @@ install_jq() {
     ### jq is required
     if ! which jq >/dev/null 2>&1
     then
-    echo "### ${FUNCNAME[0]} - jq is required ###"
-    exit 1
+      echo "### ${FUNCNAME[0]} - jq is required ###"
+      exit 1
     else
-    echo "### ${FUNCNAME[0]} - jq is installed ###"
+      echo "### ${FUNCNAME[0]} - jq is installed ###"
+      JQ_INSTALLED=1
     fi
   else
     echo "### ${FUNCNAME[0]} - jq already installed ###"
