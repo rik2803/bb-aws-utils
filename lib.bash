@@ -307,7 +307,6 @@ set_credentials() {
 set_source_ecr_credentials() {
   set_credentials "${AWS_ACCESS_KEY_ID_ECR_SOURCE}" "${AWS_SECRET_ACCESS_KEY_ECR_SOURCE}"
   echo "### ${FUNCNAME[0]} - Logging in to AWS ECR source ###"
-  echo '{"experimental": "enabled"}' > ~/.docker/config.json
   eval $(aws ecr get-login --no-include-email --region ${AWS_REGION_SOURCE:-eu-central-1})
 }
 
@@ -331,7 +330,6 @@ docker_build() {
   fi
 
   install_awscli
-  echo '{"experimental": "enabled"}' > ~/.docker/config.json
   eval $(aws ecr get-login --no-include-email --region ${AWS_REGION_SOURCE:-eu-central-1})
   ### The Dockerfile is supposed to be in a subdir docker of the repo
   MYDIR=$(pwd)
@@ -381,7 +379,6 @@ set_dest_ecr_credentials() {
   [[ -z ${AWS_SECRET_ACCESS_KEY_ECR_TARGET} ]] && [[ -n ${AWS_SECRET_ACCESS_KEY} ]] && AWS_SECRET_ACCESS_KEY_ECR_TARGET=${AWS_SECRET_ACCESS_KEY}
   set_credentials "${AWS_ACCESS_KEY_ID_ECR_TARGET}" "${AWS_SECRET_ACCESS_KEY_ECR_TARGET}"
   echo "### ${FUNCNAME[0]} - Logging in to AWS ECR target ###"
-  echo '{"experimental": "enabled"}' > ~/.docker/config.json
   eval $(aws ecr get-login --no-include-email --region ${AWS_REGION_TARGET:-eu-central-1})
 }
 
@@ -411,6 +408,8 @@ docker_build_deploy_image() {
   fi
 
   ### Check if required image exists in the repository
+  install_jq
+  cat ~/.docker/config.json | jq --arg experimental enabled '. + {experimental: $experimental}'
   #if ! docker manifest inspect ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest} >/dev/null 2>&1
   if ! docker manifest inspect ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}
   then
