@@ -408,24 +408,20 @@ docker_build_deploy_image() {
     echo "### ${FUNCNAME[0]} - Not a release build, use artefact image with tag ${TAG} ###"
   fi
 
-  ### Check if required image exists in the repository
-### TODO : FIX THIS ###  install_jq
-### TODO : FIX THIS ###  cat ~/.docker/config.json | jq --arg experimental enabled '. + {experimental: $experimental}' > ~/.docker/config.json
-### TODO : FIX THIS ###  run_log_and_exit_on_failure "cat ~/.docker/config.json"
-### TODO : FIX THIS ###  
-### TODO : FIX THIS ###  #if ! docker manifest inspect ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest} >/dev/null 2>&1
-### TODO : FIX THIS ###  if ! docker manifest inspect ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}
-### TODO : FIX THIS ###  then
-### TODO : FIX THIS ###    _print_error_banner
-### TODO : FIX THIS ###    echo "### ${FUNCNAME[0]} - ERROR - The docker image ${DOCKER_IMAGE}:${TAG:-latest} is not available"
-### TODO : FIX THIS ###    echo "### ${FUNCNAME[0]}           on ECR repository ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com."
-### TODO : FIX THIS ###    echo "### ${FUNCNAME[0]}           Possible causes:"
-### TODO : FIX THIS ###    echo "### ${FUNCNAME[0]}             - This is a production deploy and the build on ACC was not done"
-### TODO : FIX THIS ###    echo "### ${FUNCNAME[0]}             - The image was deleted on ECR"
-### TODO : FIX THIS ###    echo "### ${FUNCNAME[0]}           Fix the issue and retry"
-### TODO : FIX THIS ###    echo "### ${FUNCNAME[0]}           Exiting ..."
-### TODO : FIX THIS ###    exit 1
-### TODO : FIX THIS ###  fi  
+  ### Check if required image exists in the repository by pulling it and failing if pull fails
+  if ! docker pull ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}
+  then
+    _print_error_banner
+    echo "### ${FUNCNAME[0]} - ERROR - The docker image ${DOCKER_IMAGE}:${TAG:-latest} is not available"
+    echo "### ${FUNCNAME[0]}           on ECR repository ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com."
+    echo "### ${FUNCNAME[0]}           Possible causes:"
+    echo "### ${FUNCNAME[0]}             - This is a production deploy and the build on ACC was not done"
+    echo "### ${FUNCNAME[0]}             - The image was deleted on ECR"
+    echo "### ${FUNCNAME[0]}             - A bug in this project"
+    echo "### ${FUNCNAME[0]}           Fix the issue and retry"
+    echo "### ${FUNCNAME[0]}           Exiting ..."
+    exit 1
+  fi  
 
   echo "FROM ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}" > Dockerfile
 
