@@ -408,8 +408,11 @@ docker_build_deploy_image() {
   fi
 
   ### Check if required image exists in the repository
+  mkdir -p ~/.docker/config.json
   echo '{"experimental": "enabled"}' > ~/.docker/config.json
-  if ! docker manifest inspect ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest} >/dev/null 2>&1
+  cat ~/.docker/config.json
+  #if ! docker manifest inspect ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest} >/dev/null 2>&1
+  if ! docker manifest inspect ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}
   then
     _print_error_banner
     echo "### ${FUNCNAME[0]} - ERROR - The docker image ${DOCKER_IMAGE}:${TAG:-latest} is not available"
