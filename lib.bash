@@ -104,6 +104,9 @@ create_TAG_file_in_remote_url() {
   git config --global user.email "bitbucketpipeline@wherever.com"
   git config --global user.name "Bitbucket Pipeline"
 
+  echo "### ${FUNCNAME[0]} - Check what git user is being used ###"
+  ssh git@bitbucket.org
+
   echo "### ${FUNCNAME[0]} - Trying to clone ${REMOTE_REPO_URL} into remote_repo ###"
   rm -rf remote_repo
   git clone ${REMOTE_REPO_URL} remote_repo || { echo "### ${FUNCNAME[0]} - Error cloning ${REMOTE_REPO_URL} ###"; exit 1; }
