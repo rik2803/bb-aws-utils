@@ -135,14 +135,18 @@ create_TAG_file_in_remote_url() {
       ### In this situation, a commit to the remote repository should trigger the build,
       ### but since the TAG file was not changed, a build will not be triggered, and the
       ### monitor_automatic_remote_pipeline_start will monitor a build that will never start.
-      ### Exiting here with a clear message is better than continuing with something that
-      ### will eventually fail anyway.
-      _print_error_banner
-      echo "### ${FUNCNAME[0]} - ERROR - Running this build twice for the same commit will not trigger the   ###"
-      echo "### ${FUNCNAME[0]}           build of the pipeline for ${REMOTE_REPO_URL}. In this case, it is   ###"
-      echo "### ${FUNCNAME[0]}           better to start the pipeline for ${REMOTE_REPO_URL} manually.       ###"
-      echo "### ${FUNCNAME[0]}           This is a situation that should normally not occur.                 ###"
-      exit 1
+      ### To solve this, we force tha TAG to change by setting a dummy content and
+      ### Committing with [skip ci] in thr commit message.
+      ### The next step is to change the TAG again and commit with a normal message.
+
+      echo "### ${FUNCNAME[0]} - Forcing the TAG to change by changing it twice. ###"
+      echo "FORCE REBUILD" > TAG
+      git commit -m "[skip ci] Forcing a build on the next commit" TAG
+      git push
+      echo "${BITBUCKET_COMMIT}" > TAG
+      git add TAG
+      git commit -m 'Update TAG with source repo commit hash' || { echo "### ${FUNCNAME[0]} - Error committing TAG ###"; exit 1; }
+      git push || { echo "### ${FUNCNAME[0]} - Error pushing to ${REMOTE_REPO_URL} ###"; exit 1; }
     fi
   fi
 
@@ -152,11 +156,17 @@ create_TAG_file_in_remote_url() {
     echo "### ${FUNCNAME[0]} - This build is triggered by a tag, also put the tag ${BITBUCKET_TAG} on the config repo ###"
     echo "### ${FUNCNAME[0]} - ${REMOTE_REPO_URL} ###"
     echo "### ${FUNCNAME[0]} - To allow multiple builds of the config repo pipeline for the remote tag, the tag ###"
-    echo "### ${FUNCNAME[0]} - will first be removed' ###"
+    echo "### ${FUNCNAME[0]} - will first be removed to make sure the trigger is triggered. ###"
     
-    git tag -d ${BITBUCKET_TAG}
+    if git tag | grep -q ${BITBUCKET_TAG}
+    then
+      echo "### ${FUNCNAME[0]} - Tag ${BITBUCKET_TAG} already exists, removing it locally and remotely. ###"
+      git tag -d ${BITBUCKET_TAG}
+      git push --delete origin ${BITBUCKET_TAG}
+    fi
+
+    echo "### ${FUNCNAME[0]} - Setting tag ${BITBUCKET_TAG} on HEAD and pushing to origin. ###"
     git tag ${BITBUCKET_TAG}
-    git push --delete origin ${BITBUCKET_TAG}
     git push --tags
   fi
 
