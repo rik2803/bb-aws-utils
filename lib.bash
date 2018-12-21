@@ -123,6 +123,10 @@ create_TAG_file_in_remote_url() {
     echo "### ${FUNCNAME[0]} - TAG file was updated, committing and pushing the change ###"
     git commit -m 'Update TAG with source repo commit hash' || { echo "### ${FUNCNAME[0]} - Error committing TAG ###"; exit 1; }
     git push || { echo "### ${FUNCNAME[0]} - Error pushing to ${REMOTE_REPO_URL} ###"; exit 1; }
+  elif [[ -n ${BITBUCKET_TAG} ]]
+  then
+    echo "### ${FUNCNAME[0]} - TAG file was unchanged, because the pipeline for this commit has been run before. ###"
+    echo "### ${FUNCNAME[0]} - BUT this build is triggered by a tag. Pipeline can continue ###"
   else
     echo "### ${FUNCNAME[0]} - TAG file was unchanged, because the pipeline for this commit has been run before. ###"
     echo "### ${FUNCNAME[0]} - No further (git) actions required.                                                ###"
@@ -147,7 +151,12 @@ create_TAG_file_in_remote_url() {
   then
     echo "### ${FUNCNAME[0]} - This build is triggered by a tag, also put the tag ${BITBUCKET_TAG} on the config repo ###"
     echo "### ${FUNCNAME[0]} - ${REMOTE_REPO_URL} ###"
+    echo "### ${FUNCNAME[0]} - To allow multiple builds of the config repo pipeline for the remote tag, the tag ###"
+    echo "### ${FUNCNAME[0]} - will first be removed' ###"
+    
+    git tag -d ${BITBUCKET_TAG}
     git tag ${BITBUCKET_TAG}
+    git push --delete origin ${BITBUCKET_TAG}
     git push --tags
   fi
 
