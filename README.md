@@ -1,5 +1,14 @@
 # `bb-aws-utils` - Bash functions to build and deploy docker images from a BitBucket pipeline
 
+## IMPORTANT
+
+To solve [this](https://community.atlassian.com/t5/Bitbucket-Pipelines-articles/Pushing-back-to-your-repository/ba-p/958407),
+users of this library will always have the origin set to `SSH` **unless** the
+environment variable `BB_USE_HTTP_ORIGIN` is set.
+
+Otherwise, the HTTP orogin will be used, which offers improved authentication
+functionality, but will not work for repositories with branch protection.
+
 ## What these functions can be used for
 
 * Build Java project, build a docker container and push the container to a AWS ECR repo

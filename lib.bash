@@ -5,6 +5,17 @@ JQ_INSTALLED=0
 CW_ALARMS_DISABLED=0
 CW_ALARMS=NA
 
+### To make sure everything keeps working after February 1 (see
+### https://community.atlassian.com/t5/Bitbucket-Pipelines-articles/Pushing-back-to-your-repository/ba-p/958407)
+### we explicitely set the repo origin to ${BITBUCKET_GIT_SSH_ORIGIN} unless the envvar ${BB_USE_HTTP_ORIGIN}
+### is set
+if [[ -n ${BB_USE_HTTP_ORIGIN} ]]
+then
+  echo 'git remote set-url origin ${BITBUCKET_GIT_HTTP_ORIGIN}'
+else
+  echo 'git remote set-url origin ${BITBUCKET_GIT_SSH_ORIGIN}'
+fi
+
 run_log_and_exit_on_failure() {
   echo "### ${FUNCNAME[0]} - Starting ${1}"
   if eval "${1}"
