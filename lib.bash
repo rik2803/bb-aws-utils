@@ -732,21 +732,30 @@ s3_build_once_deploy_once() {
 ### Private functions
 
 _disable_cw_alarms() {
+  > alarms_to_enable.txt
   CW_ALARMS=$(aws cloudwatch describe-alarms --region ${AWS_REGION:-eu-central-1} --query "MetricAlarms[*]|[?contains(AlarmName, '${CW_ALARM_SUBSTR}')].AlarmName" --output text)
-  if aws cloudwatch disable-alarm-actions --region ${AWS_REGION:-eu-central-1} --alarm-names ${CW_ALARMS:-NoneFound}
-  then
-    CW_ALARMS_DISABLED=1
-  fi
+  aws cloudwatch describe-alarms --region ${AWS_REGION:-eu-central-1} --query "MetricAlarms[*]|[?contains(AlarmName, '${CW_ALARM_SUBSTR}')].[AlarmName,ActionsEnabled]" --output text | \
+  while read line
+  do
+    set -- ${line}
+    if [[ ${2} == "True" ]]
+    then
+      echo "### ${FUNCNAME[0]} - INFO - Disabling alarm ${1} ###"
+      aws cloudwatch disable-alarm-actions --region ${AWS_REGION:-eu-central-1} --alarm-names ${1}
+      echo ${1} >> alarms_to_enable.txt
+    fi
+  done
+  CW_ALARMS_DISABLED=1
 }
 
 _enable_cw_alarms() {
-  if [[ ${CW_ALARMS_DISABLED} -eq 1 ]]
-  then
-    if aws cloudwatch enable-alarm-actions --region ${AWS_REGION:-eu-central-1} --alarm-names ${CW_ALARMS:-NoneFound}
-    then
-      CW_ALARMS_DISABLED=0
-    fi
-  fi
+  for ALARM in $(cat alarms_to_enable.txt)
+  do
+    echo "### ${FUNCNAME[0]} - INFO - Enabling alarm ${ALARM} ###"
+    aws cloudwatch enable-alarm-actions --region ${AWS_REGION:-eu-central-1} --alarm-names ${ALARM}
+  done
+  CW_ALARMS_DISABLED=0
+  rm -f alarms_to_enable.txt
 }
 
 _docker_build() {
