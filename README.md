@@ -220,6 +220,7 @@ The BB pipeline build requires these pipeline environment variables:
   * `python3.6`
   * `nodejs8.10`
 * `LAMBDA_FUNCTION_NAME`: The name to use to store the function in the S3 bucket
+* `LAMBDA_PUBLIC`: Also copy the file to `${S3_DEST_BUCKET}-public` with `public-read` permissions
 * `S3_DEST_BUCKET`: The name of the bucket the function should be deployed to
 * `AWS_ACCESS_KEY_ID`: Credentials with write access to `S3_DEST_BUCKET`
 * `AWS_SECRET_ACCESS_KEY`: Credentials with write access to `S3_DEST_BUCKET`

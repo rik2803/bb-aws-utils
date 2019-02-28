@@ -623,30 +623,40 @@ s3_lambda_build_and_push() {
   fi
 
   ### Upload the Lambda artifact to S3
+  TARGETS=""
+
   if [[ ${LAMBDA_RUNTIME} = java* ]]
   then
-    echo "### ${FUNCNAME[0]} - Push the jar to the S3 bucket ${S3_DEST_BUCKET} ###"
-    set_credentials "${AWS_ACCESS_KEY_ID}" "${AWS_SECRET_ACCESS_KEY}"
-    run_log_and_exit_on_failure "aws s3 cp --acl private ${JAR_PATH:-.}/${JAR_FILE} s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}.jar"
-    run_log_and_exit_on_failure "aws s3 cp --acl private ${JAR_PATH:-.}/${JAR_FILE} s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}-${BITBUCKET_COMMIT}.jar"
-    if [[ -n ${BITBUCKET_TAG} ]]
-    then
-      run_log_and_exit_on_failure "aws s3 cp --acl private ${JAR_PATH:-.}/${JAR_FILE} s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}-${BITBUCKET_TAG}.jar"
-    fi
+    EXTENSION="jar"
+    SOURCE="${JAR_PATH:-.}/${JAR_FILE}"
   else
+    EXTENSION="zip"
+    SOURCE="/${LAMBDA_FUNCTION_NAME}.zip"
     echo "### ${FUNCNAME[0]} - Zip the Lambda code and dependencies ###"
     run_log_and_exit_on_failure "cd /builddir"
     run_log_and_exit_on_failure "zip -r /${LAMBDA_FUNCTION_NAME}.zip *"
     run_log_and_exit_on_failure "cd -"
+  fi
 
-    echo "### ${FUNCNAME[0]} - Push the zipped file to S3 bucket ${S3_DEST_BUCKET} ###"
-    set_credentials "${AWS_ACCESS_KEY_ID}" "${AWS_SECRET_ACCESS_KEY}"
-    run_log_and_exit_on_failure "aws s3 cp --acl private /${LAMBDA_FUNCTION_NAME}.zip s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}.zip"
-    run_log_and_exit_on_failure "aws s3 cp --acl private /${LAMBDA_FUNCTION_NAME}.zip s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}-${BITBUCKET_COMMIT}.zip"
-    if [[ -n ${BITBUCKET_TAG} ]]
-    then
-      run_log_and_exit_on_failure "aws s3 cp --acl private /${LAMBDA_FUNCTION_NAME}.zip s3://${S3_DEST_BUCKET}/${LAMBDA_FUNCTION_NAME}-${BITBUCKET_TAG}.zip"
-    fi
+  TARGETS="${TARGETS} ${LAMBDA_FUNCTION_NAME}.${EXTENSION}"
+  TARGETS="${TARGETS} ${LAMBDA_FUNCTION_NAME}-${BITBUCKET_COMMIT}.${EXTENSION}"
+  [[ -n ${BITBUCKET_TAG} ]] && TARGETS="${TARGETS} ${LAMBDA_FUNCTION_NAME}-${BITBUCKET_COMMIT}.${EXTENSION}"
+
+  set_credentials "${AWS_ACCESS_KEY_ID}" "${AWS_SECRET_ACCESS_KEY}"
+
+  for TARGET in ${TARGETS}
+  do
+    run_log_and_exit_on_failure "aws s3 cp --acl private ${SOURCE} s3://${S3_DEST_BUCKET}/${TARGET}"
+    echo "### ${FUNCNAME[0]} - S3 URL is https://s3.amazonaws.com/${S3_DEST_BUCKET}/${TARGET}"
+  done
+
+  if [[ -n ${LAMBDA_PUBLIC} ]] && [[ ${LAMBDA_PUBLIC} == 1 ]]
+  then
+    for TARGET in ${TARGETS}
+    do
+      run_log_and_exit_on_failure "aws s3 cp --acl public-read ${SOURCE} s3://${S3_DEST_BUCKET}-public/${TARGET}"
+      echo "### ${FUNCNAME[0]} - S3 URL is https://s3.amazonaws.com/${S3_DEST_BUCKET}-public/${TARGET}"
+    done
   fi
 }
 
