@@ -615,6 +615,8 @@ s3_lambda_build_and_push() {
   ### Python
   if [[ ${LAMBDA_RUNTIME} = python* ]]
   then
+    run_log_and_exit_on_failure "set"
+    run_log_and_exit_on_failure "ls -la"
     [[ -e ${LAMBDA_FUNCTION_FILE:-lambda.py} ]] && run_log_and_exit_on_failure "mv -f ${LAMBDA_FUNCTION_FILE:-lambda.py} /builddir"
     if [[ -f requirements.txt ]]
     then
