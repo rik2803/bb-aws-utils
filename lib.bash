@@ -2,6 +2,7 @@
 
 AWSCLI_INSTALLED=0
 JQ_INSTALLED=0
+APT_GET_UPDATE_OK=0
 CW_ALARMS_DISABLED=0
 CW_ALARMS=NA
 
@@ -28,10 +29,21 @@ run_log_and_exit_on_failure() {
   fi
 }
 
+run_apt_get_update() {
+  if [[ ${APT_GET_UPDATE_OK} -eq 0 ]]
+  then
+    # To avoid error on jessie and archived jessie-updates/main
+    sed -i '/jessie-updates/d' /etc/apt/sources.list || true
+    run_log_and_exit_on_failure "apt-get update"
+    APT_GET_UPDATE_OK=1
+  fi
+
+}
+
 install_awscli() {
   if [[ ${AWSCLI_INSTALLED} -eq 0 ]]
   then
-    run_log_and_exit_on_failure "apt-get update"
+    run_apt_get_update
     run_log_and_exit_on_failure "apt-get install -y python-dev"
     run_log_and_exit_on_failure "curl -O https://bootstrap.pypa.io/get-pip.py"
     run_log_and_exit_on_failure "python get-pip.py"
@@ -44,7 +56,7 @@ install_awscli() {
 
 install_maven2() {
   echo "### ${FUNCNAME[0]} - Start maven2 installation ###"
-  run_log_and_exit_on_failure "apt-get update"
+  run_apt_get_update
   run_log_and_exit_on_failure "apt-get install -y maven2"
 }
 
@@ -52,7 +64,7 @@ install_jq() {
   if [[ ${JQ_INSTALLED} -eq 0 ]]
   then
     echo "### ${FUNCNAME[0]} - Start jq installation ###"
-    run_log_and_exit_on_failure "apt-get update"
+    run_apt_get_update
     run_log_and_exit_on_failure "apt-get install -y jq"
 
     ### jq is required
