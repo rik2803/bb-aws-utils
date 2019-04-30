@@ -357,7 +357,7 @@ set_source_ecr_credentials() {
 }
 
 docker_build() {
-  ### Use ths function to build a docker artefact image from a source code repository
+  ### Use this function to build a docker artefact image from a source code repository
 
   ### Check for required parameters
   [[ -z ${AWS_ACCOUNTID_TARGET} ]]   && [[ -z ${AWS_ECR_ACCOUNTID} ]] \
@@ -513,8 +513,14 @@ docker_deploy_image() {
     _disable_cw_alarms
   fi
 
-  echo "### ${FUNCNAME[0]} - Force update service ${ECS_SERVICE} on ECS cluster ${ECS_CLUSTER} in region ${AWS_REGION} ###"
-  run_log_and_exit_on_failure "aws ecs update-service --cluster ${ECS_CLUSTER} --force-new-deployment --service ${ECS_SERVICE} --region ${AWS_REGION:-eu-central-1}"
+  # ECS_SERVICE can be a comma separated list of services, to support
+  # the case where the same image is used by 2 services (i.e external and
+  # internal)
+  for service in ${ECS_SERVICES//,/ }
+  do
+    echo "### ${FUNCNAME[0]} - Force update service ${service} on ECS cluster ${ECS_CLUSTER} in region ${AWS_REGION} ###"
+    run_log_and_exit_on_failure "aws ecs update-service --cluster ${ECS_CLUSTER} --force-new-deployment --service ${service} --region ${AWS_REGION:-eu-central-1}"
+  done
 
   if [[ -n ${CW_ALARM_SUBSTR} ]]
   then
