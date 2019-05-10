@@ -20,6 +20,9 @@ else
   echo 'git remote set-url origin ${BITBUCKET_GIT_SSH_ORIGIN}'
 fi
 
+# (Try to) install which, might be missing on some yum based distributions
+yum install -y which >/dev/null 2>&1 || true
+
 if which yum > /dev/null 2>&1
 then
   CENTOSDISTRO=1
