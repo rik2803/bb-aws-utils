@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 
 AWSCLI_INSTALLED=0
+ZIP_INSTALLED=0
 JQ_INSTALLED=0
 APT_GET_UPDATE_OK=0
 CW_ALARMS_DISABLED=0
 CW_ALARMS=NA
+DEBIANDISTRO=0
+CENTOSDISTRO=0
 
 ### To make sure everything keeps working after February 1 (see
 ### https://community.atlassian.com/t5/Bitbucket-Pipelines-articles/Pushing-back-to-your-repository/ba-p/958407)
@@ -15,6 +18,14 @@ then
   echo 'git remote set-url origin ${BITBUCKET_GIT_HTTP_ORIGIN}'
 else
   echo 'git remote set-url origin ${BITBUCKET_GIT_SSH_ORIGIN}'
+fi
+
+if which yum > /dev/null 2>&1
+then
+  CENTOSDISTRO=1
+elif which apt-get > /dev/null 2>&1
+then
+  DEBIANDISTRO=1
 fi
 
 run_log_and_exit_on_failure() {
@@ -43,12 +54,39 @@ run_apt_get_update() {
 install_awscli() {
   if [[ ${AWSCLI_INSTALLED} -eq 0 ]]
   then
-    run_apt_get_update
-    run_log_and_exit_on_failure "apt-get install -y python-dev"
-    run_log_and_exit_on_failure "curl -O https://bootstrap.pypa.io/get-pip.py"
-    run_log_and_exit_on_failure "python get-pip.py"
-    run_log_and_exit_on_failure "pip install awscli"
-    AWSCLI_INSTALLED=1
+    if [[ ${DEBIANDISTRO} -eq 1 ]]
+    then
+      echo "### ${FUNCNAME[0]} - Installing aws cli on debian ###"
+      run_apt_get_update
+      run_log_and_exit_on_failure "apt-get install -y python-dev"
+      run_log_and_exit_on_failure "curl -O https://bootstrap.pypa.io/get-pip.py"
+      run_log_and_exit_on_failure "python get-pip.py"
+      run_log_and_exit_on_failure "pip install awscli"
+      AWSCLI_INSTALLED=1
+    else
+      echo "### ${FUNCNAME[0]} - Installing aws cli on CentOS ###"
+      run_log_and_exit_on_failure "yum install -y awscli"
+      AWSCLI_INSTALLED=1
+    fi
+  else
+    echo "### ${FUNCNAME[0]} - awscli already installed ###"
+  fi
+}
+
+install_zip() {
+  if [[ ${ZIP_INSTALLED} -eq 0 ]]
+  then
+    if [[ ${DEBIANDISTRO} -eq 1 ]]
+    then
+      echo "### ${FUNCNAME[0]} - Installing zip on debian ###"
+      run_apt_get_update
+      run_log_and_exit_on_failure "apt-get install -y zip"
+      ZIP_INSTALLED=1
+    else
+      echo "### ${FUNCNAME[0]} - Installing zip on CentOS ###"
+      run_log_and_exit_on_failure "yum install -y zip unzip"
+      ZIP_INSTALLED=1
+    fi
   else
     echo "### ${FUNCNAME[0]} - awscli already installed ###"
   fi
@@ -56,16 +94,26 @@ install_awscli() {
 
 install_maven2() {
   echo "### ${FUNCNAME[0]} - Start maven2 installation ###"
-  run_apt_get_update
-  run_log_and_exit_on_failure "apt-get install -y maven2"
+  if [[ ${DEBIANDISTRO} -eq 1 ]]
+  then
+    run_apt_get_update
+    run_log_and_exit_on_failure "apt-get install -y maven2"
+  else
+    echo "### ${FUNCNAME[0]} - Installing maven2 on CentOS like distro is not implemented ###"
+  fi
 }
 
 install_jq() {
   if [[ ${JQ_INSTALLED} -eq 0 ]]
   then
     echo "### ${FUNCNAME[0]} - Start jq installation ###"
-    run_apt_get_update
-    run_log_and_exit_on_failure "apt-get install -y jq"
+    if [[ ${DEBIANDISTRO} -eq 1 ]]
+    then
+      run_apt_get_update
+      run_log_and_exit_on_failure "apt-get install -y jq"
+    else
+      run_log_and_exit_on_failure "yum install -y jq"
+    fi
 
     ### jq is required
     if ! which jq >/dev/null 2>&1
@@ -607,7 +655,7 @@ s3_lambda_build_and_push() {
   ### Setup
   export CI=false
   install_awscli
-  run_log_and_exit_on_failure "apt-get install -y zip"
+  install_zip
   run_log_and_exit_on_failure "mkdir -p /builddir"
 
   ### Java8
