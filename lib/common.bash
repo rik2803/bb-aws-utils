@@ -46,6 +46,8 @@ is_debug_enabled() {
 check_command() {
   if ! which ${1:-not_present} >/dev/null 2>&1; then
     fail "Command ${1} is required but not found."
+  else
+    success "Command ${1} is available"
   fi
 }
 
@@ -65,6 +67,7 @@ check_command() {
 #   None
 #######################################
 check_envvar() {
+  info "Start checking envvar ${@}"
   if [[ -n ${1} ]]; then
     envvar=${1}
     shift

@@ -2,6 +2,7 @@ source ${LIB_DIR:-lib}/common.bash
 source ${LIB_DIR:-lib}/git.bash
 
 maven_create_settings_xml() {
+  info "Start creation of settings.xml"
   check_envvar MAVEN_SETTINGS_ID R
   check_envvar MAVEN_SETTINGS_USERNAME R
   check_envvar MAVEN_SETTINGS_PASSWORD R
