@@ -1,0 +1,10 @@
+source ./lib/common.bash
+source ./lib/maven.bash
+
+export MAVEN_SETTINGS_ID="id1 id2 id3"
+export MAVEN_SETTINGS_USERNAME="u1 u2 u3"
+export MAVEN_SETTINGS_PASSWORD="p1 p2 p3"
+export MAVEN_SETTINGS_PATH="./"
+maven_create_settings_xml
+
+
