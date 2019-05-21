@@ -1,3 +1,3 @@
-source "$(dirname "$0")/bashlib/common.bash"
-source "$(dirname "$0")/bashlib/dockerhub.bash"
+source "$(dirname "$0")/lib/common.bash"
+source "$(dirname "$0")/lib/dockerhub.bash"
 

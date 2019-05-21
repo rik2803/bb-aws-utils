@@ -1,5 +1,5 @@
-source lib/common.bash
-source lib/git.bash
+source ${LIB_DIR:-lib}/common.bash
+source ${LIB_DIR:-lib}/git.bash
 
 maven_create_settings_xml() {
   check_envvar MAVEN_SETTINGS_ID R
@@ -21,7 +21,7 @@ maven_create_settings_xml() {
     echo "      <filePermissions>664</filePermissions>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
     echo "      <directoryPermissions>775</directoryPermissions>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
     echo "    </server>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-  done  
+  done
   echo "  </servers>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
   echo "</settings>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
 }
@@ -32,18 +32,47 @@ maven_build() {
   check_envvar MAVEN_SETTINGS_PATH O /
   check_command mvn
 
-  run mvn ${MAVEN_COMMAND} -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS}
+  run_cmd mvn ${MAVEN_COMMAND} -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS}
 }
 
 maven_minor_bump() {
   check_envvar MAVEN_MINOR_BUMP_STRING O "bump_minor_version"
 
-  run git_current_commit_message
-  if [[ ${output} =~ ${MAVEN_MINOR_BUMP_STRING} ]]; then
-    return 1
-  else
+  if git_current_commit_message | grep -q ${MAVEN_MINOR_BUMP_STRING}; then
     return 0
-  fi 
+  else
+    return 1
+  fi
+}
+
+maven_set_versions() {
+    set -- $(run_cmd mvn build-helper:parse-version -q -Dexec.executable=echo \
+              -Dexec.args='${parsedVersion.majorVersion} ${parsedVersion.minorVersion} ${parsedVersion.incrementalVersion} ${parsedVersion.nextMajorVersion} ${parsedVersion.nextMinorVersion} ${parsedVersion.nextIncrementalVersion}' \
+              --non-recursive exec:exec)
+    export MAVEN_MAJOR=${1}; shift
+    export MAVEN_MINOR=${1}; shift
+    export MAVEN_INCR=${1}; shift
+    export MAVEN_NEXT_MAJOR=${1}; shift
+    export MAVEN_NEXT_MINOR=${1}; shift
+    export MAVEN_NEXT_INCR=${1}
+}
+
+maven_get_release_version() {
+  maven_set_versions
+  if maven_minor_bump; then
+    echo "${MAVEN_MAJOR}.${MAVEN_NEXT_MINOR}.0"
+  else
+    echo "${MAVEN_MAJOR}.${MAVEN_MINOR}.${MAVEN_INCR}"
+  fi
+}
+
+maven_get_develop_version() {
+  maven_set_versions
+  if maven_minor_bump; then
+    echo "${MAVEN_MAJOR}.${MAVEN_NEXT_MINOR}.1-SNAPSHOT"
+  else
+    echo "${MAVEN_MAJOR}.${MAVEN_MINOR}.${MAVEN_NEXT_INCR}-SNAPSHOT"
+  fi
 }
 
 maven_release_build() {
@@ -52,25 +81,10 @@ maven_release_build() {
   check_envvar MAVEN_SETTINGS_PATH O /
   check_command mvn
 
-  if maven_minor_bump; then
-    run mvn build-helper:parse-version -q -Dexec.executable=echo \
-            -Dexec.args='${parsedVersion.majorVersion}.${parsedVersion.nextMinorVersion}.0' \
-            --non-recursive exec:exec
-    RELEASE_VERSION=${output}
-    run mvn build-helper:parse-version -q -Dexec.executable=echo \
-            -Dexec.args='${parsedVersion.majorVersion}.${parsedVersion.nextMinorVersion}.1' \
-            --non-recursive exec:exec
-    DEVELOP_VERSION="${output}-SNAPSHOT"
-  else
-    run mvn build-helper:parse-version -q -Dexec.executable=echo \
-            -Dexec.args='${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}' \
-            --non-recursive exec:exec
-    RELEASE_VERSION=${output}
-    run mvn build-helper:parse-version -q -Dexec.executable=echo \
-            -Dexec.args='${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.nextIncrementalVersion}' \
-            --non-recursive exec:exec
-    DEVELOP_VERSION="${output}-SNAPSHOT"
-  fi
+  run_cmd maven_set_versions
+
+  RELEASE_VERSION=$(maven_get_release_version)
+  DEVELOP_VERSION=$(maven_get_develop_version)
 
   mvn -B -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS} -Dresume=false \
       -DreleaseVersion="${RELEASE_VERSION}" \

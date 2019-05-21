@@ -68,7 +68,7 @@ The image will be available as:
 * `${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}`
 * `${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_TAG}` if it is a tag triggered build and `${RC_PREFIX}`
   is defined and `[[ ${BITBUCKET_TAG} = ${RC_PREFIX}* ]]`
-  
+
 
 ## The `s3_artifact` function
 
@@ -104,7 +104,7 @@ The function:
 * Recursively copies the content of `workdir` to `S3_DEST_BUCKET`
 * (optional) Invalidates the CloudFront distribution if
   `CLOUDFRONT_DISTRIBUTION_ID` is defined
-  
+
 An overview of all allowed environment variables:
 
 * `AWS_ACCESS_KEY_ID_S3_SOURCE`: AWS read-only credentials for the bucket
@@ -158,7 +158,7 @@ What this does:
 
 ```
 aws ecs update-service --cluster ${ECS_CLUSTER} --force-new-deployment --service ${ECS_SERVICE} --region ${AWS_REGION:-eu-central-1}
-``` 
+```
 
   * And finally wait 120 seconds for the update to finish and enable the _CloudWatch_ alarms (skip this step if the variable  `CW_ALARM_SUBSTR` is not set)
 
@@ -279,6 +279,38 @@ pipelines:
 ```
 
 
-### Links and Resources
+## Unit Testing
+
+### Install as git submodules
+
+```bash
+git submodule init
+git submodule add https://github.com/sstephenson/bats test/libs/bats
+git submodule add https://github.com/ztombol/bats-assert test/libs/bats-assert
+git submodule add https://github.com/ztombol/bats-support test/libs/bats-support
+git add .
+git commit -m 'installed bats'
+```
+
+### To run tests
+
+```bash
+./test/libs/bats/bin/bats test/*bats
+```
+
+### To run tests in a CI/CD pipeline (i.e. BitBucket)
+
+Submodules are not automatically cloned inside a BB pipeline. To clone the submodules, use this command:
+
+```bash
+git submodule update --init --recursive
+```
+
+### Where the mustard comes from
+
+* https://opensource.com/article/19/2/testing-bash-bats
+
+
+## Links and Resources
 
 * [Create a Lambda Function Deployment Package](https://docs.aws.amazon.com/lambda/latest/dg/deployment-package-v2.html)

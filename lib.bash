@@ -231,7 +231,7 @@ create_TAG_file_in_remote_url() {
     echo "### ${FUNCNAME[0]} - ${REMOTE_REPO_URL} ###"
     echo "### ${FUNCNAME[0]} - To allow multiple builds of the config repo pipeline for the remote tag, the tag ###"
     echo "### ${FUNCNAME[0]} - will first be removed to make sure the trigger is triggered. ###"
-    
+
     if git tag | grep -q ${BITBUCKET_TAG}
     then
       echo "### ${FUNCNAME[0]} - Tag ${BITBUCKET_TAG} already exists, removing it locally and remotely. ###"
@@ -517,7 +517,7 @@ docker_build_deploy_image() {
     echo "### ${FUNCNAME[0]}           Fix the issue and retry"
     echo "### ${FUNCNAME[0]}           Exiting ..."
     exit 1
-  fi  
+  fi
 
   echo "FROM ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}" > Dockerfile
 

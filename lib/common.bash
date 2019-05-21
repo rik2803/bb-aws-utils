@@ -108,18 +108,15 @@ check_envvar() {
   fi
 }
 
-# Execute a command, saving its output and exit status code, and echoing its output upon completion.
+# Execute a command, saving its exit status code.
 # Globals set:
 #   run_status: Exit status of the command that was executed.
-#   output: Output generated from the command.
 #
 run_cmd() {
-  echo "$@"
   set +e
-  output=$("$@" 2>&1)
+  $@ 2>&1
   run_status=$?
   set -e
-  echo "${output}"
 }
 
 # End standard 'imports'
