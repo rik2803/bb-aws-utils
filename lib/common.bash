@@ -109,6 +109,8 @@ check_envvar() {
     eval export $envvar=$default
     debug "check_envvar(): Optional envvar ${envvar} set to default value ${default}"
   fi
+
+  success "Envvar $envvar successfully verified"
 }
 
 # Execute a command, saving its exit status code.
