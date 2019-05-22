@@ -41,7 +41,10 @@ maven_build() {
   check_envvar MAVEN_SETTINGS_PATH O /
   check_command mvn
 
-  mvn ${MAVEN_COMMAND} -s ${MAVEN_SETTINGS_PATH}/settings.xml -DscmCommentPrefix="[skip ci]" ${MAVEN_EXTRA_ARGS}
+  COMMAND="mvn ${MAVEN_COMMAND} -s ${MAVEN_SETTINGS_PATH}/settings.xml -DscmCommentPrefix='[skip ci]' ${MAVEN_EXTRA_ARGS}"
+
+  info "${COMMAND}"
+  ${COMMAND}
 }
 
 maven_minor_bump() {
@@ -98,9 +101,12 @@ maven_release_build() {
 
   git checkout ${MAVEN_BRANCH}
 
-  mvn -B -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS} -Dresume=false \
-      -DreleaseVersion="${RELEASE_VERSION}" \
-      -DscmCommentPrefix="[skip ci]" \
-      -DdevelopmentVersion="${DEVELOP_VERSION}" \
-      ${MAVEN_COMMAND}
+ COMMAND="mvn -B -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS} -Dresume=false \
+      -DreleaseVersion=${RELEASE_VERSION} \
+      -DscmCommentPrefix='[skip ci]' \
+      -DdevelopmentVersion=${DEVELOP_VERSION} \
+      ${MAVEN_COMMAND}"
+
+  info "${COMMAND}"
+  ${COMMAND}
 }
