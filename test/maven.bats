@@ -17,11 +17,24 @@ teardown() {
   export MAVEN_SETTINGS_ID="id1 id2 id3"
   export MAVEN_SETTINGS_USERNAME="u1 u2 u3"
   export MAVEN_SETTINGS_PASSWORD="p1 p2 p3"
+  export MAVEN_SETTINGS_EMAIL="NA NA NA"
   export MAVEN_SETTINGS_PATH="./"
   run maven_create_settings_xml
   lines=$(cat ${MAVEN_SETTINGS_PATH}/settings.xml | wc -l | tr -d ' ')
   assert_success
   assert_equal $lines 25
+}
+
+@test "maven_create_settings_xml with 1 email address" {
+  export MAVEN_SETTINGS_ID="id1 id2 id3"
+  export MAVEN_SETTINGS_USERNAME="u1 u2 u3"
+  export MAVEN_SETTINGS_PASSWORD="p1 p2 p3"
+  export MAVEN_SETTINGS_EMAIL="email NA NA"
+  export MAVEN_SETTINGS_PATH="./"
+  run maven_create_settings_xml
+  lines=$(cat ${MAVEN_SETTINGS_PATH}/settings.xml | wc -l | tr -d ' ')
+  assert_success
+  assert_equal $lines 28
 }
 
 @test "maven_minor_bump true" {
