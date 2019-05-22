@@ -61,19 +61,21 @@ maven_set_versions() {
 maven_get_release_version() {
   maven_set_versions
   if maven_minor_bump; then
-    echo "${MAVEN_MAJOR}.${MAVEN_NEXT_MINOR}.0"
+    RELEASE_VERSION="${MAVEN_MAJOR}.${MAVEN_NEXT_MINOR}.0"
   else
-    echo "${MAVEN_MAJOR}.${MAVEN_MINOR}.${MAVEN_INCR}"
+    RELEASE_VERSION="${MAVEN_MAJOR}.${MAVEN_MINOR}.${MAVEN_INCR}"
   fi
+  info "Release version is ${RELEASE_VERSION}"
 }
 
 maven_get_develop_version() {
   maven_set_versions
   if maven_minor_bump; then
-    echo "${MAVEN_MAJOR}.${MAVEN_NEXT_MINOR}.1-SNAPSHOT"
+    DEVELOP_VERSION="${MAVEN_MAJOR}.${MAVEN_NEXT_MINOR}.1-SNAPSHOT"
   else
-    echo "${MAVEN_MAJOR}.${MAVEN_MINOR}.${MAVEN_NEXT_INCR}-SNAPSHOT"
+    DEVELOP_VERSION="${MAVEN_MAJOR}.${MAVEN_MINOR}.${MAVEN_NEXT_INCR}-SNAPSHOT"
   fi
+  info "Develop version is ${DEVELOP_VERSION}"
 }
 
 maven_release_build() {
@@ -84,8 +86,8 @@ maven_release_build() {
 
   run_cmd maven_set_versions
 
-  RELEASE_VERSION=$(maven_get_release_version)
-  DEVELOP_VERSION=$(maven_get_develop_version)
+  maven_get_release_version
+  maven_get_develop_version
 
   mvn -B -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS} -Dresume=false \
       -DreleaseVersion="${RELEASE_VERSION}" \
