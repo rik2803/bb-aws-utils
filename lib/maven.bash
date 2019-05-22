@@ -99,6 +99,8 @@ maven_release_build() {
   maven_get_release_version
   maven_get_develop_version
 
+  git remote set-url origin ${BITBUCKET_GIT_SSH_ORIGIN}
+
   info "Checking out branch ${MAVEN_BRANCH}"
   git checkout ${MAVEN_BRANCH}
   success "Successfully checked out ${MAVEN_BRANCH}"
@@ -109,7 +111,6 @@ maven_release_build() {
       -DscmCommentPrefix='[skip ci]' \
       ${MAVEN_COMMAND}"
 
-  echo "${COMMAND}" > /tmp/rikske
   info "${COMMAND}"
   eval ${COMMAND}
   success "mvn successfully executed"
