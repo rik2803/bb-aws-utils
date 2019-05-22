@@ -33,7 +33,7 @@ maven_build() {
   check_envvar MAVEN_SETTINGS_PATH O /
   check_command mvn
 
-  run_cmd mvn ${MAVEN_COMMAND} -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS}
+  mvn ${MAVEN_COMMAND} -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS}
 }
 
 maven_minor_bump() {
@@ -47,15 +47,15 @@ maven_minor_bump() {
 }
 
 maven_set_versions() {
-    set -- $(run_cmd mvn build-helper:parse-version -q -Dexec.executable=echo \
-              -Dexec.args='${parsedVersion.majorVersion} ${parsedVersion.minorVersion} ${parsedVersion.incrementalVersion} ${parsedVersion.nextMajorVersion} ${parsedVersion.nextMinorVersion} ${parsedVersion.nextIncrementalVersion}' \
-              --non-recursive exec:exec)
+    set -x
+    set -- $(mvn build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${parsedVersion.majorVersion} ${parsedVersion.minorVersion} ${parsedVersion.incrementalVersion} ${parsedVersion.nextMajorVersion} ${parsedVersion.nextMinorVersion} ${parsedVersion.nextIncrementalVersion}' --non-recursive exec:exec)
     export MAVEN_MAJOR=${1}; shift
     export MAVEN_MINOR=${1}; shift
     export MAVEN_INCR=${1}; shift
     export MAVEN_NEXT_MAJOR=${1}; shift
     export MAVEN_NEXT_MINOR=${1}; shift
     export MAVEN_NEXT_INCR=${1}
+    set +x
 }
 
 maven_get_release_version() {
@@ -84,7 +84,7 @@ maven_release_build() {
   check_envvar MAVEN_SETTINGS_PATH O /
   check_command mvn
 
-  run_cmd maven_set_versions
+  maven_set_versions
 
   maven_get_release_version
   maven_get_develop_version
