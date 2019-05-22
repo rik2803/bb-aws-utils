@@ -1,16 +1,19 @@
 source ${LIB_DIR:-lib}/common.bash
 source ${LIB_DIR:-lib}/git.bash
 
+# MAVEN_SETTINGS_EMAIL: use NA if not required in settings.xml for an index in the array
 maven_create_settings_xml() {
   info "Start creation of settings.xml"
   check_envvar MAVEN_SETTINGS_ID R
   check_envvar MAVEN_SETTINGS_USERNAME R
   check_envvar MAVEN_SETTINGS_PASSWORD R
+  check_envvar MAVEN_SETTINGS_EMAIL R
   check_envvar MAVEN_SETTINGS_PATH O /
 
   MAVEN_SETTINGS_ID_ARRAY=(${MAVEN_SETTINGS_ID})
   MAVEN_SETTINGS_USERNAME_ARRAY=(${MAVEN_SETTINGS_USERNAME})
   MAVEN_SETTINGS_PASSWORD_ARRAY=(${MAVEN_SETTINGS_PASSWORD})
+  MAVEN_SETTINGS_EMAIL_ARRAY=(${MAVEN_SETTINGS_EMAIL})
 
   echo "<settings>" > ${MAVEN_SETTINGS_PATH}/settings.xml
   echo "  <servers>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
@@ -19,6 +22,11 @@ maven_create_settings_xml() {
     echo "      <id>${MAVEN_SETTINGS_ID_ARRAY[$index]}</id>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
     echo "      <username>${MAVEN_SETTINGS_USERNAME_ARRAY[$index]}</username>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
     echo "      <password>${MAVEN_SETTINGS_PASSWORD_ARRAY[$index]}</password>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+    if [[ ${MAVEN_SETTINGS_EMAIL_ARRAY[$index]} != "NA" ]]; then
+      echo "      <configuration>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+      echo "        <email>${MAVEN_SETTINGS_EMAIL_ARRAY[$index]}</email>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+      echo "      </configuration>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+    fi
     echo "      <filePermissions>664</filePermissions>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
     echo "      <directoryPermissions>775</directoryPermissions>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
     echo "    </server>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
@@ -47,7 +55,6 @@ maven_minor_bump() {
 }
 
 maven_set_versions() {
-    set -x
     set -- $(mvn build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${parsedVersion.majorVersion} ${parsedVersion.minorVersion} ${parsedVersion.incrementalVersion} ${parsedVersion.nextMajorVersion} ${parsedVersion.nextMinorVersion} ${parsedVersion.nextIncrementalVersion}' --non-recursive exec:exec)
     export MAVEN_MAJOR=${1}; shift
     export MAVEN_MINOR=${1}; shift
@@ -55,7 +62,6 @@ maven_set_versions() {
     export MAVEN_NEXT_MAJOR=${1}; shift
     export MAVEN_NEXT_MINOR=${1}; shift
     export MAVEN_NEXT_INCR=${1}
-    set +x
 }
 
 maven_get_release_version() {
