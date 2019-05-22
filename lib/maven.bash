@@ -100,6 +100,7 @@ maven_release_build() {
   maven_get_develop_version
 
   git remote set-url origin ${BITBUCKET_GIT_SSH_ORIGIN}
+  git config --global --add status.displayCommentPrefix true
 
   info "Checking out branch ${MAVEN_BRANCH}"
   git checkout ${MAVEN_BRANCH}
