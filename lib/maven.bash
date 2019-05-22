@@ -45,6 +45,7 @@ maven_build() {
 
   info "${COMMAND}"
   ${COMMAND}
+  success "mvn successfully executed"
 }
 
 maven_minor_bump() {
@@ -99,7 +100,9 @@ maven_release_build() {
   maven_get_release_version
   maven_get_develop_version
 
+  info "Checking out branch ${MAVEN_BRANCH}"
   git checkout ${MAVEN_BRANCH}
+  success "Successfully checked out ${MAVEN_BRANCH}"
 
  COMMAND="mvn -B -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS} -Dresume=false \
       -DreleaseVersion=${RELEASE_VERSION} \
@@ -109,4 +112,5 @@ maven_release_build() {
 
   info "${COMMAND}"
   ${COMMAND}
+  success "mvn successfully executed"
 }
