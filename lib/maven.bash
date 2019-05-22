@@ -105,7 +105,7 @@ maven_release_build() {
   git checkout ${MAVEN_BRANCH}
   success "Successfully checked out ${MAVEN_BRANCH}"
 
-  COMMAND="mvn -B -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS} -Dresume=false \
+  COMMAND="mvn -X -B -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS} -Dresume=false \
       -DreleaseVersion=${RELEASE_VERSION} \
       -DdevelopmentVersion=${DEVELOP_VERSION} \
       -DscmCommentPrefix='[skip ci]' \
