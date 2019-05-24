@@ -1,5 +1,6 @@
-source ${LIB_DIR:-lib}/common.bash
-source ${LIB_DIR:-lib}/git.bash
+[[ -z ${LIB_COMMON_LOADED} ]]    && { source ${LIB_DIR:-lib}/common.bash; }
+[[ -z ${LIB_GIT_LOADED} ]]       && { source ${LIB_DIR:-lib}/git.bash; }
+export LIB_MAVEN_LOADED=1;
 
 # MAVEN_SETTINGS_EMAIL: use NA if not required in settings.xml for an index in the array
 maven_create_settings_xml() {

@@ -1,4 +1,4 @@
-#!/bin/bash
+export LIB_COMMON_LOADED=1
 
 # Begin Standard 'imports'
 set -e
