@@ -40,11 +40,11 @@ aws_update_service() {
 aws_ecs_create_task_definition_file() {
   check_command aws || install_awscli
   check_command jq
-  check_envvar AWS_ECS_TASKFAMILY R
+  check_envvar AWS_ECS_TASK_FAMILY R
   [[ -z ${1} ]] && fail "aws_ecs_create_task_definition_file docker_image"
   AWS_IMAGE=${1}
 
-  aws ecs describe-task-definition --task-definition ${AWS_ECS_TASKFAMILY} \
+  aws ecs describe-task-definition --task-definition ${AWS_ECS_TASK_FAMILY} \
                                    --query 'taskDefinition' | \
                                    jq 'map(del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities))' | \
                                    jq '.containerDefinitions[0].image = "${AWS_IMAGE}"' > /taskdefinition.json
@@ -54,11 +54,11 @@ aws_ecs_register_taskdefinition() {
   # Limitation: only supports task definitions with 1 containerDefinition
   check_command aws || install_awscli
   check_command jq
-  check_envvar AWS_ECS_TASKFAMILY R
+  check_envvar AWS_ECS_TASK_FAMILY R
 
-  info "Registering a new task definition for ${AWS_ECS_TASKFAMILY}"
-  RESULT=$(aws ecs register-task-definition --family ${AWS_ECS_TASKFAMILY} --cli-json file:///taskdefinition.json)
+  info "Registering a new task definition for ${AWS_ECS_TASK_FAMILY}"
+  RESULT=$(aws ecs register-task-definition --family ${AWS_ECS_TASK_FAMILY} --cli-json file:///taskdefinition.json)
   NEW_TASK_DEFINITION_ARN=$(echo ${RESULT} | jq -r '.taskDefinition.taskDefinitionArn')
-  success "Successfully registered new task definition for ${AWS_ECS_TASKFAMILY}"
+  success "Successfully registered new task definition for ${AWS_ECS_TASK_FAMILY}"
   info "New task definition ARN is ${NEW_TASK_DEFINITION_ARN}"
 }
