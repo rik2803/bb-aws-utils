@@ -45,9 +45,11 @@ is_debug_enabled() {
 #######################################
 check_command() {
   if ! which ${1:-not_present} >/dev/null 2>&1; then
-    fail "Command ${1} is required but not found."
+    error "Command ${1} is required but not found."
+    return 1
   else
     success "Command ${1} is available"
+    return 0
   fi
 }
 
