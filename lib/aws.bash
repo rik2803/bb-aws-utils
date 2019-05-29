@@ -1,10 +1,10 @@
 [[ -z ${LIB_COMMON_LOADED} ]] && { source ${LIB_DIR:-lib}/common.bash; }
 export LIB_AWS_LOADED=1
 
-check_envvar AWS_REGION O eu-central-1
+check_envvar AWS_DEFAULT_REGION O eu-central-1
 
 aws_update_service() {
-  check_envvar AWS_REGION R
+  check_envvar AWS_DEFAULT_REGION R
   [[ -z ${1} || -z ${2} || -z ${3} || -z ${4} || -z ${5} ]] && \
     fail "aws_update_service aws_account_id aws_ecs_cluster_name aws_ecs_service_name aws_ecs_task_family_name image_tag"
   local aws_account_id=${1}
@@ -22,7 +22,8 @@ aws_update_service() {
   success "Task definition successfully registgered"
 
   info "Update service ${3} in cluster ${2} on AWS account ${1}"
-  aws ecs update-service --cluster ${aws_ecs_cluster_name} --force-new-deployment --service ${aws_ecs_service_name} --region ${AWS_REGION:-eu-central-1}
+  #aws ecs update-service --cluster ${aws_ecs_cluster_name} --force-new-deployment --service ${aws_ecs_service_name} --region ${AWS_REGION:-eu-central-1}
+  aws ecs update-service --cluster ${aws_ecs_cluster_name} --force-new-deployment --service ${aws_ecs_service_name}
   success "Successfully updated service ${3} in cluster ${2} on AWS account ${1}"
 }
 
