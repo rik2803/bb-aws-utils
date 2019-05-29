@@ -5,18 +5,21 @@ export LIB_AWS_LOADED=1
 check_envvar AWS_REGION O eu-central-1
 
 aws_update_service() {
-  [[ -z ${1} || -z ${2} || -z ${3} || -z ${4} ]] && fail "aws_update_service aws_account_id aws_ecs_cluster_name aws_ecs_service_name aws_ecs_task_family_name"
+  check_envvar AWS_REGION R
+  check_command mvn || install_sw mvn
+  [[ -z ${1} || -z ${2} || -z ${3} || -z ${4} || -z ${5} ]] && \
+    fail "aws_update_service aws_account_id aws_ecs_cluster_name aws_ecs_service_name aws_ecs_task_family_name image_tag"
   local aws_account_id=${1}
   local aws_ecs_cluster_name=${2}
   local aws_ecs_service_name=${3}
+  local aws_ecs_task_family_name=${4}
+  local image_tag=${5}
 
-  maven_get_current_version
-
-  info "Creating task definition file for ${aws_ecs_task_family_name} with version ${MAVEN_CURRENT_VERSION}"
-  aws_ecs_create_task_definition_file "${aws_ecs_task_family_name}:${MAVEN_CURRENT_VERSION}"
+  info "Creating task definition file for ${aws_ecs_task_family_name} with version ${image_tag}"
+  aws_ecs_create_task_definition_file "${aws_ecs_task_family_name}:${image_tag}"
   success "Task definition file successfully created"
 
-  info "Registering task definition file for ${aws_ecs_task_family_name} with version ${MAVEN_CURRENT_VERSION}"
+  info "Registering task definition file for ${aws_ecs_task_family_name} with version ${image_tag}"
   aws_ecs_register_taskdefinition "${aws_ecs_task_family_name}"
   success "Task definition successfully registgered"
 

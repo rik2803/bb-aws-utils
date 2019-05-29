@@ -57,8 +57,9 @@ maven_set_versions() {
 }
 
 maven_get_current_version() {
-    export MAVEN_CURRENT_VERSION=$(mvn build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${project.version}' exec:exec)
-    info "MAVEN_CURRENT_VERSION=${MAVEN_CURRENT_VERSION}"
+  check_command mvn || install_sw maven
+  export MAVEN_CURRENT_VERSION=$(mvn build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${project.version}' exec:exec)
+  info "MAVEN_CURRENT_VERSION=${MAVEN_CURRENT_VERSION}"
 }
 
 maven_get_next_release_version() {
@@ -85,7 +86,7 @@ maven_build() {
   check_envvar MAVEN_DEVELOP_COMMAND O "clean deploy"
   check_envvar MAVEN_EXTRA_ARGS O " "
   check_envvar MAVEN_SETTINGS_PATH O /
-  check_command mvn
+  check_command mvn || install_sw maven
 
   COMMAND="mvn ${MAVEN_DEVELOP_COMMAND} -s ${MAVEN_SETTINGS_PATH}/settings.xml -DscmCommentPrefix=\"[skip ci]\" ${MAVEN_EXTRA_ARGS}"
 
@@ -99,7 +100,7 @@ maven_release_build() {
   check_envvar MAVEN_EXTRA_ARGS O " "
   check_envvar MAVEN_SETTINGS_PATH O /
   check_envvar MAVEN_BRANCH O master
-  check_command mvn
+  check_command mvn || install_sw maven
 
   maven_set_versions
   maven_get_next_release_version
