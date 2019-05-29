@@ -82,12 +82,12 @@ maven_get_next_develop_version() {
 }
 
 maven_build() {
-  check_envvar MAVEN_COMMAND O "clean deploy"
+  check_envvar MAVEN_DEVELOP_COMMAND O "clean deploy"
   check_envvar MAVEN_EXTRA_ARGS O " "
   check_envvar MAVEN_SETTINGS_PATH O /
   check_command mvn
 
-  COMMAND="mvn ${MAVEN_COMMAND} -s ${MAVEN_SETTINGS_PATH}/settings.xml -DscmCommentPrefix=\"[skip ci]\" ${MAVEN_EXTRA_ARGS}"
+  COMMAND="mvn ${MAVEN_DEVELOP_COMMAND} -s ${MAVEN_SETTINGS_PATH}/settings.xml -DscmCommentPrefix=\"[skip ci]\" ${MAVEN_EXTRA_ARGS}"
 
   info "${COMMAND}"
   eval ${COMMAND}
@@ -95,7 +95,7 @@ maven_build() {
 }
 
 maven_release_build() {
-  check_envvar MAVEN_COMMAND O "clean deploy"
+  check_envvar MAVEN_RELEASE_COMMAND O "release:prepare release:perform"
   check_envvar MAVEN_EXTRA_ARGS O " "
   check_envvar MAVEN_SETTINGS_PATH O /
   check_envvar MAVEN_BRANCH O master
@@ -116,7 +116,7 @@ maven_release_build() {
       -DreleaseVersion=${RELEASE_VERSION} \
       -DdevelopmentVersion=${DEVELOP_VERSION} \
       -DscmCommentPrefix='[skip ci]' \
-      ${MAVEN_COMMAND}"
+      ${MAVEN_RELEASE_COMMAND}"
 
   info "${COMMAND}"
   eval ${COMMAND}
