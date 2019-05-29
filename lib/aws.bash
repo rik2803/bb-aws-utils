@@ -2,6 +2,8 @@
 [[ -z ${LIB_MAVEN_LOADED} ]]  && { source ${LIB_DIR:-lib}/maven.bash; }
 export LIB_AWS_LOADED=1
 
+check_envvar AWS_REGION O eu-central-1
+
 aws_update_service() {
   [[ -z ${1} || -z ${2} || -z ${3} || -z ${4} ]] && fail "aws_update_service aws_account_id aws_ecs_cluster_name aws_ecs_service_name aws_ecs_task_family_name"
   local aws_account_id=${1}
