@@ -56,7 +56,7 @@ teardown() {
   unset mvn git_current_commit_message
 }
 
-@test "maven_get_develop_version 1.0.4 patch" {
+@test "maven_get_next_develop_version 1.0.4 patch" {
   function maven_minor_bump() {
     return 1
   }
@@ -64,13 +64,13 @@ teardown() {
     echo "1 0 4 2 1 5"
   }
   export -f mvn maven_minor_bump
-  run maven_get_develop_version
+  run maven_get_next_develop_version
   echo $output > /tmp/rikske
   assert_output --partial "1.0.5-SNAPSHOT"
   unset mvn maven_minor_bump
 }
 
-@test "maven_get_release_version 1.0.4 patch" {
+@test "maven_get_next_release_version 1.0.4 patch" {
   function maven_minor_bump() {
     return 1
   }
@@ -78,12 +78,12 @@ teardown() {
     echo "1 0 4 2 1 5"
   }
   export -f mvn maven_minor_bump
-  run maven_get_release_version
+  run maven_get_next_release_version
   assert_output --partial "1.0.4"
   unset mvn maven_minor_bump
 }
 
-@test "maven_get_develop_version 1.0.4 minor" {
+@test "maven_get_next_develop_version 1.0.4 minor" {
   function maven_minor_bump() {
     return 0
   }
@@ -91,12 +91,12 @@ teardown() {
     echo "1 0 4 2 1 5"
   }
   export -f mvn maven_minor_bump
-  run maven_get_develop_version
+  run maven_get_next_develop_version
   assert_output --partial "1.1.1-SNAPSHOT"
   unset mvn maven_minor_bump
 }
 
-@test "maven_get_release_version 1.0.4 minor" {
+@test "maven_get_next_release_version 1.0.4 minor" {
   function maven_minor_bump() {
     return 0
   }
@@ -104,8 +104,28 @@ teardown() {
     echo "1 0 4 2 1 5"
   }
   export -f mvn maven_minor_bump
-  run maven_get_release_version
+  run maven_get_next_release_version
   echo $output > /tmp/rikske
   assert_output --partial "1.1.0"
   unset mvn maven_minor_bump
+}
+
+@test "maven_get_current version 1.0.4" {
+  function mvn() {
+    echo "1.0.4"
+  }
+  export -f mvn
+  run maven_get_current_version
+  assert_output --partial "MAVEN_CURRENT_VERSION=1.0.4"
+  unset mvn
+}
+
+@test "maven_get_current version 1.0.5-SNAPSHOT" {
+  function mvn() {
+    echo "1.0.5-SNAPSHOT"
+  }
+  export -f mvn
+  run maven_get_current_version
+  assert_output --partial "MAVEN_CURRENT_VERSION=1.0.5-SNAPSHOT"
+  unset mvn
 }

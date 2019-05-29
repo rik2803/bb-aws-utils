@@ -36,19 +36,6 @@ maven_create_settings_xml() {
   echo "</settings>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
 }
 
-maven_build() {
-  check_envvar MAVEN_COMMAND O "clean deploy"
-  check_envvar MAVEN_EXTRA_ARGS O " "
-  check_envvar MAVEN_SETTINGS_PATH O /
-  check_command mvn
-
-  COMMAND="mvn ${MAVEN_COMMAND} -s ${MAVEN_SETTINGS_PATH}/settings.xml -DscmCommentPrefix=\"[skip ci]\" ${MAVEN_EXTRA_ARGS}"
-
-  info "${COMMAND}"
-  eval ${COMMAND}
-  success "mvn successfully executed"
-}
-
 maven_minor_bump() {
   check_envvar MAVEN_MINOR_BUMP_STRING O "bump_minor_version"
 
@@ -69,7 +56,12 @@ maven_set_versions() {
     export MAVEN_NEXT_INCR=${1}
 }
 
-maven_get_release_version() {
+maven_get_current_version() {
+    export MAVEN_CURRENT_VERSION=$(mvn build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${project.version}' exec:exec)
+    info "MAVEN_CURRENT_VERSION=${MAVEN_CURRENT_VERSION}"
+}
+
+maven_get_next_release_version() {
   maven_set_versions
   if maven_minor_bump; then
     RELEASE_VERSION="${MAVEN_MAJOR}.${MAVEN_NEXT_MINOR}.0"
@@ -79,7 +71,7 @@ maven_get_release_version() {
   info "Release version is ${RELEASE_VERSION}"
 }
 
-maven_get_develop_version() {
+maven_get_next_develop_version() {
   maven_set_versions
   if maven_minor_bump; then
     DEVELOP_VERSION="${MAVEN_MAJOR}.${MAVEN_NEXT_MINOR}.1-SNAPSHOT"
@@ -87,6 +79,19 @@ maven_get_develop_version() {
     DEVELOP_VERSION="${MAVEN_MAJOR}.${MAVEN_MINOR}.${MAVEN_NEXT_INCR}-SNAPSHOT"
   fi
   info "Develop version is ${DEVELOP_VERSION}"
+}
+
+maven_build() {
+  check_envvar MAVEN_COMMAND O "clean deploy"
+  check_envvar MAVEN_EXTRA_ARGS O " "
+  check_envvar MAVEN_SETTINGS_PATH O /
+  check_command mvn
+
+  COMMAND="mvn ${MAVEN_COMMAND} -s ${MAVEN_SETTINGS_PATH}/settings.xml -DscmCommentPrefix=\"[skip ci]\" ${MAVEN_EXTRA_ARGS}"
+
+  info "${COMMAND}"
+  eval ${COMMAND}
+  success "mvn successfully executed"
 }
 
 maven_release_build() {
@@ -97,8 +102,8 @@ maven_release_build() {
   check_command mvn
 
   maven_set_versions
-  maven_get_release_version
-  maven_get_develop_version
+  maven_get_next_release_version
+  maven_get_next_develop_version
 
   git remote set-url origin ${BITBUCKET_GIT_SSH_ORIGIN}
   git config --global --add status.displayCommentPrefix true
