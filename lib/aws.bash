@@ -50,7 +50,7 @@ aws_ecs_create_task_definition_file() {
 
   aws ecs describe-task-definition --task-definition ${AWS_ECS_TASK_FAMILY} \
                                    --query 'taskDefinition' | \
-                                   jq 'map(del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities))' | \
+                                   jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities)' | \
                                    jq '.containerDefinitions[0].image = "${AWS_IMAGE}"' > /taskdefinition.json
 }
 
