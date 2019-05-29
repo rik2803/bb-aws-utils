@@ -29,6 +29,8 @@ install_set_linux_distribution_type() {
 }
 
 install_sw() {
+  info "Installing ${1}"
+
   [[ -z ${1} ]] && fail "install_sw sw_to_install"
 
   if [[ ${CENTOSDISTRO} = "1" ]]; then
@@ -40,6 +42,8 @@ install_sw() {
   else
     info "Unknown distribution, continuing without installing ${1}"
   fi
+
+  success "Successfully installed ${1}"
 }
 
 install_apt_get_update() {
@@ -53,6 +57,7 @@ install_apt_get_update() {
 }
 
 install_awscli() {
+  info "Installing AWS CLI (if not already installed)"
   if which aws > /dev/null 2>&1; then
     AWSCLI_INSTALLED=1
   elif [[ ${AWSCLI_INSTALLED} -eq 0 ]]; then
