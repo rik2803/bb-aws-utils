@@ -33,6 +33,16 @@ setup() {
   [ $status = 1 ]
 }
 
+@test "check_envvar optional default set to empty string - 1" {
+  run check_envvar TESTVAR O \"\"
+  [ $status = 0 ]
+}
+
+@test "check_envvar optional default set to empty string - 2" {
+  run check_envvar TESTVAR O \"\"
+  [ $status = 0 ]
+}
+
 @test "check_envvar optional default set" {
   export TESTVAR=testvalue
   run check_envvar TESTVAR O default

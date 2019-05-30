@@ -9,7 +9,7 @@ setup() {
 }
 
 teardown() {
-  rm -f ./settings.xml || true
+  #rm -f ./settings.xml || true
   true
 }
 
@@ -23,6 +23,7 @@ teardown() {
   lines=$(cat ${MAVEN_SETTINGS_PATH}/settings.xml | wc -l | tr -d ' ')
   assert_success
   assert_equal $lines 25
+  rm -f settings.xml
 }
 
 @test "maven_create_settings_xml with 1 email address" {
@@ -35,6 +36,7 @@ teardown() {
   lines=$(cat ${MAVEN_SETTINGS_PATH}/settings.xml | wc -l | tr -d ' ')
   assert_success
   assert_equal $lines 28
+  rm -f settings.xml
 }
 
 @test "maven_minor_bump true" {
