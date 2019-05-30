@@ -95,7 +95,7 @@ check_envvar() {
     if [[ -n ${1} ]]; then
       default=${1}
       shift
-      debug "check_envvar(): default = ${default}"
+      debug "check_envvar(): default = \"${default}\""
     else
       fail "check_envvar(): default value is required for optional envvars"
     fi
@@ -108,7 +108,7 @@ check_envvar() {
   if [[ "${mode}" = "R" && -z $check ]]; then
     fail "check_envvar(): Required envvar ${envvar} is not set"
   elif [[ "${mode}" = "O" && -z $check ]]; then
-    eval export $envvar="$default"
+    eval export $envvar=\"$default\"
     debug "check_envvar(): Optional envvar ${envvar} set to default value ${default}"
   fi
 
