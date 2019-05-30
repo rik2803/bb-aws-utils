@@ -53,7 +53,7 @@ aws_ecs_create_task_definition_file() {
                                    jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities)' | \
                                    jq '.containerDefinitions[0].image = "${AWS_IMAGE}"' > /taskdefinition.json
 
-  if is_debug; then
+  if is_debug_enabled; then
     debug "Content of task definition file -- START"
     cat /taskdefinition.json
     debug "Content of task definition file -- END"
