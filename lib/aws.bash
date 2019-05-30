@@ -61,7 +61,7 @@ aws_ecs_register_taskdefinition() {
   check_envvar AWS_ECS_TASK_FAMILY R
 
   info "Registering a new task definition for ${AWS_ECS_TASK_FAMILY}"
-  RESULT=$(aws ecs register-task-definition --family ${AWS_ECS_TASK_FAMILY} --cli-json file:///taskdefinition.json)
+  RESULT=$(aws ecs register-task-definition --family ${AWS_ECS_TASK_FAMILY} --cli-input-json file:///taskdefinition.json)
   NEW_TASK_DEFINITION_ARN=$(echo ${RESULT} | jq -r '.taskDefinition.taskDefinitionArn')
   success "Successfully registered new task definition for ${AWS_ECS_TASK_FAMILY}"
   info "New task definition ARN is ${NEW_TASK_DEFINITION_ARN}"
