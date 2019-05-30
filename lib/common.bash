@@ -70,6 +70,7 @@ check_command() {
 #######################################
 check_envvar() {
   info "Start checking envvar ${@}"
+  ### Check first argument: name of the envvar
   if [[ -n ${1} ]]; then
     envvar=${1}
     shift
@@ -78,6 +79,7 @@ check_envvar() {
     fail "check_envvar(): first argument (envvar) is required"
   fi
 
+  ### Check second argument: R(equired) or O(ptional)
   if [[ -n ${1} ]]; then
     if [[ ${1} = R || ${1} = O ]]; then
       mode=${1}
@@ -91,6 +93,7 @@ check_envvar() {
     mode="R"
   fi
 
+  ### Check 3rd argument: default value for optional envvars
   if [[ "${mode}" = "O" ]]; then
     if [[ -n ${1} ]]; then
       default=${1}

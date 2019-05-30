@@ -22,8 +22,10 @@ aws_update_service() {
   success "Task definition successfully registgered"
 
   info "Update service ${3} in cluster ${2} on AWS account ${1}"
-  #aws ecs update-service --cluster ${aws_ecs_cluster_name} --force-new-deployment --service ${aws_ecs_service_name} --region ${AWS_REGION:-eu-central-1}
-  aws ecs update-service --cluster ${aws_ecs_cluster_name} --force-new-deployment --service ${aws_ecs_service_name}
+  aws ecs update-service --cluster ${aws_ecs_cluster_name} \
+                         --task-definition ${AWS_ECS_NEW_TASK_DEFINITION_ARN} \
+                         --force-new-deployment \
+                         --service ${aws_ecs_service_name}
   success "Successfully updated service ${3} in cluster ${2} on AWS account ${1}"
 }
 
@@ -68,7 +70,7 @@ aws_ecs_register_taskdefinition() {
 
   info "Registering a new task definition for ${AWS_ECS_TASK_FAMILY}"
   RESULT=$(aws ecs register-task-definition --family ${AWS_ECS_TASK_FAMILY} --cli-input-json file:///taskdefinition.json)
-  NEW_TASK_DEFINITION_ARN=$(echo ${RESULT} | jq -r '.taskDefinition.taskDefinitionArn')
+  AWS_ECS_NEW_TASK_DEFINITION_ARN=$(echo ${RESULT} | jq -r '.taskDefinition.taskDefinitionArn')
   success "Successfully registered new task definition for ${AWS_ECS_TASK_FAMILY}"
-  info "New task definition ARN is ${NEW_TASK_DEFINITION_ARN}"
+  info "New task definition ARN is ${AWS_ECS_NEW_TASK_DEFINITION_ARN}"
 }
