@@ -4,36 +4,42 @@ export LIB_MAVEN_LOADED=1;
 
 # MAVEN_SETTINGS_EMAIL: use NA if not required in settings.xml for an index in the array
 maven_create_settings_xml() {
-  info "Start creation of settings.xml"
-  check_envvar MAVEN_SETTINGS_ID R
-  check_envvar MAVEN_SETTINGS_USERNAME R
-  check_envvar MAVEN_SETTINGS_PASSWORD R
-  check_envvar MAVEN_SETTINGS_EMAIL R
-  check_envvar MAVEN_SETTINGS_PATH O /
+  if [[ -e ${MAVEN_SETTINGS_PATH}/settings.xml ]]; then
+    info "${MAVEN_SETTINGS_PATH}/settings.xml already exists"
+  else
+    info "Start creation of settings.xml"
+    check_envvar MAVEN_SETTINGS_ID O 'skip'
+    check_envvar MAVEN_SETTINGS_USERNAME O 'skip'
+    check_envvar MAVEN_SETTINGS_PASSWORD O 'skip'
+    check_envvar MAVEN_SETTINGS_EMAIL O 'skip'
+    check_envvar MAVEN_SETTINGS_PATH O /
 
-  MAVEN_SETTINGS_ID_ARRAY=(${MAVEN_SETTINGS_ID})
-  MAVEN_SETTINGS_USERNAME_ARRAY=(${MAVEN_SETTINGS_USERNAME})
-  MAVEN_SETTINGS_PASSWORD_ARRAY=(${MAVEN_SETTINGS_PASSWORD})
-  MAVEN_SETTINGS_EMAIL_ARRAY=(${MAVEN_SETTINGS_EMAIL})
+    MAVEN_SETTINGS_ID_ARRAY=(${MAVEN_SETTINGS_ID})
+    MAVEN_SETTINGS_USERNAME_ARRAY=(${MAVEN_SETTINGS_USERNAME})
+    MAVEN_SETTINGS_PASSWORD_ARRAY=(${MAVEN_SETTINGS_PASSWORD})
+    MAVEN_SETTINGS_EMAIL_ARRAY=(${MAVEN_SETTINGS_EMAIL})
 
-  echo "<settings>" > ${MAVEN_SETTINGS_PATH}/settings.xml
-  echo "  <servers>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-  for index in "${!MAVEN_SETTINGS_ID_ARRAY[@]}"; do
-    echo "    <server>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-    echo "      <id>${MAVEN_SETTINGS_ID_ARRAY[$index]}</id>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-    echo "      <username>${MAVEN_SETTINGS_USERNAME_ARRAY[$index]}</username>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-    echo "      <password>${MAVEN_SETTINGS_PASSWORD_ARRAY[$index]}</password>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-    if [[ ${MAVEN_SETTINGS_EMAIL_ARRAY[$index]} != "NA" ]]; then
-      echo "      <configuration>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-      echo "        <email>${MAVEN_SETTINGS_EMAIL_ARRAY[$index]}</email>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-      echo "      </configuration>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+    echo "<settings>" > ${MAVEN_SETTINGS_PATH}/settings.xml
+    echo "  <servers>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+    if [[ ${MAVEN_SETTINGS_ID} != skip ]]; then
+      for index in "${!MAVEN_SETTINGS_ID_ARRAY[@]}"; do
+        echo "    <server>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+        echo "      <id>${MAVEN_SETTINGS_ID_ARRAY[$index]}</id>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+        echo "      <username>${MAVEN_SETTINGS_USERNAME_ARRAY[$index]}</username>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+        echo "      <password>${MAVEN_SETTINGS_PASSWORD_ARRAY[$index]}</password>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+        if [[ ${MAVEN_SETTINGS_EMAIL_ARRAY[$index]} != "NA" ]]; then
+          echo "      <configuration>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+          echo "        <email>${MAVEN_SETTINGS_EMAIL_ARRAY[$index]}</email>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+          echo "      </configuration>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+        fi
+        echo "      <filePermissions>664</filePermissions>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+        echo "      <directoryPermissions>775</directoryPermissions>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+        echo "    </server>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+      done
     fi
-    echo "      <filePermissions>664</filePermissions>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-    echo "      <directoryPermissions>775</directoryPermissions>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-    echo "    </server>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-  done
-  echo "  </servers>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-  echo "</settings>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+    echo "  </servers>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+    echo "</settings>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+  fi
 }
 
 maven_minor_bump() {
@@ -47,18 +53,25 @@ maven_minor_bump() {
 }
 
 maven_set_versions() {
-    set -- $(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${parsedVersion.majorVersion} ${parsedVersion.minorVersion} ${parsedVersion.incrementalVersion} ${parsedVersion.nextMajorVersion} ${parsedVersion.nextMinorVersion} ${parsedVersion.nextIncrementalVersion}' --non-recursive exec:exec)
-    export MAVEN_MAJOR=${1}; shift
-    export MAVEN_MINOR=${1}; shift
-    export MAVEN_INCR=${1}; shift
-    export MAVEN_NEXT_MAJOR=${1}; shift
-    export MAVEN_NEXT_MINOR=${1}; shift
-    export MAVEN_NEXT_INCR=${1}
+  maven_create_settings_xml
+  set -- $(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${parsedVersion.majorVersion} ${parsedVersion.minorVersion} ${parsedVersion.incrementalVersion} ${parsedVersion.nextMajorVersion} ${parsedVersion.nextMinorVersion} ${parsedVersion.nextIncrementalVersion}' --non-recursive exec:exec)
+  export MAVEN_MAJOR=${1}; shift
+  export MAVEN_MINOR=${1}; shift
+  export MAVEN_INCR=${1}; shift
+  export MAVEN_NEXT_MAJOR=${1}; shift
+  export MAVEN_NEXT_MINOR=${1}; shift
+  export MAVEN_NEXT_INCR=${1}
 }
 
 maven_get_current_version() {
-  check_command mvn || install_sw maven
-  export MAVEN_CURRENT_VERSION=$(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+  if [[ -e ${BITBUCKET_CLONE_DIR}/MAVEN_CURRENT_VERSION ]]; then
+    source ${BITBUCKET_CLONE_DIR}/MAVEN_CURRENT_VERSION
+  else
+    check_command mvn || install_sw maven
+    maven_create_settings_xml
+    export MAVEN_CURRENT_VERSION=$(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+    echo "export MAVEN_CURRENT_VERSION=${MAVEN_CURRENT_VERSION} > ${BITBUCKET_CLONE_DIR}/MAVEN_CURRENT_VERSION"
+  fi
   info "MAVEN_CURRENT_VERSION=${MAVEN_CURRENT_VERSION}"
 }
 
@@ -88,6 +101,7 @@ maven_build() {
   check_envvar MAVEN_SETTINGS_PATH O /
   check_command mvn || install_sw maven
 
+  maven_create_settings_xml
   COMMAND="mvn ${MAVEN_DEVELOP_COMMAND} -s ${MAVEN_SETTINGS_PATH}/settings.xml -DscmCommentPrefix=\"[skip ci]\" ${MAVEN_EXTRA_ARGS}"
 
   info "${COMMAND}"
@@ -105,6 +119,7 @@ maven_release_build() {
   maven_set_versions
   maven_get_next_release_version
   maven_get_next_develop_version
+  maven_create_settings_xml
 
   git remote set-url origin ${BITBUCKET_GIT_SSH_ORIGIN}
   git config --global --add status.displayCommentPrefix true
@@ -122,4 +137,5 @@ maven_release_build() {
   info "${COMMAND}"
   eval ${COMMAND}
   success "mvn successfully executed"
+
 }
