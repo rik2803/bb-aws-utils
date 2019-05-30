@@ -5,7 +5,7 @@ check_envvar AWS_DEFAULT_REGION O eu-central-1
 
 aws_update_service() {
   check_envvar AWS_DEFAULT_REGION R
-  [[ -z ${1} || -z ${2} || -z ${3} || -z ${4} || -z ${5} || -z ${6} ]] && \
+  [[ -z ${1} || -z ${2} || -z ${3} || -z ${4} || -z ${5} ]] && \
     fail "aws_update_service aws_ecs_cluster_name aws_ecs_service_name aws_ecs_task_family_name image_tag image_basename"
   local aws_ecs_cluster_name=${1}; shift
   local aws_ecs_service_name=${1}; shift
