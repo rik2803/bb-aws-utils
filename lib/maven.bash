@@ -64,14 +64,15 @@ maven_set_versions() {
 }
 
 maven_get_current_version() {
+  mkdir -p ${BITBUCKET_CLONE_DIR}/artifacts
   info "Getting current version and save in a file"
-  if [[ -e ${BITBUCKET_CLONE_DIR}/MAVEN_CURRENT_VERSION ]]; then
-    source ${BITBUCKET_CLONE_DIR}/MAVEN_CURRENT_VERSION
+  if [[ -e ${BITBUCKET_CLONE_DIR}/artifacts/MAVEN_CURRENT_VERSION ]]; then
+    source ${BITBUCKET_CLONE_DIR}/artifacts/MAVEN_CURRENT_VERSION
   else
     check_command mvn || install_sw maven
     maven_create_settings_xml
     export MAVEN_CURRENT_VERSION=$(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
-    echo "export MAVEN_CURRENT_VERSION=${MAVEN_CURRENT_VERSION} > ${BITBUCKET_CLONE_DIR}/MAVEN_CURRENT_VERSION"
+    echo "export MAVEN_CURRENT_VERSION=${MAVEN_CURRENT_VERSION} > ${BITBUCKET_CLONE_DIR}/artifacts/MAVEN_CURRENT_VERSION"
   fi
   info "MAVEN_CURRENT_VERSION=${MAVEN_CURRENT_VERSION}"
 }
