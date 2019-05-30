@@ -47,7 +47,7 @@ maven_minor_bump() {
 }
 
 maven_set_versions() {
-    set -- $(mvn build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${parsedVersion.majorVersion} ${parsedVersion.minorVersion} ${parsedVersion.incrementalVersion} ${parsedVersion.nextMajorVersion} ${parsedVersion.nextMinorVersion} ${parsedVersion.nextIncrementalVersion}' --non-recursive exec:exec)
+    set -- $(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${parsedVersion.majorVersion} ${parsedVersion.minorVersion} ${parsedVersion.incrementalVersion} ${parsedVersion.nextMajorVersion} ${parsedVersion.nextMinorVersion} ${parsedVersion.nextIncrementalVersion}' --non-recursive exec:exec)
     export MAVEN_MAJOR=${1}; shift
     export MAVEN_MINOR=${1}; shift
     export MAVEN_INCR=${1}; shift
@@ -58,7 +58,7 @@ maven_set_versions() {
 
 maven_get_current_version() {
   check_command mvn || install_sw maven
-  export MAVEN_CURRENT_VERSION=$(mvn build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${project.version}' exec:exec)
+  export MAVEN_CURRENT_VERSION=$(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
   info "MAVEN_CURRENT_VERSION=${MAVEN_CURRENT_VERSION}"
 }
 
