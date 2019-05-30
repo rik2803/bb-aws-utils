@@ -64,6 +64,7 @@ maven_set_versions() {
 }
 
 maven_get_current_version() {
+  info "Getting current version and save in a file"
   if [[ -e ${BITBUCKET_CLONE_DIR}/MAVEN_CURRENT_VERSION ]]; then
     source ${BITBUCKET_CLONE_DIR}/MAVEN_CURRENT_VERSION
   else
@@ -107,6 +108,7 @@ maven_build() {
   info "${COMMAND}"
   eval ${COMMAND}
   success "mvn successfully executed"
+  maven_get_current_version
 }
 
 maven_release_build() {
@@ -137,5 +139,6 @@ maven_release_build() {
   info "${COMMAND}"
   eval ${COMMAND}
   success "mvn successfully executed"
+  maven_get_current_version
 
 }
