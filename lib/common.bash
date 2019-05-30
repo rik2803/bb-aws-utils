@@ -109,7 +109,7 @@ check_envvar() {
     fail "check_envvar(): Required envvar ${envvar} is not set"
   elif [[ "${mode}" = "O" && -z $check ]]; then
     eval export $envvar=\"$default\"
-    debug "check_envvar(): Optional envvar ${envvar} set to default value ${default}"
+    debug "check_envvar(): Optional envvar ${envvar} set to default value \"${default}\""
   fi
 
   success "Envvar $envvar successfully verified"
