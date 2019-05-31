@@ -71,10 +71,12 @@ maven_get_current_version() {
   else
     check_command mvn || install_sw maven
     maven_create_settings_xml
-    export MAVEN_CURRENT_VERSION=$(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
-    echo "export MAVEN_CURRENT_VERSION=${MAVEN_CURRENT_VERSION}" > ${BITBUCKET_CLONE_DIR}/artifacts/MAVEN_CURRENT_VERSION
+    export MAVEN_CURRENT_SNAPSHOT_VERSION=$(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+    echo "export MAVEN_CURRENT_SNAPSHOT_VERSION=${MAVEN_CURRENT_SNAPSHOT_VERSION}" > ${BITBUCKET_CLONE_DIR}/artifacts/MAVEN_CURRENT_VERSION
   fi
-  info "MAVEN_CURRENT_VERSION=${MAVEN_CURRENT_VERSION}"
+  echo "export MAVEN_CURRENT_RELEASE_VERSION=${RELEASE_VERSION:-NA}" >> ${BITBUCKET_CLONE_DIR}/artifacts/MAVEN_CURRENT_VERSION
+  info "MAVEN_CURRENT_SNAPSHOT_VERSION=${MAVEN_CURRENT_SNAPSHOT_VERSION}"
+  info "MAVEN_CURRENT_RELEASE_VERSION=${MAVEN_CURRENT_RELEASE_VERSION}"
 }
 
 maven_get_next_release_version() {
@@ -141,5 +143,4 @@ maven_release_build() {
   eval ${COMMAND}
   success "mvn successfully executed"
   maven_get_current_version
-
 }

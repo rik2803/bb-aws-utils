@@ -118,7 +118,7 @@ teardown() {
   }
   export -f mvn
   run maven_get_current_version
-  assert_output --partial "MAVEN_CURRENT_VERSION=1.0.4"
+  assert_output --partial "MAVEN_CURRENT_SNAPSHOT_VERSION=1.0.4"
   unset mvn
 }
 
@@ -128,6 +128,6 @@ teardown() {
   }
   export -f mvn
   run maven_get_current_version
-  assert_output --partial "MAVEN_CURRENT_VERSION=1.0.5-SNAPSHOT"
+  assert_output --partial "MAVEN_CURRENT_SNAPSHOT_VERSION=1.0.5-SNAPSHOT"
   unset mvn
 }
