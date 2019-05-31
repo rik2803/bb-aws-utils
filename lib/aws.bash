@@ -47,8 +47,8 @@ aws_ecs_create_task_definition_file() {
   check_command aws || install_awscli
   check_command jq || install_sw jq
   [[ -z ${1} || -z ${2} ]] && fail "aws_ecs_create_task_definition_file aws_ecs_task_family docker_image"
-  local aws_image=${1}; shift
   local aws_ecs_task_family=${1}; shift
+  local aws_image=${1}; shift
 
   aws ecs describe-task-definition --task-definition ${aws_ecs_task_family} \
                                    --query 'taskDefinition' | \
