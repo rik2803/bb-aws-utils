@@ -8,9 +8,11 @@ gray="\\e[37m"
 blue="\\e[36m"
 red="\\e[31m"
 green="\\e[32m"
+orange="\\e[33m"
 reset="\\e[0m"
 
 info()    { echo -e "${blue}INFO: $*${reset}"; }
+warning() { echo -e "${orange}WARN: $*${reset}"; }
 error()   { echo -e "${red}ERROR: $*${reset}"; }
 success() { echo -e "${green}✔ $*${reset}"; }
 fail()    { echo -e "${red}✖ $*${reset}"; exit 1; }
