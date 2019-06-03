@@ -98,7 +98,7 @@ maven_get_current_versions() {
   if [[ -e ${target_dir}/MAVEN_CURRENT_VERSION ]]; then
     info "Build artifacts stille present, sourcing ./artifacts/MAVEN_CURRENT_VERSION"
     source ${target_dir}/MAVEN_CURRENT_VERSION
-    success "Successfully sources ./artifacts/MAVEN_CURRENT_VERSION"
+    success "Successfully sourced ./artifacts/MAVEN_CURRENT_VERSION"
   else
     warning "./artifacts/MAVEN_CURRENT_VERSION not found, probably expired."
     warning "Trying repository envvar MAVEN_CURRENT_RELEASE_VERSION now ..."
