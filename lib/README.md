@@ -79,17 +79,19 @@ To perform a _Maven_ build, two functions are available:
 
 ### Overview of environment variables used in the `maven` module
 
-| Variable name             | Req?| Description                                    | Default                           |
-|---------------------------|-----|------------------------------------------------|-----------------------------------|
-| `MAVEN_SETTINGS_ID`       | no  | Used to create `settings.xml` file             |                                   |
-| `MAVEN_SETTINGS_USERNAME` | no  | Used to create `settings.xml` file             |                                   |
-| `MAVEN_SETTINGS_PASSWORD` | no  | Used to create `settings.xml` file             |                                   |
-| `MAVEN_SETTINGS_EMAIL`    | no  | Used to create `settings.xml` file             |                                   |
-| `MAVEN_SETTINGS_PATH`     | no  | Path where `settings.xml` should be            | `/`                               |
-| `MAVEN_MINOR_BUMP_STRING` | no  | String to determine if minor version is bumped | `bump_minor_version`              |
-| `MAVEN_DEVELOP_COMMAND`   | no  | Maven phases to run for snapshot build         | `clean deploy`                    |
-| `MAVEN_RELEASE_COMMAND`   | no  | Maven phases to run for release build          | `release:prepare release:perform` |
-| `MAVEN_EXTRA_ARGS`        | no  | Extra arguments to pass to the `mvn` command   |                                   |
+| Variable name                   | Req?| Description                                    | Default                           |
+|---------------------------------|-----|------------------------------------------------|-----------------------------------|
+| `MAVEN_BRANCH`                  | no  | Branch to checkout and to perform release on   | `master`                          |
+| `MAVEN_SETTINGS_ID`             | no  | Used to create `settings.xml` file             |                                   |
+| `MAVEN_SETTINGS_USERNAME`       | no  | Used to create `settings.xml` file             |                                   |
+| `MAVEN_SETTINGS_PASSWORD`       | no  | Used to create `settings.xml` file             |                                   |
+| `MAVEN_SETTINGS_EMAIL`          | no  | Used to create `settings.xml` file             |                                   |
+| `MAVEN_SETTINGS_PATH`           | no  | Path where `settings.xml` should be            | `/`                               |
+| `MAVEN_MINOR_BUMP_STRING`       | no  | String to determine if minor version is bumped | `bump_minor_version`              |
+| `MAVEN_DEVELOP_COMMAND`         | no  | Maven phases to run for snapshot build         | `clean deploy`                    |
+| `MAVEN_RELEASE_COMMAND`         | no  | Maven phases to run for release build          | `release:prepare release:perform` |
+| `MAVEN_EXTRA_ARGS`              | no  | Extra arguments to pass to the `mvn` command   |                                   |
+| `MAVEN_CURRENT_RELEASE_VERSION` | no  | Fallback for release version in artifact file  | Deploy might fail if not set      |
 
 ### Generate the `settings.xml` file
 
@@ -119,6 +121,11 @@ is created for use in the next steps (a deploy step, for example).
 
 ### Perform a release build
 
+**WARNING**: A release build is always performed on the `HEAD` of the branch specified
+by `MAVEN_BRANCH` (defaults to `master`). This is required because a _Maven_ release needs
+to perform 2 commits (`pom.xml` update for release build and `pom.xml` update for the next
+development release preparation).
+
 The function `maven_release_build` performs a release build. The default phases are
 `release:prepare release:perform`, but can be overridden by setting the environment variable
 `MAVEN_RELEASE_COMMAND`.
@@ -126,21 +133,73 @@ The function `maven_release_build` performs a release build. The default phases 
 At the end of the function, if everything was successful, a script `artifacts/MAVEN_CURRENT_VERSION`
 is created for use in the next steps (a deploy step, for example).
 
-The version of the release and the version of the next snapshot is determined like this:
+The version of the release and the version of the next snapshot are determined like this:
 
-* The current version is `M.m.p-SNAPSHOT`
-* The last commit message contains the string defined in the environment variable
+* Given the current version in `pom.xml` is `M.m.p-SNAPSHOT`
+* If the last commit message contains the string defined in the environment variable
   `MAVEN_MINOR_BUMP_STRING` (default value is `bump_minor_version`)
   * The release version becomes `M.m+1.0`
   * The new snapshot version becomes `M.m+1.1-SNAPSHOT`
-* The last commit message **does not** contain the bump string
+* If the last commit message **does not** contain the bump string
   * The release version becomes `M.m.p`
   * The new snapshot version becomes `M.m.p+1-SNAPSHOT`
 
-### Get the current version
+### Determine the *current* version
 
-The function `maven_get_current_version` sets the environment variable `MAVEN_CURRENT_VERSION`. That
-variable van be used to pass to steps that require the version string.
+The function `maven_get_current-version` will set the required environment variables, if
+possible, and will fail the deploy if an error occurs. The function should be called
+explicitely in the pipeline.
+
+* `MAVEN_CURRENT_RELEASE_VERSION`: The release version that was build by this pipeline run.
+* `MAVEN_CURRENT_SNAPSHOT_VERSION`: The snapshot version that was prepared by
+  this pipeline run.
+
+In a CI/CD setup, where no _human intervention_ should be required, all steps have to be
+designed to run automatically and without providing input to the pipeline (OK, a push of a
+button to start a production deploy is the only exception).
+
+Every step of the build pipeline runs on a given commit. The `pom.xml` file of that commit
+contains a snapshot version, the new (release and snapshot) versions are calculated as part
+of the build and passed to _Maven_ on the commandline.
+
+Since the deploys are in different steps of the pipeline (you should be able to re-run these
+steps in case of a failure without having to re-build), there should be a way to pass the
+version to deploy from the build step to the deploy steps.
+
+How can this be accomplished?
+
+#### Using _BitBucket_ artifacts
+
+A file is created during the build phase. This file contains shell commands to set environment
+variables that contain the release and snapshot version. During the deploy phase, this file
+can be sources and the variables can be used to trigger the deploy of the desired version.
+
+All good so far, but there is a _but_. _BitBucket_ only keeps artifacts for 7 days. Starting
+a deploy mare than seven days after the build will cause the version not to be available.
+
+There should be a fall-back options if this occurs.
+
+#### Using a repository variables
+
+When the artifact is not available, the repository variable `MAVEN_CURRENT_RELEASE_VERSION`
+will be used. If the variable does not exist, the deploy will fail with a clear message.
+
+#### *TODO* Store the information in a DynamoDB table
+
+This could serve as an alternative for the repository variable workaround, and offers a
+stable and seamless solution for the problem.
+
+The table will have the commit hash as the partition key and the project name as the
+sort key, and will store this during the build, together with:
+
+* Release version
+* Snapshot version
+* Metadata (optional)
+  * Build date
+  * Deploy information
+  * ...
+
+When deploying, the record is retrieved using commit hash and project name.
 
 ## The `aws` module
 
