@@ -136,7 +136,9 @@ maven_get_next_develop_version() {
   info "Develop version is ${DEVELOP_VERSION}"
 }
 
-maven_get_current_version() {
+maven_get_current_version_from_pom() {
+  check_command mvn || install_sw maven
+  maven_create_settings_xml
 
   export MAVEN_CURRENT_VERSION_FROM_POM=$(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
 
@@ -149,7 +151,7 @@ maven_build() {
   check_command mvn || install_sw maven
 
   maven_create_settings_xml
-  maven_get_current_version
+  maven_get_current_version_from_pom
 
   COMMAND="mvn ${MAVEN_DEVELOP_COMMAND} -s ${MAVEN_SETTINGS_PATH}/settings.xml -DscmCommentPrefix=\"[skip ci]\" ${MAVEN_EXTRA_ARGS}"
 
