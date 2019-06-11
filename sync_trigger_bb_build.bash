@@ -22,7 +22,7 @@ then
   echo "### sync_trigger_bb_build.bash - monitor_automatic_remote_pipeline_start finished ###"
 else
   echo "### sync_trigger_bb_build.bash - Starting start_pipeline_for_remote_repo .... ###"
-  start_pipeline_for_remote_repo ${REMOTE_REPO_COMMIT_HASH} ${2:-build_and_deploy}
+  start_pipeline_for_remote_repo ${REMOTE_REPO_COMMIT_HASH} ${1:-build_and_deploy}
   echo "### sync_trigger_bb_build.bash - start_pipeline_for_remote_repo finished ###"
 fi
 
