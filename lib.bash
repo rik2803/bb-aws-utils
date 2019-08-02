@@ -549,6 +549,9 @@ docker_tag_and_push_deploy_image() {
 }
 
 docker_tag_and_push_application_image() {
+  [[ -z ${AWS_ACCOUNTID_TARGET} ]] && { echo "### ${FUNCNAME[0]} - AWS_ACCOUNTID_TARGET envvar is required ###"; exit 1; }
+  [[ -z ${DOCKER_IMAGE} ]]         && { echo "### ${FUNCNAME[0]} - DOCKER_IMAGE envvar is required ###"; exit 1; }
+
   echo "### ${FUNCNAME[0]} - Tagging docker image ${DOCKER_IMAGE} ###"
   docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
   docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
