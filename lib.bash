@@ -840,6 +840,8 @@ _enable_cw_alarms() {
 _docker_build() {
   image_name=${1:-${DOCKER_IMAGE}}
 
+  [[ -z ${image_name} ]] && { echo "### ${FUNCNAME[0]} - DOCKER_IMAGE is required ###"; exit 1; }
+
   echo "### ${FUNCNAME[0]} - Start build of docker image ${DOCKER_IMAGE} ###"
   docker build --build-arg="BITBUCKET_COMMIT=${BITBUCKET_COMMIT:-NA}" \
                --build-arg="BITBUCKET_REPO_SLUG=${BITBUCKET_REPO_SLUG:-NA}" \
