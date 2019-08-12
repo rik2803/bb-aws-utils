@@ -7,3 +7,8 @@ git_current_commit_message() {
 
   run_cmd git log --format=%B -n 1
 }
+
+git_set_user_config() {
+  git config --global user.email "${GIT_EMAIL:-cicd@domain.com}"
+  git config --global user.name "${GIT_USERNAME:-cicd}"
+}
