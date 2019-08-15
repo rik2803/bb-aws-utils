@@ -6,10 +6,12 @@ load 'libs/bats-assert/load'
 setup() {
   source "./lib/common.bash"
   source "./lib/maven.bash"
+  mkdir -p ./artifacts
 }
 
 teardown() {
-  #rm -f ./settings.xml || true
+  rm -f ./settings.xml || true
+  rm -rf ./artifacts   || true
   true
 }
 
@@ -47,13 +49,13 @@ teardown() {
   unset git_current_commit_message
 }
 
-@test "maven_set_versions 1.0.4" {
+@test "maven_set_version_vars 1.0.4" {
   function git_current_commit_message() { echo "bump_minor_version"; }
   function mvn() {
     echo "1 0 4 2 1 5"
   }
   export -f mvn git_current_commit_message
-  run maven_set_versions
+  run maven_set_version_vars
   assert_success
   unset mvn git_current_commit_message
 }
@@ -112,22 +114,34 @@ teardown() {
   unset mvn maven_minor_bump
 }
 
-@test "maven_get_current version 1.0.4" {
-  function mvn() {
-    echo "1.0.4"
-  }
-  export -f mvn
-  run maven_get_current_version
-  assert_output --partial "MAVEN_CURRENT_VERSION=1.0.4"
-  unset mvn
+@test "maven_save_current_versions 1.0.4 1.0.5-SNAPSHOT" {
+  run maven_save_current_versions 1.0.4 1.0.5-SNAPSHOT
+  assert_success
+  assert_output --partial "MAVEN_CURRENT_RELEASE_VERSION=1.0.4"
 }
 
-@test "maven_get_current version 1.0.5-SNAPSHOT" {
-  function mvn() {
-    echo "1.0.5-SNAPSHOT"
-  }
-  export -f mvn
-  run maven_get_current_version
-  assert_output --partial "MAVEN_CURRENT_VERSION=1.0.5-SNAPSHOT"
-  unset mvn
+@test "maven_save_current_versions 1.0.5 1.0.6-SNAPSHOT" {
+  run maven_save_current_versions 1.0.5 1.0.6-SNAPSHOT
+  assert_success
+  assert_output --partial "MAVEN_CURRENT_SNAPSHOT_VERSION=1.0.6-SNAPSHOT"
+}
+
+@test "maven_get_current_versions from artifacts" {
+  echo "export MAVEN_CURRENT_RELEASE_VERSION=1.2.3" > artifacts/MAVEN_CURRENT_VERSION
+  echo "export MAVEN_CURRENT_SNAPSHOT_VERSION=1.2.4-SNAPSHOT" >> artifacts/MAVEN_CURRENT_VERSION
+  run maven_get_current_versions
+  echo $status
+  echo $output
+  assert_success
+  assert_output --partial "MAVEN_CURRENT_RELEASE_VERSION=1.2.3"
+  assert_output --partial "MAVEN_CURRENT_SNAPSHOT_VERSION=1.2.4-SNAPSHOT"
+}
+
+@test "maven_get_current_versions from env" {
+  export MAVEN_CURRENT_RELEASE_VERSION=1.2.3
+  export MAVEN_CURRENT_SNAPSHOT_VERSION=1.2.4-SNAPSHOT
+  run maven_get_current_versions
+  assert_success
+  assert_output --partial "MAVEN_CURRENT_RELEASE_VERSION=1.2.3"
+  assert_output --partial "MAVEN_CURRENT_SNAPSHOT_VERSION=1.2.4-SNAPSHOT"
 }

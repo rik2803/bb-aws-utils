@@ -1,6 +1,8 @@
 [[ -z ${LIB_COMMON_LOADED} ]]    && { source ${LIB_DIR:-lib}/common.bash; }
 [[ -z ${LIB_GIT_LOADED} ]]       && { source ${LIB_DIR:-lib}/git.bash; }
-export LIB_MAVEN_LOADED=1;
+
+export LIB_MAVEN_LOADED=1
+export MAVEN_VERSION_VARS_SET=0
 
 # MAVEN_SETTINGS_EMAIL: use NA if not required in settings.xml for an index in the array
 maven_create_settings_xml() {
@@ -52,33 +54,70 @@ maven_minor_bump() {
   fi
 }
 
-maven_set_versions() {
-  maven_create_settings_xml
-  set -- $(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${parsedVersion.majorVersion} ${parsedVersion.minorVersion} ${parsedVersion.incrementalVersion} ${parsedVersion.nextMajorVersion} ${parsedVersion.nextMinorVersion} ${parsedVersion.nextIncrementalVersion}' --non-recursive exec:exec)
-  export MAVEN_MAJOR=${1}; shift
-  export MAVEN_MINOR=${1}; shift
-  export MAVEN_INCR=${1}; shift
-  export MAVEN_NEXT_MAJOR=${1}; shift
-  export MAVEN_NEXT_MINOR=${1}; shift
-  export MAVEN_NEXT_INCR=${1}
+maven_set_version_vars() {
+  if [[ ${MAVEN_VERSION_VARS_SET} -eq 0 ]]; then
+    maven_create_settings_xml
+    set -- $(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${parsedVersion.majorVersion} ${parsedVersion.minorVersion} ${parsedVersion.incrementalVersion} ${parsedVersion.nextMajorVersion} ${parsedVersion.nextMinorVersion} ${parsedVersion.nextIncrementalVersion}' --non-recursive exec:exec)
+    export MAVEN_MAJOR=${1}; shift
+    export MAVEN_MINOR=${1}; shift
+    export MAVEN_INCR=${1}; shift
+    export MAVEN_NEXT_MAJOR=${1}; shift
+    export MAVEN_NEXT_MINOR=${1}; shift
+    export MAVEN_NEXT_INCR=${1}
+    export MAVEN_VERSION_VARS_SET=1
+  else
+    info "Maven version variables already set"
+  fi
 }
 
-maven_get_current_version() {
-  mkdir -p ${BITBUCKET_CLONE_DIR}/artifacts
-  info "Getting current version and save in a file"
-  if [[ -e ${BITBUCKET_CLONE_DIR}/artifacts/MAVEN_CURRENT_VERSION ]]; then
-    source ${BITBUCKET_CLONE_DIR}/artifacts/MAVEN_CURRENT_VERSION
+maven_save_current_versions() {
+  # Run during release build
+  [[ -z ${1} || -z ${2} ]] && \
+    fail "maven_save_current_versions release_version snapshot_version"
+
+  local maven_release_version=${1}; shift
+  local maven_snapshot_version=${1}; shift
+  local target_dir=${BITBUCKET_CLONE_DIR:-./}/artifacts
+
+  mkdir -p ${target_dir}
+  echo "export MAVEN_CURRENT_SNAPSHOT_VERSION=${maven_snapshot_version}" > ${target_dir}/MAVEN_CURRENT_VERSION
+  echo "export MAVEN_CURRENT_RELEASE_VERSION=${maven_release_version}"  >> ${target_dir}/MAVEN_CURRENT_VERSION
+
+  info "MAVEN_CURRENT_SNAPSHOT_VERSION=${maven_snapshot_version}"
+  info "MAVEN_CURRENT_RELEASE_VERSION=${maven_release_version}"
+}
+
+maven_get_current_versions() {
+  # Run during deploy
+  # Check artifacts/MAVEN_CURRENT_VERSION first
+  # If not found (expired and deleted), check the envvar MAVEN_CURRENT_RELEASE_VERSION
+  # If not set: log an error and stop
+  local target_dir=${BITBUCKET_CLONE_DIR:-./}/artifacts
+
+  info "Trying to retrieve current versions from the build artifacts ..."
+  if [[ -e ${target_dir}/MAVEN_CURRENT_VERSION ]]; then
+    info "Build artifacts stille present, sourcing ./artifacts/MAVEN_CURRENT_VERSION"
+    source ${target_dir}/MAVEN_CURRENT_VERSION
+    success "Successfully sourced ./artifacts/MAVEN_CURRENT_VERSION"
   else
-    check_command mvn || install_sw maven
-    maven_create_settings_xml
-    export MAVEN_CURRENT_VERSION=$(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
-    echo "export MAVEN_CURRENT_VERSION=${MAVEN_CURRENT_VERSION}" > ${BITBUCKET_CLONE_DIR}/artifacts/MAVEN_CURRENT_VERSION
+    warning "./artifacts/MAVEN_CURRENT_VERSION not found, probably expired."
+    warning "Trying repository envvar MAVEN_CURRENT_RELEASE_VERSION now ..."
   fi
-  info "MAVEN_CURRENT_VERSION=${MAVEN_CURRENT_VERSION}"
+
+  if [[ -z ${MAVEN_CURRENT_RELEASE_VERSION} ]]; then
+    fail "MAVEN_CURRENT_RELEASE_VERSION not available, unable to continue without MAVEN_CURRENT_RELEASE_VERSION"
+  fi
+
+  if [[ -z ${MAVEN_CURRENT_SNAPSHOT_VERSION} ]]; then
+    fail "MAVEN_CURRENT_SNAPSHOT_VERSION not available, unable to continue without MAVEN_SNAPSHOT_RELEASE_VERSION"
+  fi
+
+  info "MAVEN_CURRENT_SNAPSHOT_VERSION=${MAVEN_CURRENT_SNAPSHOT_VERSION}"
+  info "MAVEN_CURRENT_RELEASE_VERSION=${MAVEN_CURRENT_RELEASE_VERSION}"
 }
 
 maven_get_next_release_version() {
-  maven_set_versions
+  maven_set_version_vars
   if maven_minor_bump; then
     RELEASE_VERSION="${MAVEN_MAJOR}.${MAVEN_NEXT_MINOR}.0"
   else
@@ -88,13 +127,21 @@ maven_get_next_release_version() {
 }
 
 maven_get_next_develop_version() {
-  maven_set_versions
+  maven_set_version_vars
   if maven_minor_bump; then
     DEVELOP_VERSION="${MAVEN_MAJOR}.${MAVEN_NEXT_MINOR}.1-SNAPSHOT"
   else
     DEVELOP_VERSION="${MAVEN_MAJOR}.${MAVEN_MINOR}.${MAVEN_NEXT_INCR}-SNAPSHOT"
   fi
   info "Develop version is ${DEVELOP_VERSION}"
+}
+
+maven_get_current_version_from_pom() {
+  check_command mvn || install_sw maven
+  maven_create_settings_xml
+
+  export MAVEN_CURRENT_VERSION_FROM_POM=$(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+
 }
 
 maven_build() {
@@ -104,12 +151,14 @@ maven_build() {
   check_command mvn || install_sw maven
 
   maven_create_settings_xml
+  maven_get_current_version_from_pom
+
   COMMAND="mvn ${MAVEN_DEVELOP_COMMAND} -s ${MAVEN_SETTINGS_PATH}/settings.xml -DscmCommentPrefix=\"[skip ci]\" ${MAVEN_EXTRA_ARGS}"
 
   info "${COMMAND}"
   eval ${COMMAND}
   success "mvn successfully executed"
-  maven_get_current_version
+  maven_save_current_versions "NA" "${MAVEN_CURRENT_VERSION_FROM_POM}"
 }
 
 maven_release_build() {
@@ -119,7 +168,6 @@ maven_release_build() {
   check_envvar MAVEN_BRANCH O master
   check_command mvn || install_sw maven
 
-  maven_set_versions
   maven_get_next_release_version
   maven_get_next_develop_version
   maven_create_settings_xml
@@ -140,6 +188,5 @@ maven_release_build() {
   info "${COMMAND}"
   eval ${COMMAND}
   success "mvn successfully executed"
-  maven_get_current_version
-
+  maven_save_current_versions "${RELEASE_VERSION}" "${DEVELOP_VERSION}"
 }
