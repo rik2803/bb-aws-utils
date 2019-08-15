@@ -10,6 +10,11 @@
 * `p` release: Bugfixes, introduction of new features that can normally
   be used without any interruption or rebuild of resources.
 
+## `0.0.2` (20190815)
+
+* Update maven release functions
+* Update and extend git functions
+
 ## `0.0.1` (20190531)
 
 First release, contains the original `lib.bash` file and the first release
