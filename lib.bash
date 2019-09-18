@@ -602,6 +602,8 @@ s3_deploy_apply_config_to_tree() {
     SUBST_VAL=$(eval echo \$${VARNAME})
     echo "### ${FUNCNAME[0]} - Replacing all occurences of ${SUBST_SRC} to ${SUBST_VAL} in all files under ${basedir} ###"
     #find ${basedir} -type f | xargs sed -i "" "s|${SUBST_SRC}|${SUBST_VAL}|g"
+    echo "BASEDIR: ${basedir}"
+    echo "PWD: $(pwd)"
     find ${basedir} -type f
     for file in $(find ${basedir} -type f); do
       sed -i "" "s|${SUBST_SRC}|${SUBST_VAL}|g" ${file}
