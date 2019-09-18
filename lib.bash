@@ -630,7 +630,9 @@ s3_deploy_download_tar_and_prepare_for_deploy() {
   echo "### ${FUNCNAME[0]} - Create workdir ###"
   mkdir -p workdir
   echo "### ${FUNCNAME[0]} - Untar the artifact file into the workdir ###"
-  tar -C workdir -xzvf ${ARTIFACT_NAME}-${TAG}.tgz
+  cd workdir
+  tar -xzvf ${ARTIFACT_NAME}-${TAG}.tgz
+  cd ..
   echo "### ${FUNCNAME[0]} - Start applying the config to the untarred files ###"
   s3_deploy_apply_config_to_tree workdir
 }
