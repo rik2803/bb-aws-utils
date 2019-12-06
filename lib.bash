@@ -850,11 +850,20 @@ _docker_build() {
   [[ -z ${image_name} ]] && { echo "### ${FUNCNAME[0]} - DOCKER_IMAGE is required ###"; exit 1; }
 
   echo "### ${FUNCNAME[0]} - Start build of docker image ${DOCKER_IMAGE} ###"
-  docker build --build-arg="BITBUCKET_COMMIT=${BITBUCKET_COMMIT:-NA}" \
-               --build-arg="BITBUCKET_REPO_SLUG=${BITBUCKET_REPO_SLUG:-NA}" \
-               --build-arg="BITBUCKET_REPO_OWNER=${BITBUCKET_REPO_OWNER:-NA}" \
-               --build-arg="SSH_PRIV_KEY=$(cat /opt/atlassian/pipelines/agent/data/id_rsa)" \
-               -t ${image_name} .
+  if [[ -e /opt/atlassian/pipelines/agent/data/id_rsa ]]; then
+    echo "### ${FUNCNAME[0]} - The private ssh key file exists, passing its contents as docker build arg ###"
+    docker build --build-arg="BITBUCKET_COMMIT=${BITBUCKET_COMMIT:-NA}" \
+                 --build-arg="BITBUCKET_REPO_SLUG=${BITBUCKET_REPO_SLUG:-NA}" \
+                 --build-arg="BITBUCKET_REPO_OWNER=${BITBUCKET_REPO_OWNER:-NA}" \
+                 --build-arg="SSH_PRIV_KEY=$(cat /opt/atlassian/pipelines/agent/data/id_rsa)" \
+                 -t ${image_name} .
+  else
+    echo "### ${FUNCNAME[0]} - The private ssh key file does not exist ###"
+    docker build --build-arg="BITBUCKET_COMMIT=${BITBUCKET_COMMIT:-NA}" \
+                 --build-arg="BITBUCKET_REPO_SLUG=${BITBUCKET_REPO_SLUG:-NA}" \
+                 --build-arg="BITBUCKET_REPO_OWNER=${BITBUCKET_REPO_OWNER:-NA}" \
+                 -t ${image_name} .
+  fi
 
   if [[ $? -ne 0 ]]
   then
