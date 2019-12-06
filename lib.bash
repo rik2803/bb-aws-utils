@@ -853,6 +853,7 @@ _docker_build() {
   docker build --build-arg="BITBUCKET_COMMIT=${BITBUCKET_COMMIT:-NA}" \
                --build-arg="BITBUCKET_REPO_SLUG=${BITBUCKET_REPO_SLUG:-NA}" \
                --build-arg="BITBUCKET_REPO_OWNER=${BITBUCKET_REPO_OWNER:-NA}" \
+               --build-arg="SSH_PRIV_KEY=$(cat /opt/atlassian/pipelines/agent/data/id_rsa)" \
                -t ${image_name} .
 
   if [[ $? -ne 0 ]]
