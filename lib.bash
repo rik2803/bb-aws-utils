@@ -61,7 +61,7 @@ install_awscli() {
     then
       echo "### ${FUNCNAME[0]} - Installing aws cli on debian ###"
       run_apt_get_update
-      run_log_and_exit_on_failure "apt-get install -y python-dev"
+      #run_log_and_exit_on_failure "apt-get install -y python-dev"
       run_log_and_exit_on_failure "curl -O https://bootstrap.pypa.io/get-pip.py"
       run_log_and_exit_on_failure "python get-pip.py"
       run_log_and_exit_on_failure "pip install awscli"
