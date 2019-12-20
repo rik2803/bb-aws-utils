@@ -689,12 +689,14 @@ s3_lambda_build_and_push() {
   fi
 
   ### Python
-  if [[ ${LAMBDA_RUNTIME} = python* ]]
-  then
+  if [[ ${LAMBDA_RUNTIME} = python* ]]; then
     [[ -e ${LAMBDA_FUNCTION_FILE:-lambda.py} ]] && run_log_and_exit_on_failure "mv -f ${LAMBDA_FUNCTION_FILE:-lambda.py} /builddir"
-    if [[ -f requirements.txt ]]
-    then
-      run_log_and_exit_on_failure "pip install -r requirements.txt --target /builddir"
+    if [[ -f requirements.txt ]]; then
+      if [[ -z ${SKIP_PIP_INSTALL} || ${SKIP_PIP_INSTALL} -eq 0 ]]; then
+        run_log_and_exit_on_failure "pip install -r requirements.txt --target /builddir"
+      else
+        echo "### ${FUNCNAME[0]} - Skipped dependency build because SKIP_PIP_INSTALL is set to ${SKIP_PIP_INSTALL} ###"
+      fi
     fi
   fi
 
