@@ -83,6 +83,10 @@ maven_save_current_versions() {
   echo "export MAVEN_CURRENT_SNAPSHOT_VERSION=${maven_snapshot_version}" > ${target_dir}/MAVEN_CURRENT_VERSION
   echo "export MAVEN_CURRENT_RELEASE_VERSION=${maven_release_version}"  >> ${target_dir}/MAVEN_CURRENT_VERSION
 
+  # Also set the envvars
+  export MAVEN_CURRENT_SNAPSHOT_VERSION=${maven_snapshot_version}
+  export MAVEN_CURRENT_RELEASE_VERSION=${maven_release_version}
+
   info "MAVEN_CURRENT_SNAPSHOT_VERSION=${maven_snapshot_version}"
   info "MAVEN_CURRENT_RELEASE_VERSION=${maven_release_version}"
 }
@@ -96,7 +100,7 @@ maven_get_current_versions() {
 
   info "Trying to retrieve current versions from the build artifacts ..."
   if [[ -e ${target_dir}/MAVEN_CURRENT_VERSION ]]; then
-    info "Build artifacts stille present, sourcing ./artifacts/MAVEN_CURRENT_VERSION"
+    info "Build artifacts still present, sourcing ./artifacts/MAVEN_CURRENT_VERSION"
     source ${target_dir}/MAVEN_CURRENT_VERSION
     success "Successfully sourced ./artifacts/MAVEN_CURRENT_VERSION"
   else
