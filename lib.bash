@@ -691,6 +691,15 @@ s3_lambda_build_and_push() {
   ### Python
   if [[ ${LAMBDA_RUNTIME} = python* ]]; then
     [[ -e ${LAMBDA_FUNCTION_FILE:-lambda.py} ]] && run_log_and_exit_on_failure "mv -f ${LAMBDA_FUNCTION_FILE:-lambda.py} /builddir"
+    # DIRS_TO_ADD_TO_ZIP is a space separated list of directories that will be copied to
+    # builddir and be part of the function zip file
+    if [[ -n ${DIRS_TO_ADD_TO_ZIP} ]]; then
+      for dir in ${DIRS_TO_ADD_TO_ZIP}; do
+        echo "### ${FUNCNAME[0]} - Copying ${dir} to /builddir ###"
+        run_log_and_exit_on_failure "cp -rp ${dir} /builddir"
+      done
+    fi
+
     if [[ -f requirements.txt ]]; then
       if [[ -z ${SKIP_PIP_INSTALL} || ${SKIP_PIP_INSTALL} -eq 0 ]]; then
         run_log_and_exit_on_failure "pip install -r requirements.txt --target /builddir"
