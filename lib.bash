@@ -538,7 +538,7 @@ docker_build_deploy_image() {
   # ADD src2 dst2
   if [[ -n ${FILES_TO_ADD_TO_DOCKER_IMAGE} ]]; then
     for SRC_COLON_DEST in ${FILES_TO_ADD_TO_DOCKER_IMAGE}; do
-      echo "ADD ${F%%:*} ${F##*:}" >> Dockerfile
+      echo "ADD ${SRC_COLON_DEST%%:*} ${SRC_COLON_DEST##*:}" >> Dockerfile
     done
   fi
 
