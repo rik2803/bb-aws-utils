@@ -531,6 +531,17 @@ docker_build_deploy_image() {
 
   echo "FROM ${SOURCE_IMAGE}" > Dockerfile
 
+  # Allow to add extra files to the docker image. The envvar should be consturcted like
+  # this: "src1:dst1 src2:dst2". This will result in these lines being added to the
+  # Dockerfile file:
+  # ADD src1 dst1
+  # ADD src2 dst2
+  if [[ -n ${FILES_TO_ADD_TO_DOCKER_IMAGE} ]]; then
+    for SRC_COLON_DEST in ${FILES_TO_ADD_TO_DOCKER_IMAGE}; do
+      echo "ADD ${F%%:*} ${F##*:}" >> Dockerfile
+    done
+  fi
+
   IMAGE=${DOCKER_IMAGE}
 
   if [[ -n ${DOCKER_IMAGE_TARGET} ]]
