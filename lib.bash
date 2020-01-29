@@ -504,12 +504,22 @@ docker_build_deploy_image() {
     echo "### ${FUNCNAME[0]} - Not a release build, use artefact image with tag ${TAG} ###"
   fi
 
-  ### Check if required image exists in the repository by pulling it and failing if pull fails
-  if ! docker pull ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}
+  # Check if required image exists in the repository by pulling it and failing if pull fails
+  #   To support images in docker hub, the image is pulled from docker hub when the envvar
+  #   AWS_ACCOUNTID_SRC is not defined
+  if [[ -z ${AWS_ACCOUNTID_SRC} ]]; then
+    SOURCE_IMAGE="${DOCKER_IMAGE}:${TAG:-latest}"
+    IMAGE_REPOSITORY="Docker Hub"
+  else
+    SOURCE_IMAGE="${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}"
+    IMAGE_REPOSITORY="${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com."
+  fi
+
+  if ! docker pull ${SOURCE_IMAGE}
   then
     _print_error_banner
     echo "### ${FUNCNAME[0]} - ERROR - The docker image ${DOCKER_IMAGE}:${TAG:-latest} is not available"
-    echo "### ${FUNCNAME[0]}           on ECR repository ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com."
+    echo "### ${FUNCNAME[0]}           on repository ${IMAGE_REPOSITORY}"
     echo "### ${FUNCNAME[0]}           Possible causes:"
     echo "### ${FUNCNAME[0]}             - This is a production deploy and the build on ACC was not done"
     echo "### ${FUNCNAME[0]}             - The image was deleted on ECR"
@@ -519,7 +529,7 @@ docker_build_deploy_image() {
     exit 1
   fi
 
-  echo "FROM ${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${TAG:-latest}" > Dockerfile
+  echo "FROM ${SOURCE_IMAGE}" > Dockerfile
 
   IMAGE=${DOCKER_IMAGE}
 
