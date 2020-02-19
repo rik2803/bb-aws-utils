@@ -751,7 +751,7 @@ s3_lambda_build_and_push() {
     SOURCE="/${LAMBDA_FUNCTION_NAME}.zip"
     echo "### ${FUNCNAME[0]} - Zip the Lambda code and dependencies ###"
     run_log_and_exit_on_failure "cd /builddir"
-    run_log_and_exit_on_failure "zip -r /${LAMBDA_FUNCTION_NAME}.zip *"
+    run_log_and_exit_on_failure "zip -q -r /${LAMBDA_FUNCTION_NAME}.zip *"
     run_log_and_exit_on_failure "cd -"
   fi
 
