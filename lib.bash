@@ -704,7 +704,7 @@ s3_lambda_build_and_push() {
     [[ -e ${LAMBDA_FUNCTION_FILE:-index.js} ]] && run_log_and_exit_on_failure "mv -f ${LAMBDA_FUNCTION_FILE:-index.js} /builddir"
     if [[ -f package.json ]]
     then
-      run_log_and_exit_on_failure "npm install"
+      run_log_and_exit_on_failure "npm install --only=prod --silent"
       [[ -e node_modules ]] && run_log_and_exit_on_failure "mv -f node_modules /builddir"
     fi
   fi
