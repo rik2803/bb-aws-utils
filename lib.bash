@@ -703,7 +703,7 @@ s3_lambda_build_and_push() {
   then
     if [[ -n ${NESTJS} ]]; then
       # https://keyholesoftware.com/2019/05/13/aws-lambda-with-nestjs/
-      run_log_and_exit_on_failure "npm install --only=prod --silent"
+      run_log_and_exit_on_failure "npm install --silent"
       run_log_and_exit_on_failure "npm run build"
       run_log_and_exit_on_failure "npm prune --production"
       run_log_and_exit_on_failure "mv -f dist node_modules /builddir"
