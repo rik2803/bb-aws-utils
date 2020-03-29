@@ -689,6 +689,13 @@ s3_lambda_build_and_push() {
   install_zip
   run_log_and_exit_on_failure "mkdir -p /builddir"
 
+  ### Copy extra stuff to builddir
+  if [[ -n ${LAMBDA_COPY_TO_BUILDDIR} ]]; then
+    for file in ${LAMBDA_COPY_TO_BUILDDIR}; do
+      run_log_and_exit_on_failure "cp -rp ${file} builddir"
+    done
+  fi
+
   ### Java8
   if [[ ${LAMBDA_RUNTIME} = java* ]]
   then
