@@ -692,7 +692,7 @@ s3_lambda_build_and_push() {
   ### Copy extra stuff to builddir
   if [[ -n ${LAMBDA_COPY_TO_BUILDDIR} ]]; then
     for file in ${LAMBDA_COPY_TO_BUILDDIR}; do
-      run_log_and_exit_on_failure "cp -rp ${file} builddir"
+      run_log_and_exit_on_failure "cp -rp ${file} /builddir"
     done
   fi
 
