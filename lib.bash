@@ -737,7 +737,10 @@ s3_lambda_build_and_push() {
       done
     fi
 
-    if [[ -f requirements.txt ]]; then
+    if [[ -n ${CICD_REQUIREMENTS} && -f ${CICD_REQUIREMENTS} ]]; then
+        echo "### ${FUNCNAME[0]} - CICD requirements file ${CICD_REQUIREMENTS} found, using this file to build dependencies ###"
+        run_log_and_exit_on_failure "pip install -r ${CICD_REQUIREMENTS} --target /builddir"
+    elif [[ -f requirements.txt ]]; then
       if [[ -z ${SKIP_PIP_INSTALL} || ${SKIP_PIP_INSTALL} -eq 0 ]]; then
         run_log_and_exit_on_failure "pip install -r requirements.txt --target /builddir"
       else
