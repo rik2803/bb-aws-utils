@@ -736,6 +736,12 @@ s3_lambda_build_and_push() {
         run_log_and_exit_on_failure "cp -rp ${dir} /builddir"
       done
     fi
+    if [[ -n ${FILES_TO_ADD_TO_ZIP} ]]; then
+      for file in ${FILES_TO_ADD_TO_ZIP}; do
+        echo "### ${FUNCNAME[0]} - Copying ${file} to /builddir ###"
+        run_log_and_exit_on_failure "cp -rp ${file} /builddir"
+      done
+    fi
 
     if [[ -n ${CICD_REQUIREMENTS} && -f ${CICD_REQUIREMENTS} ]]; then
         echo "### ${FUNCNAME[0]} - CICD requirements file ${CICD_REQUIREMENTS} found, using this file to build dependencies ###"
