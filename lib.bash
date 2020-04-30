@@ -753,6 +753,8 @@ s3_lambda_build_and_push() {
         echo "### ${FUNCNAME[0]} - Skipped dependency build because SKIP_PIP_INSTALL is set to ${SKIP_PIP_INSTALL} ###"
       fi
     fi
+    echo "### ${FUNCNAME[0]} - Remove boto stuff from the installed dependencies ###"
+    run_log_and_exit_on_failure "rm -rf /builddir/boto* || true"
   fi
 
   ### Upload the Lambda artifact to S3
