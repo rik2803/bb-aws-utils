@@ -157,7 +157,7 @@ maven_build() {
   maven_create_settings_xml
   maven_get_current_version_from_pom
 
-  COMMAND="mvn ${MAVEN_DEVELOP_COMMAND} -s ${MAVEN_SETTINGS_PATH}/settings.xml -DscmCommentPrefix=\"[skip ci]\" ${MAVEN_EXTRA_ARGS}"
+  COMMAND="mvn -B ${MAVEN_DEVELOP_COMMAND} -s ${MAVEN_SETTINGS_PATH}/settings.xml -DscmCommentPrefix=\"[skip ci]\" ${MAVEN_EXTRA_ARGS}"
 
   info "${COMMAND}"
   eval ${COMMAND}
@@ -183,7 +183,7 @@ maven_release_build() {
   git checkout ${MAVEN_BRANCH}
   success "Successfully checked out ${MAVEN_BRANCH}"
 
-  COMMAND="mvn -X -B -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS} -Dresume=false \
+  COMMAND="mvn -B -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS} -Dresume=false \
       -DreleaseVersion=${RELEASE_VERSION} \
       -DdevelopmentVersion=${DEVELOP_VERSION} \
       -DscmCommentPrefix='[skip ci]' \
