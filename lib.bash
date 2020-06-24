@@ -710,7 +710,11 @@ s3_lambda_build_and_push() {
   then
     if [[ -n ${NESTJS} ]]; then
       # https://keyholesoftware.com/2019/05/13/aws-lambda-with-nestjs/
-      run_log_and_exit_on_failure "npm install --silent"
+      if [[ -n ${DEBUG} ]]; then
+        run_log_and_exit_on_failure "npm install"
+      else
+        run_log_and_exit_on_failure "npm install --silent"
+      fi
       run_log_and_exit_on_failure "npm run build"
       run_log_and_exit_on_failure "npm prune --production"
       run_log_and_exit_on_failure "mv -f dist node_modules /builddir"
@@ -718,7 +722,11 @@ s3_lambda_build_and_push() {
       [[ -e ${LAMBDA_FUNCTION_FILE:-index.js} ]] && run_log_and_exit_on_failure "mv -f ${LAMBDA_FUNCTION_FILE:-index.js} /builddir"
       if [[ -f package.json ]]
       then
-        run_log_and_exit_on_failure "npm install --silent"
+        if [[ -n ${DEBUG} ]]; then
+          run_log_and_exit_on_failure "npm install"
+        else
+          run_log_and_exit_on_failure "npm install --silent"
+        fi
         run_log_and_exit_on_failure "npm prune --production"
         [[ -e node_modules ]] && run_log_and_exit_on_failure "mv -f node_modules /builddir"
       fi
