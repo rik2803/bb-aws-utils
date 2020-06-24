@@ -708,6 +708,7 @@ s3_lambda_build_and_push() {
   ### Node
   if [[ ${LAMBDA_RUNTIME} = nodejs* ]]
   then
+    create_npmrc
     if [[ -n ${NESTJS} ]]; then
       # https://keyholesoftware.com/2019/05/13/aws-lambda-with-nestjs/
       if [[ -n ${DEBUG} ]]; then
