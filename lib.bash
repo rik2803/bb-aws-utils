@@ -532,7 +532,11 @@ docker_build_deploy_image() {
   echo "FROM ${SOURCE_IMAGE}" > Dockerfile
 
   if [[ -e Dockerfile.template ]]; then
+    echo "### ${FUNCNAME[0]} INFO: evaluating Dockerfile.template to add to Dockerfile"
     sh -c 'echo "'"$(cat Dockerfile.template)"'"' >> Dockerfile
+    echo "### ${FUNCNAME[0]} INFO: Dockerfile content - START"
+    cat Dockerfile
+    echo "### ${FUNCNAME[0]} INFO: Dockerfile content - END"
   fi
 
   # Allow to add extra files to the docker image. The envvar should be constructed like
