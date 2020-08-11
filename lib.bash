@@ -531,7 +531,11 @@ docker_build_deploy_image() {
 
   echo "FROM ${SOURCE_IMAGE}" > Dockerfile
 
-  # Allow to add extra files to the docker image. The envvar should be consturcted like
+  if [[ -e Dockerfile.template ]]; then
+    sh -c 'echo "'"$(cat Dockerfile.template)"'"' >> Dockerfile
+  fi
+
+  # Allow to add extra files to the docker image. The envvar should be constructed like
   # this: "src1:dst1 src2:dst2". This will result in these lines being added to the
   # Dockerfile file:
   # ADD src1 dst1
