@@ -101,7 +101,12 @@ aws_set_service_account_config() {
     SERVICE_ACCOUNT=1
     mkdir -p "${AWS_CONFIG_BASEDIR}"
     {
-      echo "${AWS_CREDENTIALS_JSON}" | jq -r '.profiles | [.[] | "[" + .name + "]", "aws_access_key_id=" +.aws_access_key_id, "aws_secret_access_key=" + .aws_secret_access_key, "role_arn=" + .role_arn, "region=" + (.region // "eu-central-1") ][]'
+      echo "${AWS_CREDENTIALS_JSON}" | jq -r '.credentials | [.[] | "[" + .name + "]", "aws_access_key_id=" +.aws_access_key_id, "aws_secret_access_key=" + .aws_secret_access_key, "region=" + (.region // "eu-central-1") ][]'
     } > "${AWS_CONFIG_BASEDIR}/credentials"
+    if [[ -n ${AWS_CONFIG_JSON} ]]; then
+      {
+        echo "${AWS_CONFIG_JSON}" | jq -r '.profiles | [.[] | "[profile " + .name + "]", "source_profile=" + .source_profile, "role_arn=" + .role_arn ][]'
+      } > "${AWS_CONFIG_BASEDIR}/config"
+    fi
   fi
 }
