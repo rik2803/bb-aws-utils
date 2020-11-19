@@ -95,6 +95,9 @@ aws_set_service_account_config() {
     if ! check_command jq; then
       install_jq
     fi
+    if ! check_command aws; then
+      install_awscli
+    fi
     SERVICE_ACCOUNT=1
     mkdir -p "${AWS_CONFIG_BASEDIR}"
     {
