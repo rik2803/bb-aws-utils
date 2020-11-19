@@ -1,0 +1,28 @@
+{
+  "profiles": [
+    {
+      "name": "default",
+      "role_arn": "arn:aws:iam::123456789012:role/ServiceAccount/cicd",
+      "aws_access_key_id": "AKIAXXXXXXXXXXXXXXX",
+      "aws_secret_access_key": "sdkfjasldfhasjdflashkjfdklasjhdfaklsdfhjaskjlf"
+    },
+    {
+      "name": "tst",
+      "role_arn": "arn:aws:iam::123456789012:role/ServiceAccount/cicd",
+      "aws_access_key_id": "AKIAXXXXXXXXXXXXXXX",
+      "aws_secret_access_key": "sdkfjasldfhasjdflashkjfdklasjhdfaklsdfhjaskjlf"
+    },
+    {
+      "name": "stg",
+      "role_arn": "arn:aws:iam::123456789012:role/ServiceAccount/cicd",
+      "aws_access_key_id": "AKIAXXXXXXXXXXXXXXX",
+      "aws_secret_access_key": "sdkfjasldfhasjdflashkjfdklasjhdfaklsdfhjaskjlf"
+    },
+    {
+      "name": "prd",
+      "role_arn": "arn:aws:iam::123456789012:role/ServiceAccount/cicd",
+      "aws_access_key_id": "AKIAXXXXXXXXXXXXXXX",
+      "aws_secret_access_key": "sdkfjasldfhasjdflashkjfdklasjhdfaklsdfhjaskjlf"
+    }
+  ]
+}

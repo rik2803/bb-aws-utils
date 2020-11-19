@@ -6,7 +6,7 @@ export MAVEN_VERSION_VARS_SET=0
 
 # MAVEN_SETTINGS_EMAIL: use NA if not required in settings.xml for an index in the array
 maven_create_settings_xml() {
-  if [[ -e ${MAVEN_SETTINGS_PATH}/settings.xml ]]; then
+  if [[ -e "${MAVEN_SETTINGS_PATH}/settings.xml" ]]; then
     info "${MAVEN_SETTINGS_PATH}/settings.xml already exists"
   else
     info "Start creation of settings.xml"
@@ -16,38 +16,40 @@ maven_create_settings_xml() {
     check_envvar MAVEN_SETTINGS_EMAIL O 'skip'
     check_envvar MAVEN_SETTINGS_PATH O /
 
-    MAVEN_SETTINGS_ID_ARRAY=(${MAVEN_SETTINGS_ID})
-    MAVEN_SETTINGS_USERNAME_ARRAY=(${MAVEN_SETTINGS_USERNAME})
-    MAVEN_SETTINGS_PASSWORD_ARRAY=(${MAVEN_SETTINGS_PASSWORD})
-    MAVEN_SETTINGS_EMAIL_ARRAY=(${MAVEN_SETTINGS_EMAIL})
+    local MAVEN_SETTINGS_ID_ARRAY=(${MAVEN_SETTINGS_ID})
+    local MAVEN_SETTINGS_USERNAME_ARRAY=(${MAVEN_SETTINGS_USERNAME})
+    local MAVEN_SETTINGS_PASSWORD_ARRAY=(${MAVEN_SETTINGS_PASSWORD})
+    local MAVEN_SETTINGS_EMAIL_ARRAY=(${MAVEN_SETTINGS_EMAIL})
 
-    echo "<settings>" > ${MAVEN_SETTINGS_PATH}/settings.xml
-    echo "  <servers>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-    if [[ ${MAVEN_SETTINGS_ID} != skip ]]; then
-      for index in "${!MAVEN_SETTINGS_ID_ARRAY[@]}"; do
-        echo "    <server>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-        echo "      <id>${MAVEN_SETTINGS_ID_ARRAY[$index]}</id>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-        echo "      <username>${MAVEN_SETTINGS_USERNAME_ARRAY[$index]}</username>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-        echo "      <password>${MAVEN_SETTINGS_PASSWORD_ARRAY[$index]}</password>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-        if [[ ${MAVEN_SETTINGS_EMAIL_ARRAY[$index]} != "NA" ]]; then
-          echo "      <configuration>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-          echo "        <email>${MAVEN_SETTINGS_EMAIL_ARRAY[$index]}</email>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-          echo "      </configuration>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-        fi
-        echo "      <filePermissions>664</filePermissions>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-        echo "      <directoryPermissions>775</directoryPermissions>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-        echo "    </server>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-      done
-    fi
-    echo "  </servers>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
-    echo "</settings>" >> ${MAVEN_SETTINGS_PATH}/settings.xml
+    {
+      echo "<settings>"
+      echo "  <servers>"
+      if [[ ${MAVEN_SETTINGS_ID} != skip ]]; then
+        for index in "${!MAVEN_SETTINGS_ID_ARRAY[@]}"; do
+          echo "    <server>"
+          echo "      <id>${MAVEN_SETTINGS_ID_ARRAY[$index]}</id>"
+          echo "      <username>${MAVEN_SETTINGS_USERNAME_ARRAY[$index]}</username>"
+          echo "      <password>${MAVEN_SETTINGS_PASSWORD_ARRAY[$index]}</password>"
+          if [[ ${MAVEN_SETTINGS_EMAIL_ARRAY[$index]} != "NA" ]]; then
+            echo "      <configuration>"
+            echo "        <email>${MAVEN_SETTINGS_EMAIL_ARRAY[$index]}</email>"
+            echo "      </configuration>"
+          fi
+          echo "      <filePermissions>664</filePermissions>"
+          echo "      <directoryPermissions>775</directoryPermissions>"
+          echo "    </server>"
+        done
+      fi
+      echo "  </servers>"
+      echo "</settings>"
+    } > "${MAVEN_SETTINGS_PATH}/settings.xml"
   fi
 }
 
 maven_minor_bump() {
   check_envvar MAVEN_MINOR_BUMP_STRING O "bump_minor_version"
 
-  if git_current_commit_message | grep -q ${MAVEN_MINOR_BUMP_STRING}; then
+  if git_current_commit_message | grep -q "${MAVEN_MINOR_BUMP_STRING}"; then
     return 0
   else
     return 1
@@ -57,7 +59,7 @@ maven_minor_bump() {
 maven_set_version_vars() {
   if [[ ${MAVEN_VERSION_VARS_SET} -eq 0 ]]; then
     maven_create_settings_xml
-    set -- $(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${parsedVersion.majorVersion} ${parsedVersion.minorVersion} ${parsedVersion.incrementalVersion} ${parsedVersion.nextMajorVersion} ${parsedVersion.nextMinorVersion} ${parsedVersion.nextIncrementalVersion}' --non-recursive exec:exec)
+    set -- $(mvn -s "${MAVEN_SETTINGS_PATH}/settings.xml" build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${parsedVersion.majorVersion} ${parsedVersion.minorVersion} ${parsedVersion.incrementalVersion} ${parsedVersion.nextMajorVersion} ${parsedVersion.nextMinorVersion} ${parsedVersion.nextIncrementalVersion}' --non-recursive exec:exec)
     export MAVEN_MAJOR=${1}; shift
     export MAVEN_MINOR=${1}; shift
     export MAVEN_INCR=${1}; shift
@@ -79,9 +81,11 @@ maven_save_current_versions() {
   local maven_snapshot_version=${1}; shift
   local target_dir=${BITBUCKET_CLONE_DIR:-./}/artifacts
 
-  mkdir -p ${target_dir}
-  echo "export MAVEN_CURRENT_SNAPSHOT_VERSION=${maven_snapshot_version}" > ${target_dir}/MAVEN_CURRENT_VERSION
-  echo "export MAVEN_CURRENT_RELEASE_VERSION=${maven_release_version}"  >> ${target_dir}/MAVEN_CURRENT_VERSION
+  mkdir -p "${target_dir}"
+  {
+    echo "export MAVEN_CURRENT_SNAPSHOT_VERSION=${maven_snapshot_version}"
+    echo "export MAVEN_CURRENT_RELEASE_VERSION=${maven_release_version}"
+  } > "${target_dir}/MAVEN_CURRENT_VERSION"
 
   # Also set the envvars
   export MAVEN_CURRENT_SNAPSHOT_VERSION=${maven_snapshot_version}
@@ -99,9 +103,9 @@ maven_get_current_versions() {
   local target_dir=${BITBUCKET_CLONE_DIR:-./}/artifacts
 
   info "Trying to retrieve current versions from the build artifacts ..."
-  if [[ -e ${target_dir}/MAVEN_CURRENT_VERSION ]]; then
+  if [[ -e "${target_dir}/MAVEN_CURRENT_VERSION" ]]; then
     info "Build artifacts still present, sourcing ./artifacts/MAVEN_CURRENT_VERSION"
-    source ${target_dir}/MAVEN_CURRENT_VERSION
+    source "${target_dir}/MAVEN_CURRENT_VERSION"
     success "Successfully sourced ./artifacts/MAVEN_CURRENT_VERSION"
   else
     warning "./artifacts/MAVEN_CURRENT_VERSION not found, probably expired."
@@ -144,8 +148,8 @@ maven_get_current_version_from_pom() {
   check_command mvn || install_sw maven
   maven_create_settings_xml
 
-  export MAVEN_CURRENT_VERSION_FROM_POM=$(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
-
+  MAVEN_CURRENT_VERSION_FROM_POM=$(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+  export MAVEN_CURRENT_VERSION_FROM_POM
 }
 
 maven_build() {
@@ -176,11 +180,11 @@ maven_release_build() {
   maven_get_next_develop_version
   maven_create_settings_xml
 
-  git remote set-url origin ${BITBUCKET_GIT_SSH_ORIGIN}
+  git remote set-url origin "${BITBUCKET_GIT_SSH_ORIGIN}"
   git config --global --add status.displayCommentPrefix true
 
   info "Checking out branch ${MAVEN_BRANCH}"
-  git checkout ${MAVEN_BRANCH}
+  git checkout "${MAVEN_BRANCH}"
   success "Successfully checked out ${MAVEN_BRANCH}"
 
   COMMAND="mvn -X -B -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS} -Dresume=false \

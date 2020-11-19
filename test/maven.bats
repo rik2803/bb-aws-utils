@@ -4,8 +4,8 @@ load 'libs/bats-support/load'
 load 'libs/bats-assert/load'
 
 setup() {
-  source "./lib/common.bash"
-  source "./lib/maven.bash"
+  source "${LIB_DIR}/common.bash"
+  source "${LIB_DIR}/maven.bash"
   mkdir -p ./artifacts
 }
 

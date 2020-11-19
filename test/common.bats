@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 setup() {
-  source "./lib/common.bash"
+  source "${LIB_DIR}/common.bash"
 }
 
 @test "check_envvar required with mode" {
