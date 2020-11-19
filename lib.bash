@@ -4,7 +4,8 @@ CW_ALARMS_DISABLED=0
 CW_ALARMS=NA
 
 ### Always load the complete library (including lib/*)
-[[ -e lib/load.bash ]] && source lib/load.bash
+[[ -z ${LIB_DIR} ]] && LIB_DIR="./bb-aws-utils/lib"
+[[ -e ${LIB_DIR}/load.bash ]] && source /load.bash
 
 ### To make sure everything keeps working after February 1 (see
 ### https://community.atlassian.com/t5/Bitbucket-Pipelines-articles/Pushing-back-to-your-repository/ba-p/958407)
