@@ -5,17 +5,18 @@ CW_ALARMS=NA
 
 ### Always load the complete library (including lib/*)
 [[ -z ${LIB_DIR} ]] && LIB_DIR="./bb-aws-utils/lib"
+# shellcheck source=lib/load.bash
 [[ -e ${LIB_DIR}/load.bash ]] && source ${LIB_DIR}/load.bash
 
 ### To make sure everything keeps working after February 1 (see
 ### https://community.atlassian.com/t5/Bitbucket-Pipelines-articles/Pushing-back-to-your-repository/ba-p/958407)
-### we explicitely set the repo origin to ${BITBUCKET_GIT_SSH_ORIGIN} unless the envvar ${BB_USE_HTTP_ORIGIN}
+### we explicitly set the repo origin to ${BITBUCKET_GIT_SSH_ORIGIN} unless the envvar ${BB_USE_HTTP_ORIGIN}
 ### is set
 if [[ -n ${BB_USE_HTTP_ORIGIN} ]]
 then
-  echo 'git remote set-url origin ${BITBUCKET_GIT_HTTP_ORIGIN}'
+  git remote set-url origin "${BITBUCKET_GIT_HTTP_ORIGIN}"
 else
-  echo 'git remote set-url origin ${BITBUCKET_GIT_SSH_ORIGIN}'
+  git remote set-url origin "${BITBUCKET_GIT_SSH_ORIGIN}"
 fi
 
 install_set_linux_distribution_type
@@ -43,7 +44,7 @@ create_TAG_file_in_remote_url() {
   # to be cloned, changed, committed and pushed, and will be available
   # as ~/.ssh/id_rsa
 
-  ### It's useless to do this if no SSHKEY is configured in the pipeline.
+  ### It's useless to do this if no ssh key is configured in the pipeline.
   if [[ ! -e /opt/atlassian/pipelines/agent/data/id_rsa ]]
   then
     error "${FUNCNAME[0]} - ERROR: No SSH Key is configured in the pipeline, and this is required"
@@ -72,7 +73,7 @@ create_TAG_file_in_remote_url() {
 
   info "${FUNCNAME[0]} - Trying to clone ${REMOTE_REPO_URL} into remote_repo"
   rm -rf remote_repo
-  git clone ""${REMOTE_REPO_URL}"" remote_repo || { echo "### ${FUNCNAME[0]} - Error cloning ${REMOTE_REPO_URL} ###"; exit 1; }
+  git clone "${REMOTE_REPO_URL}" remote_repo || { echo "### ${FUNCNAME[0]} - Error cloning ${REMOTE_REPO_URL} ###"; exit 1; }
 
   run_log_and_exit_on_failure "cd remote_repo"
 
@@ -121,15 +122,15 @@ create_TAG_file_in_remote_url() {
     info "${FUNCNAME[0]} - To allow multiple builds of the config repo pipeline for the remote tag, the tag"
     info "${FUNCNAME[0]} - will first be removed to make sure the trigger is triggered."
 
-    if git tag | grep -q ${BITBUCKET_TAG}
+    if git tag | grep -q "${BITBUCKET_TAG}"
     then
       info "${FUNCNAME[0]} - Tag ${BITBUCKET_TAG} already exists, removing it locally and remotely."
-      git tag -d ${BITBUCKET_TAG}
-      git push --delete origin ${BITBUCKET_TAG}
+      git tag -d "${BITBUCKET_TAG}"
+      git push --delete origin "${BITBUCKET_TAG}"
     fi
 
     echo "${FUNCNAME[0]} - Setting tag ${BITBUCKET_TAG} on HEAD and pushing to origin."
-    git tag ${BITBUCKET_TAG}
+    git tag "${BITBUCKET_TAG}"
     git push --tags
   fi
 
@@ -147,7 +148,7 @@ monitor_automatic_remote_pipeline_start() {
   ### pipeline build is made by setting the environment variable MONITOR_REMOTE_PIPELINE:
   ###    - envvar ONLY_MONITOR_REMOTE_PIPELINE is set and has value 1: use this function
   ###    - envvar ONLY_MONITOR_REMOTE_PIPELINE is not set or has value 0: trigger the remote
-  ###      pipelind
+  ###      pipeline
   ### That envvar is evaluated in the script sync_trigger_bb_build.bash script
 
   info "${FUNCNAME[0]} - INFO - Entering ${FUNCNAME[0]}"
@@ -155,6 +156,8 @@ monitor_automatic_remote_pipeline_start() {
 
   typeset -i MAX_TRIES=30
   typeset -i CUR_TRIES=0
+
+  local STATE
 
   while [[ 1 -eq 1 ]]
   do
@@ -164,7 +167,7 @@ monitor_automatic_remote_pipeline_start() {
     fi
 
     ### Get latest remote build info until status is pending, that indicates a newly started build
-    STATE=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' ${URL} | jq --raw-output '.values[0].state.name')
+    STATE=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' "${URL}" | jq --raw-output '.values[0].state.name')
     if [[ ${STATE} == PENDING ]] || [[ ${STATE} == IN_PROGRESS ]]
     then
       info "${FUNCNAME[0]} - INFO - Remote pipeline is in PENDING state, continue to monitor it."
@@ -174,14 +177,14 @@ monitor_automatic_remote_pipeline_start() {
       info " ${FUNCNAME[0]} -        until state is PENDING or IN_PROGRESS ..."
       sleep 2
     fi
-    let CUR_TRIES=CUR_TRIES+1
+    (( CUR_TRIES=CUR_TRIES+1 )) || true
   done
 
   info "${FUNCNAME[0]} - Retrieve information about the most recent remote pipeline."
-  CURLRESULT=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' ${URL})
+  CURL_RESULT=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' "${URL}")
 
-  UUID=$(echo ${CURLRESULT} | jq --raw-output '.values[0].uuid' | tr -d '\{\}')
-  BUILDNUMBER=$(echo ${CURLRESULT} | jq --raw-output '.values[0].build_number' | tr -d '\{\}')
+  UUID=$(echo "${CURL_RESULT}" | jq --raw-output '.values[0].uuid' | tr -d '\{\}')
+  BUILDNUMBER=$(echo "${CURL_RESULT}" | jq --raw-output '.values[0].build_number' | tr -d '\{\}')
 
   monitor_running_pipeline
 }
@@ -192,7 +195,7 @@ start_pipeline_for_remote_repo() {
   echo "${FUNCNAME[0]} - INFO - Entering ${FUNCNAME[0]}"
 
   REMOTE_REPO_COMMIT_HASH=${1}
-  PATTERN=${2:-build_and_deploy}
+  local PATTERN=${2:-build_and_deploy}
 
   URL="https://api.bitbucket.org/2.0/repositories/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/pipelines/"
 
@@ -218,20 +221,20 @@ start_pipeline_for_remote_repo() {
 }
 EOF
 
-  CURLRESULT=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
-                    ${URL} -d '@/curldata')
+  CURL_RESULT=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
+                    "${URL}" -d '@/curldata')
 
-  UUID=$(echo "${CURLRESULT}" | jq --raw-output '.uuid' | tr -d '\{\}')
-  BUILDNUMBER=$(echo "${CURLRESULT}" | jq --raw-output '.build_number')
+  UUID=$(echo "${CURL_RESULT}" | jq --raw-output '.uuid' | tr -d '\{\}')
+  BUILDNUMBER=$(echo "${CURL_RESULT}" | jq --raw-output '.build_number')
 
   if [[ ${UUID} = "null" ]]
   then
-    info "${FUNCNAME[0]} - ERROR: An error occured when triggering the pipeline"
+    info "${FUNCNAME[0]} - ERROR: An error occurred when triggering the pipeline"
     info "${FUNCNAME[0]} -        for ${REMOTE_REPO_SLUG}"
     info "${FUNCNAME[0]} - Curl data and return object follow"
     cat /curldata
     info "***"
-    echo "${CURLRESULT}" | jq .
+    echo "${CURL_RESULT}" | jq .
     exit 1
   fi
 
@@ -249,19 +252,19 @@ monitor_running_pipeline() {
   info "${FUNCNAME[0]} - Link to the remote pipeline result is:"
   info "${FUNCNAME[0]} -   https://bitbucket.org/${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}/addon/pipelines/home#!/results/${BUILDNUMBER}"
 
-  CONTINUE=1
-  SLEEP=10
-  STATE="NA"
-  RESULT="na"
-  CURLRESULT="NA"
+  local CONTINUE=1
+  local SLEEP=10
+  local STATE="NA"
+  local RESULT="na"
+  local CURL_RESULT="NA"
 
   info "${FUNCNAME[0]} - Monitoring remote pipeline with UUID ${UUID} with interval ${SLEEP}"
 
   while [[ ${CONTINUE} = 1 ]]
   do
     sleep ${SLEEP}
-    CURLRESULT=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' ${URL}\\{${UUID}\\})
-    STATE=$(echo ${CURLRESULT} | jq --raw-output ".state.name")
+    CURL_RESULT=$(curl -X GET -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' ${URL}\\{${UUID}\\})
+    STATE=$(echo "${CURL_RESULT}" | jq --raw-output ".state.name")
 
     info "  Pipeline is in state ${STATE}"
 
@@ -271,36 +274,43 @@ monitor_running_pipeline() {
     fi
   done
 
-  RESULT=$(echo ${CURLRESULT} | jq --raw-output '.state.result.name')
+  RESULT=$(echo "${CURL_RESULT}" | jq --raw-output '.state.result.name')
   info "${FUNCNAME[0]} - Pipeline result is ${RESULT}"
 
   RETURNVALUE="${RESULT}"
 }
 
 set_credentials() {
-  access_key=${1}
-  secret_key=${2}
-  info "${FUNCNAME[0]} - Setting environment for AWS authentication"
-  AWS_ACCESS_KEY_ID="${access_key}"
-  AWS_SECRET_ACCESS_KEY="${secret_key}"
-  export AWS_ACCESS_KEY_ID
-  export AWS_SECRET_ACCESS_KEY
+  if [[ ${SERVICE_ACCOUNT} -eq 0 ]]; then
+    local access_key=${1}
+    local secret_key=${2}
+    info "${FUNCNAME[0]} - Setting environment for AWS authentication"
+    AWS_ACCESS_KEY_ID="${access_key}"
+    AWS_SECRET_ACCESS_KEY="${secret_key}"
+    export AWS_ACCESS_KEY_ID
+    export AWS_SECRET_ACCESS_KEY
+  else
+    info "${FUNCNAME[0]} - Service account is being used, skipping set_credentials"
+  fi
 }
 
 set_source_ecr_credentials() {
   set_credentials "${AWS_ACCESS_KEY_ID_ECR_SOURCE}" "${AWS_SECRET_ACCESS_KEY_ECR_SOURCE}"
   info "${FUNCNAME[0]} - Logging in to AWS ECR source"
-  eval $(aws ecr get-login --no-include-email --region ${AWS_REGION_SOURCE:-eu-central-1})
+  eval "$(aws ecr get-login --no-include-email --region ${AWS_REGION_SOURCE:-eu-central-1})"
 }
 
 docker_build() {
   ### Use this function to build a docker artefact image from a source code repository
+  local MYDIR
 
   ### Check for required parameters
   [[ -z ${AWS_ACCOUNTID_TARGET} ]]  && [[ -z ${AWS_ECR_ACCOUNTID} ]] && fail "${FUNCNAME[0]} - One of AWS_ACCOUNTID_TARGET or AWS_ECR_ACCOUNTID is required"
   [[ -z ${DOCKER_IMAGE} ]]          && fail "${FUNCNAME[0]} - DOCKER_IMAGE is required"
-  [[ -z ${AWS_ACCESS_KEY_ID} ]]     && fail "${FUNCNAME[0]} - AWS_ACCESS_KEY_ID is required"
-  [[ -z ${AWS_SECRET_ACCESS_KEY} ]] && fail "${FUNCNAME[0]} - AWS_SECRET_ACCESS_KEY is required"
+  if [[ ${SERVICE_ACCOUNT} -eq 0 ]]; then
+    [[ -z ${AWS_ACCESS_KEY_ID} ]]     && fail "${FUNCNAME[0]} - AWS_ACCESS_KEY_ID is required"
+    [[ -z ${AWS_SECRET_ACCESS_KEY} ]] && fail "${FUNCNAME[0]} - AWS_SECRET_ACCESS_KEY is required"
+  fi
 
   ### Use AWS_ECR_ACCOUNTID if AWS_ACCOUNTID_TARGET is not defined
   if [[ -z ${AWS_ACCOUNTID_TARGET} ]]
@@ -312,15 +322,15 @@ docker_build() {
   fi
 
   install_awscli
-  eval $(aws ecr get-login --no-include-email --region ${AWS_REGION_SOURCE:-eu-central-1})
-  ### The Dockerfile is supposed to be in a subdir docker of the repo
+  eval "$(aws ecr get-login --no-include-email --region "${AWS_REGION_SOURCE:-eu-central-1}")"
+  ### The Dockerfile is supposed to be in a subdirectory docker of the repo
   MYDIR=$(pwd)
   if [[ -e /${BITBUCKET_CLONE_DIR}/docker/Dockerfile ]]
   then
-    cd /${BITBUCKET_CLONE_DIR}/docker
+    cd "/${BITBUCKET_CLONE_DIR}/docker" || fail "Directory /${BITBUCKET_CLONE_DIR}/docker does not exist, Exiting ..."
   elif [[ -e /${BITBUCKET_CLONE_DIR}/Dockerfile ]]
   then
-    cd /${BITBUCKET_CLONE_DIR}
+    cd "/${BITBUCKET_CLONE_DIR}" || fail "Directory /${BITBUCKET_CLONE_DIR} does not exist, Exiting ..."
   else
     info "${FUNCNAME[0]} - ERROR - No dockerfile found where expected (/${BITBUCKET_CLONE_DIR}/docker/Dockerfile or"
     info "${FUNCNAME[0]} - /${BITBUCKET_CLONE_DIR}/Dockerfile. Exiting ..."
@@ -328,51 +338,56 @@ docker_build() {
    fi
 
   info "{FUNCNAME[0]} - Start build of docker image ${DOCKER_IMAGE}"
-  _docker_build ${DOCKER_IMAGE}
+  _docker_build "${DOCKER_IMAGE}"
 
   info "${FUNCNAME[0]} - Tagging docker image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT}"
-  docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
-  docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
+  docker tag "${DOCKER_IMAGE}" "${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}"
+  docker tag "${DOCKER_IMAGE}" "${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}"
 
   info "${FUNCNAME[0]} - Pushing docker image ${DOCKER_IMAGE}:${BITBUCKET_COMMIT} to ECR"
-  docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
-  docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
+  docker push "${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}"
+  docker push "${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}"
 
   if [[ -n ${BITBUCKET_TAG} ]] && [[ -n ${RC_PREFIX} ]] && [[ ${BITBUCKET_TAG} = ${RC_PREFIX}* ]]
   then
     info "${FUNCNAME[0]} - Building a release candidate, also add the ${BITBUCKET_TAG} tag on the docker image"
-    docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_TAG}
-    docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_TAG}
+    docker tag "${DOCKER_IMAGE}" "${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_TAG}"
+    docker push "${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_TAG}"
   fi
 
-  cd ${MYDIR}
+  cd "${MYDIR}" || fail "Directory ${MYDIR} does not exist, Exiting ..."
 }
 
 docker_build_application_image() {
   info "${FUNCNAME[0]} - Docker info:"
   docker info
   info "${FUNCNAME[0]} - Start build of docker image ${DOCKER_IMAGE}"
-  _docker_build ${DOCKER_IMAGE}
+  _docker_build "${DOCKER_IMAGE}"
 }
 
 set_dest_ecr_credentials() {
-  info "${FUNCNAME[0]} - Fallback to AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY if AWS_ACCESS_KEY_ID_ECR_TARGET or AWS_SECRET_ACCESS_KEY_ECR_TARGET are not defined"
-  [[ -z ${AWS_ACCESS_KEY_ID_ECR_TARGET} ]] && [[ -n ${AWS_ACCESS_KEY_ID} ]] && AWS_ACCESS_KEY_ID_ECR_TARGET=${AWS_ACCESS_KEY_ID}
-  [[ -z ${AWS_SECRET_ACCESS_KEY_ECR_TARGET} ]] && [[ -n ${AWS_SECRET_ACCESS_KEY} ]] && AWS_SECRET_ACCESS_KEY_ECR_TARGET=${AWS_SECRET_ACCESS_KEY}
+  if [[ ${SERVICE_ACCOUNT} -eq 0 ]]; then
+    info "${FUNCNAME[0]} - Fallback to AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY if AWS_ACCESS_KEY_ID_ECR_TARGET or AWS_SECRET_ACCESS_KEY_ECR_TARGET are not defined"
+    [[ -z ${AWS_ACCESS_KEY_ID_ECR_TARGET} ]] && [[ -n ${AWS_ACCESS_KEY_ID} ]] && AWS_ACCESS_KEY_ID_ECR_TARGET=${AWS_ACCESS_KEY_ID}
+    [[ -z ${AWS_SECRET_ACCESS_KEY_ECR_TARGET} ]] && [[ -n ${AWS_SECRET_ACCESS_KEY} ]] && AWS_SECRET_ACCESS_KEY_ECR_TARGET=${AWS_SECRET_ACCESS_KEY}
+  fi
   set_credentials "${AWS_ACCESS_KEY_ID_ECR_TARGET}" "${AWS_SECRET_ACCESS_KEY_ECR_TARGET}"
   info "${FUNCNAME[0]} - Logging in to AWS ECR target."
-  eval $(aws ecr get-login --no-include-email --region ${AWS_REGION_TARGET:-eu-central-1})
+  eval "$(aws ecr get-login --no-include-email --region "${AWS_REGION_TARGET:-eu-central-1}")"
 }
 
 docker_build_deploy_image() {
   echo "${FUNCNAME[0]} - Determine the TAG to use for the docker pull from the file named TAG."
   export TAG="latest"
 
+  local SOURCE_IMAGE
+  local IMAGE_REPOSITORY
+
   info "${FUNCNAME[0]} - Create deploy Dockerfile"
   info "${FUNCNAME[0]} -    - use the content of the TAG file as the label for the docker image"
   info "${FUNCNAME[0]} -      to build FROM, unless ...."
   info "${FUNCNAME[0]} -    - REL_PREFIX is defined and RC_PREFIX is defined and the BITBUCKET_TAG"
-  info "${FUNCNAME[0]} -      being built starts with REL_REFIX. This indicates a production"
+  info "${FUNCNAME[0]} -      being built starts with REL_PREFIX. This indicates a production"
   info "${FUNCNAME[0]} -      build that should use the corresponding ACC build (with a RC tag)"
   info "***"
   info "${FUNCNAME[0]} - REL_PREFIX:       ${REL_PREFIX:-NA}"
@@ -400,7 +415,7 @@ docker_build_deploy_image() {
     IMAGE_REPOSITORY="${AWS_ACCOUNTID_SRC}.dkr.ecr.${AWS_REGION_SOURCE:-eu-central-1}.amazonaws.com."
   fi
 
-  if ! docker pull ${SOURCE_IMAGE}
+  if ! docker pull "${SOURCE_IMAGE}"
   then
     _print_error_banner
     error "${FUNCNAME[0]} - ERROR - The docker image ${DOCKER_IMAGE}:${TAG:-latest} is not available"
@@ -415,7 +430,7 @@ docker_build_deploy_image() {
 
   echo "FROM ${SOURCE_IMAGE}" > Dockerfile
 
-  # Allow to add extra files to the docker image. The envvar should be consturcted like
+  # Allow to add extra files to the docker image. The envvar should be constructed like
   # this: "src1:dst1 src2:dst2". This will result in these lines being added to the
   # Dockerfile file:
   # ADD src1 dst1
@@ -435,7 +450,7 @@ docker_build_deploy_image() {
   fi
 
   info "${FUNCNAME[0]} - Start build of docker image ${IMAGE}-${ENVIRONMENT:-dev} based on the artefact image with tag ${TAG:-latest}"
-  _docker_build ${IMAGE}-${ENVIRONMENT:-dev}
+  _docker_build "${IMAGE}-${ENVIRONMENT:-dev}"
 }
 
 docker_tag_and_push_deploy_image() {
@@ -448,9 +463,9 @@ docker_tag_and_push_deploy_image() {
   fi
 
   info "${FUNCNAME[0]} - Tagging docker image ${IMAGE}-${ENVIRONMENT:-dev}"
-  docker tag ${IMAGE}-${ENVIRONMENT:-dev} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${IMAGE}-${ENVIRONMENT:-dev}
+  docker tag "${IMAGE}-${ENVIRONMENT:-dev}" "${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${IMAGE}-${ENVIRONMENT:-dev}"
   info "${FUNCNAME[0]} - Pushing docker image ${IMAGE}-${ENVIRONMENT:-dev} to ECR."
-  docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${IMAGE}-${ENVIRONMENT:-dev}
+  docker push "${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${IMAGE}-${ENVIRONMENT:-dev}"
 }
 
 docker_tag_and_push_application_image() {
@@ -458,11 +473,11 @@ docker_tag_and_push_application_image() {
   [[ -z ${DOCKER_IMAGE} ]]         && { echo "### ${FUNCNAME[0]} - DOCKER_IMAGE envvar is required ###"; exit 1; }
 
   info "${FUNCNAME[0]} - Tagging docker image ${DOCKER_IMAGE}"
-  docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
-  docker tag ${DOCKER_IMAGE} ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
+  docker tag "${DOCKER_IMAGE}" "${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}"
+  docker tag "${DOCKER_IMAGE}" "${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}"
   info "${FUNCNAME[0]} - Pushing docker image ${DOCKER_IMAGE} to ECR."
-  docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}
-  docker push ${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}
+  docker push "${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}"
+  docker push "${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_REGION_TARGET:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${BITBUCKET_COMMIT}"
 }
 
 docker_deploy_image() {
@@ -497,28 +512,32 @@ docker_deploy_image() {
 }
 
 s3_deploy_apply_config_to_tree() {
-  # In all files under ${basedir}, replace all occurences of __VARNAME__ to the value of
+  # In all files under ${basedir}, replace all occurrences of __VARNAME__ to the value of
   # the environment variable CFG_VARNAME, for all envvars starting with CFG_
+  local basedir
+  local SUBST_SRC
+  local SUBST_VAL
+
   basedir=${1}
 
   for VARNAME in ${!CFG_*}
   do
     SUBST_SRC="__${VARNAME##CFG_}__"
     SUBST_VAL=$(eval echo \$${VARNAME})
-    info "${FUNCNAME[0]} - Replacing all occurences of ${SUBST_SRC} to ${SUBST_VAL} in all files under ${basedir}"
+    info "${FUNCNAME[0]} - Replacing all occurrences of ${SUBST_SRC} to ${SUBST_VAL} in all files under ${basedir}"
     for file in $(find ${basedir} -type f); do
-      sed -i "s|${SUBST_SRC}|${SUBST_VAL}|g" ${file}
+      sed -i "s|${SUBST_SRC}|${SUBST_VAL}|g" "${file}"
     done
   done
 }
 
 s3_deploy_create_tar_and_upload_to_s3() {
-  info "${FUNCNAME[0]} - Create tarfile ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz from all files in ${PAYLOAD_LOCATION:-dist}"
-  tar -C ${PAYLOAD_LOCATION:-dist} -czvf ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz .
+  info "${FUNCNAME[0]} - Create tar file ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz from all files in ${PAYLOAD_LOCATION:-dist}"
+  tar -C "${PAYLOAD_LOCATION:-dist}" -czvf "${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz" .
   info "${FUNCNAME[0]} - Copy ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz to S3 bucket ${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz"
-  aws s3 cp ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz
+  aws s3 cp "${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz" "s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz"
   info " ${FUNCNAME[0]} - Copy ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz to S3 bucket ${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-last.tgz"
-  aws s3 cp ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-last.tgz
+  aws s3 cp "${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz" "s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-last.tgz"
 }
 
 s3_deploy_download_tar_and_prepare_for_deploy() {
@@ -526,12 +545,12 @@ s3_deploy_download_tar_and_prepare_for_deploy() {
   [[ -e TAG ]] && TAG=$(cat TAG)
 
   info "${FUNCNAME[0]} - Download artifact ${ARTIFACT_NAME}-${TAG}.tgz from s3://${S3_ARTIFACT_BUCKET}"
-  aws s3 cp s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${TAG}.tgz .
+  aws s3 cp "s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${TAG}.tgz" .
   info "${FUNCNAME[0]} - Create workdir ###"
   mkdir -p workdir
   info "### ${FUNCNAME[0]} - Untar the artifact file into the workdir.#"
-  cd workdir
-  tar -xzvf ../${ARTIFACT_NAME}-${TAG}.tgz
+  cd workdir || fail "Directory workdir does not exist. Exiting ..."
+  tar -xzvf "../${ARTIFACT_NAME}-${TAG}.tgz"
   cd ..
   info "${FUNCNAME[0]} - Start applying the config to the untarred files."
   s3_deploy_apply_config_to_tree workdir
@@ -539,18 +558,25 @@ s3_deploy_download_tar_and_prepare_for_deploy() {
 
 s3_deploy_deploy() {
   install_awscli
-  cd ${1:-workdir}
-  info "${FUNCNAME[0]} - Set AWS credentials for deploy (AWS_ACCESS_KEY_ID_S3_TARGET and AWS_SECRET_ACCESS_KEY_S3_TARGET)."
-  set_credentials "${AWS_ACCESS_KEY_ID_S3_TARGET}" "${AWS_SECRET_ACCESS_KEY_S3_TARGET}"
+  cd "${1:-workdir}" || fail "Directory ${1:-workdir} does not exist. Exiting ..."
+
+  if [[ ${SERVICE_ACCOUNT} -eq 0 ]]; then
+    info "${FUNCNAME[0]} - Set AWS credentials for deploy (AWS_ACCESS_KEY_ID_S3_TARGET and AWS_SECRET_ACCESS_KEY_S3_TARGET)."
+    set_credentials "${AWS_ACCESS_KEY_ID_S3_TARGET}" "${AWS_SECRET_ACCESS_KEY_S3_TARGET}"
+  fi
   info "${FUNCNAME[0]} - Deploy the payload to s3://${S3_DEST_BUCKET}/${S3_PREFIX:-} with ACL ${AWS_ACCESS_CONTROL:-private}"
-  aws s3 cp --acl ${AWS_ACCESS_CONTROL:-private} --recursive . s3://${S3_DEST_BUCKET}/${S3_PREFIX:-}
-  cd -
+  aws s3 cp --acl "${AWS_ACCESS_CONTROL:-private}" --recursive . "s3://${S3_DEST_BUCKET}/${S3_PREFIX:-}"
+  cd - || fail "Previous (cd -) directory does not exist. Exiting ..."
 }
 
 s3_deploy() {
   install_awscli
-  info "${FUNCNAME[0]} - Set AWS credentials for artifact download (AWS_ACCESS_KEY_ID_S3_SOURCE and AWS_SECRET_ACCESS_KEY_S3_SOURCE)."
-  set_credentials "${AWS_ACCESS_KEY_ID_S3_SOURCE}" "${AWS_SECRET_ACCESS_KEY_S3_SOURCE}"
+
+  if [[ ${SERVICE_ACCOUNT} -eq 0 ]]; then
+    info "${FUNCNAME[0]} - Set AWS credentials for artifact download (AWS_ACCESS_KEY_ID_S3_SOURCE and AWS_SECRET_ACCESS_KEY_S3_SOURCE)."
+    set_credentials "${AWS_ACCESS_KEY_ID_S3_SOURCE}" "${AWS_SECRET_ACCESS_KEY_S3_SOURCE}"
+  fi
+
   s3_deploy_download_tar_and_prepare_for_deploy
   info "${FUNCNAME[0]} - Start the deploy."
   s3_deploy_deploy
@@ -561,8 +587,10 @@ s3_lambda_build_and_push() {
 
   ### Required for all types of Lambda build
   [[ -z ${S3_DEST_BUCKET} ]]        && fail "${FUNCNAME[0]} - S3_DEST_BUCKET envvar is required"
-  [[ -z ${AWS_ACCESS_KEY_ID} ]]     && fail "${FUNCNAME[0]} - AWS_ACCESS_KEY_ID envvar is required"
-  [[ -z ${AWS_SECRET_ACCESS_KEY} ]] && fail "${FUNCNAME[0]} - AWS_SECRET_ACCESS_KEY envvar is required"
+  if [[ ${SERVICE_ACCOUNT} -eq 0 ]]; then
+    [[ -z ${AWS_ACCESS_KEY_ID} ]]     && fail "${FUNCNAME[0]} - AWS_ACCESS_KEY_ID envvar is required"
+    [[ -z ${AWS_SECRET_ACCESS_KEY} ]] && fail "${FUNCNAME[0]} - AWS_SECRET_ACCESS_KEY envvar is required"
+  fi
   [[ -z ${LAMBDA_RUNTIME} ]]        && fail "${FUNCNAME[0]} - LAMBDA_RUNTIME envvar is required"
   [[ -z ${LAMBDA_FUNCTION_NAME} ]]  && fail "${FUNCNAME[0]} - LAMBDA_FUNCTION_NAME envvar is required"
 
@@ -630,6 +658,10 @@ s3_lambda_build_and_push() {
   fi
 
   ### Upload the Lambda artifact to S3
+  local TARGETS
+  local EXTENSION
+  local SOURCE
+
   TARGETS=""
 
   if [[ ${LAMBDA_RUNTIME} = java* ]]
@@ -673,10 +705,14 @@ s3_artifact() {
   if [[ -n ${BUILD_COMMAND} ]]
   then
     create_npmrc
-    eval ${BUILD_COMMAND}
+    eval "${BUILD_COMMAND}"
   fi
-  info "${FUNCNAME[0]} - Set AWS credentials for artifact upload (AWS_ACCESS_KEY_ID_S3_TARGET and AWS_SECRET_ACCESS_KEY_S3_TARGET)."
+
+  if [[ ${SERVICE_ACCOUNT} -eq 0 ]]; then
+    info "${FUNCNAME[0]} - Set AWS credentials for artifact upload (AWS_ACCESS_KEY_ID_S3_TARGET and AWS_SECRET_ACCESS_KEY_S3_TARGET)."
+  fi
   set_credentials "${AWS_ACCESS_KEY_ID_S3_TARGET}" "${AWS_SECRET_ACCESS_KEY_S3_TARGET}"
+
   s3_deploy_create_tar_and_upload_to_s3
 }
 
@@ -735,11 +771,14 @@ s3_build_once_deploy_once() {
   run_log_and_exit_on_failure "cd remote_repo"
   run_log_and_exit_on_failure "${BUILD_COMMAND}"
 
-  info "${FUNCNAME[0]} - Set AWS credentials for deploy (AWS_ACCESS_KEY_ID_S3_TARGET and AWS_SECRET_ACCESS_KEY_S3_TARGET)."
+  if [[ ${SERVICE_ACCOUNT} -eq 0 ]]; then
+    info "${FUNCNAME[0]} - Set AWS credentials for deploy (AWS_ACCESS_KEY_ID_S3_TARGET and AWS_SECRET_ACCESS_KEY_S3_TARGET)."
+  fi
   set_credentials "${AWS_ACCESS_KEY_ID_S3_TARGET}" "${AWS_SECRET_ACCESS_KEY_S3_TARGET}"
+
   info "${FUNCNAME[0]} - Start the deploy."
   install_awscli
-  s3_deploy_deploy ${PAYLOAD_LOCATION}
+  s3_deploy_deploy "${PAYLOAD_LOCATION}"
   s3_cloudfront_invalidate
 
   run_log_and_exit_on_failure "cd -"
@@ -749,17 +788,21 @@ s3_build_once_deploy_once() {
 ### Private functions
 
 _disable_cw_alarms() {
-  > alarms_to_enable.txt
-  CW_ALARMS=$(aws cloudwatch describe-alarms --region ${AWS_REGION:-eu-central-1} --query "MetricAlarms[*]|[?contains(AlarmName, '${CW_ALARM_SUBSTR}')].AlarmName" --output text)
-  aws cloudwatch describe-alarms --region ${AWS_REGION:-eu-central-1} --query "MetricAlarms[*]|[?contains(AlarmName, '${CW_ALARM_SUBSTR}')].[AlarmName,ActionsEnabled]" --output text | \
-  while read line
+  local line
+
+  true > alarms_to_enable.txt
+  aws cloudwatch describe-alarms \
+    --region "${AWS_REGION:-eu-central-1}" \
+    --query "MetricAlarms[*]|[?contains(AlarmName, '${CW_ALARM_SUBSTR}')].[AlarmName,ActionsEnabled]" \
+    --output text | \
+  while read -r line
   do
     set -- ${line}
     if [[ ${2} == "True" ]]
     then
       info "${FUNCNAME[0]} - INFO - Disabling alarm ${1}"
-      aws cloudwatch disable-alarm-actions --region ${AWS_REGION:-eu-central-1} --alarm-names ${1}
-      echo ${1} >> alarms_to_enable.txt
+      aws cloudwatch disable-alarm-actions --region "${AWS_REGION:-eu-central-1}" --alarm-names "${1}"
+      echo "${1}" >> alarms_to_enable.txt
     fi
   done
   CW_ALARMS_DISABLED=1
@@ -769,13 +812,15 @@ _enable_cw_alarms() {
   for ALARM in $(cat alarms_to_enable.txt)
   do
     info "${FUNCNAME[0]} - INFO - Enabling alarm ${ALARM}"
-    aws cloudwatch enable-alarm-actions --region ${AWS_REGION:-eu-central-1} --alarm-names ${ALARM}
+    aws cloudwatch enable-alarm-actions --region "${AWS_REGION:-eu-central-1}" --alarm-names "${ALARM}"
   done
   CW_ALARMS_DISABLED=0
   rm -f alarms_to_enable.txt
 }
 
 _docker_build() {
+  local image_name
+
   image_name=${1:-${DOCKER_IMAGE}}
 
   [[ -z ${image_name} ]] && { echo "### ${FUNCNAME[0]} - DOCKER_IMAGE is required ###"; exit 1; }
@@ -787,18 +832,17 @@ _docker_build() {
                  --build-arg="BITBUCKET_REPO_SLUG=${BITBUCKET_REPO_SLUG:-NA}" \
                  --build-arg="BITBUCKET_REPO_OWNER=${BITBUCKET_REPO_OWNER:-NA}" \
                  --build-arg="SSH_PRIV_KEY=$(cat /opt/atlassian/pipelines/agent/data/id_rsa)" \
-                 -t ${image_name} .
+                 -t "${image_name}" \
+                 . \
+    || fail "${FUNCNAME[0]} - An error occurred while building ${DOCKER_IMAGE}. Exiting ..."
   else
     info "${FUNCNAME[0]} - The private ssh key file does not exist."
     docker build --build-arg="BITBUCKET_COMMIT=${BITBUCKET_COMMIT:-NA}" \
                  --build-arg="BITBUCKET_REPO_SLUG=${BITBUCKET_REPO_SLUG:-NA}" \
                  --build-arg="BITBUCKET_REPO_OWNER=${BITBUCKET_REPO_OWNER:-NA}" \
-                 -t ${image_name} .
-  fi
-
-  if [[ $? -ne 0 ]]
-  then
-    fail "${FUNCNAME[0]} - An error occured while building ${DOCKER_IMAGE}. Exiting ..."
+                 -t "${image_name}" \
+                 . \
+    || fail "${FUNCNAME[0]} - An error occurred while building ${DOCKER_IMAGE}. Exiting ..."
   fi
 }
 
