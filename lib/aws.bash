@@ -20,7 +20,7 @@ aws_update_service() {
 
   info "Registering task definition file for ${aws_ecs_task_family} with version ${image_tag}"
   aws_ecs_register_taskdefinition "${aws_ecs_task_family}"
-  success "Task definition successfully registgered"
+  success "Task definition successfully registered"
 
   info "Update service ${aws_ecs_service_name} in cluster ${aws_ecs_cluster_name}"
   aws ecs update-service --cluster "${aws_ecs_cluster_name}" \
@@ -78,33 +78,76 @@ aws_ecs_register_taskdefinition() {
   info "New task definition ARN is ${AWS_ECS_NEW_TASK_DEFINITION_ARN}"
 }
 
+_indirection() {
+  local basename_var=${1}
+  local account=${2}
+  local var="${basename_var}_${account}"
+  echo "${!var}"
+}
+
 #######################################
-# If the envvar AWS_CREDENTIALS_JSON is set, AWS authentication will be done using service accounts. These are
-# users defined on an AWS bastion account and have permissions to assume a role on specific account.
-# The assumed role will determine the permissions.
 #
-# For example:
-#   SA_AWS_CREDENTIALS_JSON='{"profiles":[{"name":"default","role_arn":"arn:aws:iam::123456789012:role/ServiceAccount/cicd","aws_access_key_id":"AKIA","aws_secret_access_key":"sdkf"}]}'
-# This JQ expression will convert the JSON to a credentials file:
-#   echo "${SA_AWS_CREDENTIALS_JSON}" | jq -r '.profiles | [.[] | "[profile " + .name + "]", "aws_access_key_id=" +.aws_access_key_id, "aws_secret_access_key=" + .aws_secret_access_key, "role_arn=" + .role_arn, "region=" + (.region // "eu-central-1") ][]'
-# Setting the envvar AWS_DEFAULT_PROFILE to the name in the JSON will cause that service account and the linked
-# role to be used in the pipeline.
+#
 aws_set_service_account_config() {
+  local account
+
   [[ -z ${AWS_CONFIG_BASEDIR} ]] && AWS_CONFIG_BASEDIR=~/.aws
-  if [[ -n ${AWS_CREDENTIALS_JSON} ]]; then
-    if ! check_command jq; then
-      install_jq
-    fi
-    if ! check_command aws; then
-      install_awscli
-    fi
-    SERVICE_ACCOUNT=1
+  if [[ -n ${SA_ACCOUNT_LIST} ]]; then
     mkdir -p "${AWS_CONFIG_BASEDIR}"
     {
-      echo "${AWS_CREDENTIALS_JSON}" | jq -r '.credentials | [.[] | "[" + .name + "]", "aws_access_key_id=" +.aws_access_key_id, "aws_secret_access_key=" + .aws_secret_access_key, "region=" + (.region // "eu-central-1") ][]'
-    } > "${AWS_CONFIG_BASEDIR}/credentials"
+      for account in ${SA_ACCOUNT_LIST}; do
+        echo "[${account}_SOURCE]"
+        echo "aws_access_key_id=$(_indirection ACCESS_KEY_ID ${account})"
+        echo "aws_secret_access_key=$(_indirection SECRET_ACCESS_KEY ${account})"
+        echo "region=eu-central-1"
+        echo ""
+      done
+    } > ${AWS_CONFIG_BASEDIR}/credentials
     {
-      echo "${AWS_CREDENTIALS_JSON}" | jq -r '.profiles | [.[] | "[profile " + .name + "]", "source_profile=" + .source_profile, "role_arn=" + .role_arn ][]'
-    } > "${AWS_CONFIG_BASEDIR}/config"
+      (( counter = 0 ))
+      for account in ${SA_ACCOUNT_LIST}; do
+        local role_arn
+        local account_id
+
+        role_arn="$(_indirection ROLE_TO_ASSUME ${account})"
+        account_id="$(_indirection ACCOUNT_ID ${account})"
+
+        if [[ -z ${role_arn} ]]; then
+          role_arn="arn:aws:iam::${account_id}:role/ServiceAccount/cicd"
+        fi
+        if [[ ${counter} -eq 0 ]]; then
+          echo "[profile default]"
+          echo "source_profile=${account}_SOURCE"
+          echo "role_arn=${role_arn})"
+          echo ""
+        fi
+        echo "[profile ${account}]"
+        echo "source_profile=${account}_SOURCE"
+        echo "role_arn=${role_arn})"
+        echo ""
+        (( counter++ ))
+      done
+    } > ${AWS_CONFIG_BASEDIR}/config
+  fi
+}
+
+aws_set_codeartifact_token() {
+  if [[ -n ${AWS_CODEARTIFACT_DOMAIN} && -n ${AWS_CODEARTIFACT_DOMAIN_OWNER} ]]; then
+    info "Trying to get the CODEARTIFACT_AUTH_TOKEN"
+    if CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token  \
+                                --domain "${AWS_CODEARTIFACT_DOMAIN}" \
+                                --domain-owner "${AWS_CODEARTIFACT_DOMAIN_OWNER}" \
+                                --output text); then
+      success "Successfully retrieved CODEARTIFACT_AUTH_TOKEN"
+      export CODEARTIFACT_AUTH_TOKEN
+    else
+      error "Unable to get CODEARTIFACT_AUTH_TOKEN for:"
+      error "  Domain:       ${AWS_CODEARTIFACT_DOMAIN}"
+      error "  Domain Owner: ${AWS_CODEARTIFACT_DOMAIN_OWNER}"
+      fail "Exiting ..."
+    fi
+  else
+    info "Skipping CODEARTIFACT_AUTH_TOKEN generation because AWS_CODEARTIFACT_DOMAIN"
+    info "  and/or AWS_CODEARTIFACT_DOMAIN_OWNER are not set"
   fi
 }
