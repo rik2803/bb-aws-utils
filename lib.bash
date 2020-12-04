@@ -651,7 +651,7 @@ s3_lambda_build_and_push() {
 
     if [[ -f requirements.txt ]]; then
       if [[ -z ${SKIP_PIP_INSTALL} || ${SKIP_PIP_INSTALL} -eq 0 ]]; then
-        run_log_and_exit_on_failure "pip --quiet --target /builddir install -r requirements.txt"
+        run_log_and_exit_on_failure "pip install --quiet --target /builddir -r requirements.txt"
       else
         info "${FUNCNAME[0]} - Skipped dependency build because SKIP_PIP_INSTALL is set to ${SKIP_PIP_INSTALL}"
       fi
