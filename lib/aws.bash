@@ -93,6 +93,7 @@ aws_set_service_account_config() {
 
   [[ -z ${AWS_CONFIG_BASEDIR} ]] && AWS_CONFIG_BASEDIR=~/.aws
   if [[ -n ${SA_ACCOUNT_LIST} ]]; then
+    check_command aws || install_awscli
     mkdir -p "${AWS_CONFIG_BASEDIR}"
     {
       for account in ${SA_ACCOUNT_LIST}; do
@@ -130,12 +131,14 @@ aws_set_service_account_config() {
     } > ${AWS_CONFIG_BASEDIR}/config
 
     SERVICE_ACCOUNT=1
+    info "$(aws sts get-caller-identity)"
   fi
 }
 
 aws_set_codeartifact_token() {
   if [[ -n ${AWS_CODEARTIFACT_DOMAIN} && -n ${AWS_CODEARTIFACT_DOMAIN_OWNER} ]]; then
     info "Trying to get the CODEARTIFACT_AUTH_TOKEN"
+    check_command aws || install_awscli
     if CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token  \
                                 --domain "${AWS_CODEARTIFACT_DOMAIN}" \
                                 --domain-owner "${AWS_CODEARTIFACT_DOMAIN_OWNER}" \
