@@ -39,7 +39,7 @@ run_apt_get_update() {
   then
     # To avoid error on jessie and archived jessie-updates/main
     sed -i '/jessie-updates/d' /etc/apt/sources.list || true
-    run_log_and_exit_on_failure "apt-get update"
+    run_log_and_exit_on_failure "apt-get -qq update"
     APT_GET_UPDATE_OK=1
   fi
 }
@@ -50,11 +50,11 @@ install_sw() {
   [[ -z ${1} ]] && fail "install_sw sw_to_install"
 
   if [[ ${CENTOSDISTRO} = "1" ]]; then
-    yum install -y "${1}"
+    yum -y -q install "${1}"
   elif [[ ${DEBIANDISTRO} = "1" ]]; then
-    apt-get update && apt-get install -y "${1}"
+    apt-get -qq update && apt-get -qq -y install "${1}"
   elif [[ ${ALPINEDISTRO} = "1" ]]; then
-    apk --update --no-cache add "${1}"
+    apk --quiet --update --no-cache add "${1}"
   else
     info "Unknown distribution, continuing without installing ${1}"
   fi
@@ -67,7 +67,7 @@ install_apt_get_update() {
   then
     # To avoid error on jessie and archived jessie-updates/main
     sed -i '/jessie-updates/d' /etc/apt/sources.list || true
-    apt-get update
+    apt-get -qq update
     APT_GET_UPDATE_OK=1
   fi
 }
@@ -80,7 +80,7 @@ install_awscli() {
     if [[ ${DEBIANDISTRO} -eq 1 ]]; then
       info "${FUNCNAME[0]} - Installing aws cli on Debian"
       install_apt_get_update
-      apt-get install -y python-dev
+      apt-get -qq -y install python-dev
       curl -O https://bootstrap.pypa.io/get-pip.py
       python get-pip.py
       pip install awscli
@@ -88,12 +88,12 @@ install_awscli() {
       success "${FUNCNAME[0]} - Installed aws cli on Debian"
     elif [[ ${ALPINEDISTRO} -eq 1 ]]; then
       info "${FUNCNAME[0]} - Installing aws cli on Alpine"
-      apk --update --no-cache add python py-pip
+      apk --quiet --update --no-cache add python py-pip
       pip install --no-cache-dir awscli
       success "${FUNCNAME[0]} - Installed aws cli on Alpine"
     else
       info "${FUNCNAME[0]} - Installing aws cli on CentOS"
-      yum install -y awscli
+      yum -y -q install awscli
       AWSCLI_INSTALLED=1
       success "${FUNCNAME[0]} - Installed aws cli on CentOS"
     fi
@@ -109,11 +109,11 @@ install_zip() {
     then
       info "${FUNCNAME[0]} - Installing zip on debian"
       run_apt_get_update
-      run_log_and_exit_on_failure "apt-get install -y zip"
+      run_log_and_exit_on_failure "apt-get -qq -y install zip"
       ZIP_INSTALLED=1
     else
       info "${FUNCNAME[0]} - Installing zip on CentOS"
-      run_log_and_exit_on_failure "yum install -y zip unzip"
+      run_log_and_exit_on_failure "yum -y -q install zip unzip"
       ZIP_INSTALLED=1
     fi
   else
@@ -126,7 +126,7 @@ install_maven2() {
   if [[ ${DEBIANDISTRO} -eq 1 ]]
   then
     run_apt_get_update
-    run_log_and_exit_on_failure "apt-get install -y maven2"
+    run_log_and_exit_on_failure "apt-get -qq -y install maven2"
   else
     info "${FUNCNAME[0]} - Installing maven2 on CentOS like distro is not implemented"
   fi
@@ -139,9 +139,9 @@ install_jq() {
     if [[ ${DEBIANDISTRO} -eq 1 ]]
     then
       run_apt_get_update
-      run_log_and_exit_on_failure "apt-get install -y jq"
+      run_log_and_exit_on_failure "apt-get -qq -y install jq"
     else
-      run_log_and_exit_on_failure "yum install -y jq"
+      run_log_and_exit_on_failure "yum -y -q install jq"
     fi
 
     ### jq is required
