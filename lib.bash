@@ -536,9 +536,9 @@ s3_deploy_create_tar_and_upload_to_s3() {
   info "${FUNCNAME[0]} - Create tar file ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz from all files in ${PAYLOAD_LOCATION:-dist}"
   tar -C "${PAYLOAD_LOCATION:-dist}" -czvf "${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz" .
   info "${FUNCNAME[0]} - Copy ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz to S3 bucket ${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz"
-  aws s3 cp "${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz" "s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz"
+  aws s3 cp "${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz" "s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz" --quiet
   info " ${FUNCNAME[0]} - Copy ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz to S3 bucket ${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-last.tgz"
-  aws s3 cp "${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz" "s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-last.tgz"
+  aws s3 cp "${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz" "s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-last.tgz" --quiet
 }
 
 s3_deploy_download_tar_and_prepare_for_deploy() {
@@ -546,7 +546,7 @@ s3_deploy_download_tar_and_prepare_for_deploy() {
   [[ -e TAG ]] && TAG=$(cat TAG)
 
   info "${FUNCNAME[0]} - Download artifact ${ARTIFACT_NAME}-${TAG}.tgz from s3://${S3_ARTIFACT_BUCKET}"
-  aws s3 cp "s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${TAG}.tgz" .
+  aws s3 cp "s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${TAG}.tgz" . --quiet
   info "${FUNCNAME[0]} - Create workdir ###"
   mkdir -p workdir
   info "### ${FUNCNAME[0]} - Untar the artifact file into the workdir.#"
@@ -566,7 +566,7 @@ s3_deploy_deploy() {
     set_credentials "${AWS_ACCESS_KEY_ID_S3_TARGET}" "${AWS_SECRET_ACCESS_KEY_S3_TARGET}"
   fi
   info "${FUNCNAME[0]} - Deploy the payload to s3://${S3_DEST_BUCKET}/${S3_PREFIX:-} with ACL ${AWS_ACCESS_CONTROL:-private}"
-  aws s3 cp --acl "${AWS_ACCESS_CONTROL:-private}" --recursive . "s3://${S3_DEST_BUCKET}/${S3_PREFIX:-}"
+  aws s3 cp --quiet --acl "${AWS_ACCESS_CONTROL:-private}" --recursive . "s3://${S3_DEST_BUCKET}/${S3_PREFIX:-}"
   cd - || fail "Previous (cd -) directory does not exist. Exiting ..."
 }
 
@@ -686,7 +686,7 @@ s3_lambda_build_and_push() {
 
   for TARGET in ${TARGETS}
   do
-    run_log_and_exit_on_failure "aws s3 cp --acl private ${SOURCE} s3://${S3_DEST_BUCKET}/${TARGET}"
+    run_log_and_exit_on_failure "aws s3 cp --quiet --acl private ${SOURCE} s3://${S3_DEST_BUCKET}/${TARGET}"
     info "${FUNCNAME[0]} - S3 URL is https://s3.amazonaws.com/${S3_DEST_BUCKET}/${TARGET}"
   done
 
@@ -694,7 +694,7 @@ s3_lambda_build_and_push() {
   then
     for TARGET in ${TARGETS}
     do
-      run_log_and_exit_on_failure "aws s3 cp --acl public-read ${SOURCE} s3://${S3_DEST_BUCKET}-public/${TARGET}"
+      run_log_and_exit_on_failure "aws s3 cp --quiet --acl public-read ${SOURCE} s3://${S3_DEST_BUCKET}-public/${TARGET}"
       info "${FUNCNAME[0]} - S3 URL is https://s3.amazonaws.com/${S3_DEST_BUCKET}-public/${TARGET}"
     done
   fi
