@@ -22,6 +22,7 @@ fi
 install_set_linux_distribution_type
 aws_set_service_account_config
 
+
 repo_git_url() {
   echo "git@bitbucket.org:${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}.git"
 }

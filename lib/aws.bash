@@ -104,7 +104,7 @@ aws_set_service_account_config() {
       done
     } > ${AWS_CONFIG_BASEDIR}/credentials
     {
-      (( counter = 0 ))
+      (( counter = 0 )) || true
       for account in ${SA_ACCOUNT_LIST}; do
         local role_arn
         local account_id
