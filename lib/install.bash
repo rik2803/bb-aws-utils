@@ -83,13 +83,13 @@ install_awscli() {
       apt-get -qq -y install python-dev
       curl -O https://bootstrap.pypa.io/get-pip.py
       python get-pip.py
-      pip install awscli
+      pip --quiet install awscli
       AWSCLI_INSTALLED=1
       success "${FUNCNAME[0]} - Installed aws cli on Debian"
     elif [[ ${ALPINEDISTRO} -eq 1 ]]; then
       info "${FUNCNAME[0]} - Installing aws cli on Alpine"
       apk --quiet --update --no-cache add python py-pip
-      pip install --no-cache-dir awscli
+      pip --quiet --no-cache-dir install awscli
       success "${FUNCNAME[0]} - Installed aws cli on Alpine"
     else
       info "${FUNCNAME[0]} - Installing aws cli on CentOS"
