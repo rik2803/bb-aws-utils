@@ -125,7 +125,7 @@ aws_set_service_account_config() {
         echo "source_profile=${account}_SOURCE"
         echo "role_arn=${role_arn})"
         echo ""
-        (( counter++ ))
+        (( counter++ )) || true
       done
     } > ${AWS_CONFIG_BASEDIR}/config
   fi
