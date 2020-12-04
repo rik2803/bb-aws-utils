@@ -119,12 +119,12 @@ aws_set_service_account_config() {
         if [[ ${counter} -eq 0 ]]; then
           echo "[profile default]"
           echo "source_profile=${account}_SOURCE"
-          echo "role_arn=${role_arn})"
+          echo "role_arn=${role_arn}"
           echo ""
         fi
         echo "[profile ${account}]"
         echo "source_profile=${account}_SOURCE"
-        echo "role_arn=${role_arn})"
+        echo "role_arn=${role_arn}"
         echo ""
         (( counter++ )) || true
       done
