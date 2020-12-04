@@ -128,6 +128,8 @@ aws_set_service_account_config() {
         (( counter++ )) || true
       done
     } > ${AWS_CONFIG_BASEDIR}/config
+
+    SERVICE_ACCOUNT=1
   fi
 }
 
