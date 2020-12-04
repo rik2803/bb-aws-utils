@@ -24,6 +24,13 @@ maven_create_settings_xml() {
     {
       echo "<settings>"
       echo "  <servers>"
+      if [[ -n ${CODEARTIFACT_AUTH_TOKEN} ]]; then
+        echo '    <server>'
+        echo '        <id>codeartifact</id>'
+        echo '        <username>aws</username>'
+        echo '        <password>${env.CODEARTIFACT_AUTH_TOKEN}</password>'
+        echo '    </server>'
+      fi
       if [[ ${MAVEN_SETTINGS_ID} != skip ]]; then
         for index in "${!MAVEN_SETTINGS_ID_ARRAY[@]}"; do
           echo "    <server>"
