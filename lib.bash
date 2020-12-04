@@ -536,9 +536,9 @@ s3_deploy_create_tar_and_upload_to_s3() {
   info "${FUNCNAME[0]} - Create tar file ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz from all files in ${PAYLOAD_LOCATION:-dist}"
   tar -C "${PAYLOAD_LOCATION:-dist}" -czvf "${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz" .
   info "${FUNCNAME[0]} - Copy ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz to S3 bucket ${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz"
-  aws s3 cp "${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz" "s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz" --quiet
+  aws s3 cp --quiet "${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz" "s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz"
   info " ${FUNCNAME[0]} - Copy ${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz to S3 bucket ${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-last.tgz"
-  aws s3 cp "${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz" "s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-last.tgz" --quiet
+  aws s3 cp --quiet "${ARTIFACT_NAME}-${BITBUCKET_COMMIT}.tgz" "s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-last.tgz"
 }
 
 s3_deploy_download_tar_and_prepare_for_deploy() {
@@ -546,7 +546,7 @@ s3_deploy_download_tar_and_prepare_for_deploy() {
   [[ -e TAG ]] && TAG=$(cat TAG)
 
   info "${FUNCNAME[0]} - Download artifact ${ARTIFACT_NAME}-${TAG}.tgz from s3://${S3_ARTIFACT_BUCKET}"
-  aws s3 cp "s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${TAG}.tgz" . --quiet
+  aws s3 cp --quiet "s3://${S3_ARTIFACT_BUCKET}/${ARTIFACT_NAME}-${TAG}.tgz" .
   info "${FUNCNAME[0]} - Create workdir ###"
   mkdir -p workdir
   info "### ${FUNCNAME[0]} - Untar the artifact file into the workdir.#"
