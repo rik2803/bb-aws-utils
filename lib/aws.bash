@@ -131,7 +131,7 @@ aws_set_service_account_config() {
     } > ${AWS_CONFIG_BASEDIR}/config
 
     SERVICE_ACCOUNT=1
-    info "$(aws sts get-caller-identity)"
+    aws sts get-caller-identity || true
   fi
 }
 
