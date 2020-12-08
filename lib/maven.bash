@@ -165,8 +165,9 @@ maven_build() {
   check_envvar MAVEN_SETTINGS_PATH O /
   check_command mvn || install_sw maven
 
-  maven_create_settings_xml
+  info "Retrieving the version number from the pom file"
   maven_get_current_version_from_pom
+  info "Finished retrieving the version number from the pom file"
 
   COMMAND="mvn ${MAVEN_DEVELOP_COMMAND} -s ${MAVEN_SETTINGS_PATH}/settings.xml -DscmCommentPrefix=\"[skip ci]\" ${MAVEN_EXTRA_ARGS}"
 
