@@ -152,7 +152,8 @@ maven_get_next_develop_version() {
 }
 
 maven_get_current_version_from_pom() {
-  MAVEN_CURRENT_VERSION_FROM_POM=$(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+  mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec
+  MAVEN_CURRENT_VERSION_FROM_POM=$(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
   export MAVEN_CURRENT_VERSION_FROM_POM
 }
 
