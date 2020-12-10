@@ -142,6 +142,7 @@ aws_set_codeartifact_token() {
     if CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token  \
                                 --domain "${AWS_CODEARTIFACT_DOMAIN}" \
                                 --domain-owner "${AWS_CODEARTIFACT_DOMAIN_OWNER}" \
+                                --query authorizationToken \
                                 --output text); then
       success "Successfully retrieved CODEARTIFACT_AUTH_TOKEN"
       export CODEARTIFACT_AUTH_TOKEN
