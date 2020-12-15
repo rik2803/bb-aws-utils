@@ -166,7 +166,7 @@ maven_build() {
   maven_get_current_version_from_pom
   info "Finished retrieving the version number from the pom file"
 
-  COMMAND="mvn ${MAVEN_DEVELOP_COMMAND} -s ${MAVEN_SETTINGS_PATH}/settings.xml -DscmCommentPrefix=\"[skip ci]\" ${MAVEN_EXTRA_ARGS}"
+  COMMAND="mvn ${MAVEN_DEVELOP_COMMAND} -B -s ${MAVEN_SETTINGS_PATH}/settings.xml -DscmCommentPrefix=\"[skip ci]\" ${MAVEN_EXTRA_ARGS}"
 
   info "${COMMAND}"
   eval ${COMMAND}
