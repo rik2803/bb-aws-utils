@@ -91,10 +91,12 @@ _indirection() {
 aws_set_service_account_config() {
   local account
 
+  info "Start creation of AWS CLI config and credentials file, if applicable"
   [[ -z ${AWS_CONFIG_BASEDIR} ]] && AWS_CONFIG_BASEDIR=~/.aws
   if [[ -n ${SA_ACCOUNT_LIST} ]]; then
     check_command aws || install_awscli
     mkdir -p "${AWS_CONFIG_BASEDIR}"
+    info "Start creation of ${AWS_CONFIG_BASEDIR}/credentials"
     {
       for account in ${SA_ACCOUNT_LIST}; do
         echo "[${account}_SOURCE]"
@@ -104,6 +106,8 @@ aws_set_service_account_config() {
         echo ""
       done
     } > ${AWS_CONFIG_BASEDIR}/credentials
+
+    info "Start creation of ${AWS_CONFIG_BASEDIR}/config"
     {
       (( counter = 0 )) || true
       for account in ${SA_ACCOUNT_LIST}; do
@@ -130,8 +134,14 @@ aws_set_service_account_config() {
       done
     } > ${AWS_CONFIG_BASEDIR}/config
 
+    info "Unsetting existing AWS envvars to enforce usage of ~/.aws/* files"
+    unset AWS_ACCESS_KEY_ID
+    unset AWS_SECRET_ACCESS_KEY
     SERVICE_ACCOUNT=1
     aws sts get-caller-identity || true
+  else
+    info "Skipping creation of AWS CLI config and credentials because the required"
+    info "environment variable SA_ACCOUNT_LIST is not set"
   fi
 }
 
