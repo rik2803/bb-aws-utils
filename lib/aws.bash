@@ -4,6 +4,40 @@ export SERVICE_ACCOUNT=0
 
 check_envvar AWS_DEFAULT_REGION O eu-central-1
 
+#######################################
+# Restart a service while forcing a reload,
+# which will cause the image to be downloaded
+# again. This is for services that are configured
+# to use the "latest" tag
+#
+# Globals:
+#
+# Arguments:
+#   Cluster Name: The name of the ECS cluster where the service runs
+#   ServiceName: (part of) the name that uniquely identifies the service
+#
+# Returns:
+#
+#######################################
+aws_force_restart_service() {
+  check_envvar AWS_DEFAULT_REGION R
+  [[ -z ${1} || -z ${2} ]] && \
+    fail "aws_force_restart_service aws_ecs_cluster_name aws_ecs_service_name"
+  local cluster=${1}; shift
+  local service=${1}; shift
+  local full_service_name
+
+  info "Using ${service} to determine the full name of the service in cluster ${cluster}"
+  full_service_name=$(aws ecs list-services --cluster ""${cluster}"" --output text | grep "${service}" | awk -F'/' '{print $2}')
+  info "Full service name is ${full_service_name}"
+  info "Updating service ${full_service_name} in ECS cluste ${cluster}"
+  if aws ecs update-service --cluster "${cluster}" --force-new-deployment --service "${full_service_name}"; then
+    success "Service ${full_service_name} in cluster ${cluster} successfully updated"
+  else
+    error "An error occurred updating ${full_service_name} in cluster ${cluster}"
+  fi
+}
+
 aws_update_service() {
   check_envvar AWS_DEFAULT_REGION R
   [[ -z ${1} || -z ${2} || -z ${3} || -z ${4} || -z ${5} ]] && \
@@ -85,9 +119,6 @@ _indirection() {
   echo "${!var}"
 }
 
-#######################################
-#
-#
 aws_set_service_account_config() {
   local account
 
