@@ -28,7 +28,7 @@ aws_force_restart_service() {
   local full_service_name
 
   info "Using ${service} to determine the full name of the service in cluster ${cluster}"
-  full_service_name=$(aws ecs list-services --cluster "${cluster}" --output text | grep -i "${service}" | awk -F'/' '{print $2}')
+  full_service_name=$(aws ecs list-services --cluster "${cluster}" --output text | grep -i "${service}" | awk -F'/' '{print $3}')
   info "Full service name is ${full_service_name}"
   info "Updating service ${full_service_name} in ECS cluste ${cluster}"
   if aws ecs update-service --cluster "${cluster}" --force-new-deployment --service "${full_service_name}"; then
