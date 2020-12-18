@@ -31,13 +31,16 @@ aws_force_restart_service() {
 
   info "Using ${service} to determine the full name of the service in cluster ${cluster}"
   aws ecs list-services --cluster "${cluster}" --output text
-  full_service_name=$(aws ecs list-services --cluster "${cluster}" --output text | grep -i "${service}" | awk -F'/' '{print $3}')
+  full_service_name=$(aws ecs list-services --cluster "${cluster}" --output text | grep -i "${service}" | awk -F'/' '{print $3}' || true)
+  if [[ -z ${full_service_name} ]]; then
+    fail "No servicename found that contains the string ${service} in cluster ${cluster}"
+  fi
   info "Full service name is ${full_service_name}"
   info "Updating service ${full_service_name} in ECS cluste ${cluster}"
   if aws ecs update-service --cluster "${cluster}" --force-new-deployment --service "${full_service_name}"; then
     success "Service ${full_service_name} in cluster ${cluster} successfully updated"
   else
-    error "An error occurred updating ${full_service_name} in cluster ${cluster}"
+    fail "An error occurred updating ${full_service_name} in cluster ${cluster}"
   fi
 
   set +x
