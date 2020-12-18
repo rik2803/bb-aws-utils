@@ -27,10 +27,7 @@ aws_force_restart_service() {
   local service=${1}; shift
   local full_service_name
 
-  set -x
-
   info "Using ${service} to determine the full name of the service in cluster ${cluster}"
-  aws ecs list-services --cluster "${cluster}" --output text
   full_service_name=$(aws ecs list-services --cluster "${cluster}" --output text | grep -i "${service}" | awk -F'/' '{print $3}' || true)
   if [[ -z ${full_service_name} ]]; then
     fail "No servicename found that contains the string ${service} in cluster ${cluster}"
@@ -42,8 +39,6 @@ aws_force_restart_service() {
   else
     fail "An error occurred updating ${full_service_name} in cluster ${cluster}"
   fi
-
-  set +x
 }
 
 aws_update_service() {
