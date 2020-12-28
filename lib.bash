@@ -23,6 +23,7 @@ install_set_linux_distribution_type
 aws_set_service_account_config
 aws_set_codeartifact_token
 maven_create_settings_xml
+gradle_create_gradle_properties
 
 repo_git_url() {
   echo "git@bitbucket.org:${REMOTE_REPO_OWNER}/${REMOTE_REPO_SLUG}.git"

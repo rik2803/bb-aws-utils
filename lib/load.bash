@@ -10,5 +10,7 @@
 [[ -z ${LIB_GIT_LOADED} ]]       && source ${LIB_DIR:-lib}/git.bash       || true
 # shellcheck source=../../bb-aws-utils/lib/maven.bash
 [[ -z ${LIB_MAVEN_LOADED} ]]     && source ${LIB_DIR:-lib}/maven.bash     || true
+# shellcheck source=../../bb-aws-utils/lib/maven.bash
+[[ -z ${LIB_GRADLE_LOADED} ]]    && source ${LIB_DIR:-lib}/gradle.bash    || true
 # shellcheck source=../../bb-aws-utils/lib/install.bash
 [[ -z ${LIB_INSTALL_LOADED} ]]   && source ${LIB_DIR:-lib}/install.bash   || true
