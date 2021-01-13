@@ -433,6 +433,14 @@ docker_build_deploy_image() {
 
   echo "FROM ${SOURCE_IMAGE}" > Dockerfile
 
+  if [[ -e Dockerfile.template ]]; then
+    echo "### ${FUNCNAME[0]} INFO: evaluating Dockerfile.template to add to Dockerfile"
+    sh -c 'echo "'"$(cat Dockerfile.template)"'"' >> Dockerfile
+    echo "### ${FUNCNAME[0]} INFO: Dockerfile content - START"
+    cat Dockerfile
+    echo "### ${FUNCNAME[0]} INFO: Dockerfile content - END"
+  fi
+
   # Allow to add extra files to the docker image. The envvar should be constructed like
   # this: "src1:dst1 src2:dst2". This will result in these lines being added to the
   # Dockerfile file:
@@ -622,9 +630,14 @@ s3_lambda_build_and_push() {
   ### Node
   if [[ ${LAMBDA_RUNTIME} = nodejs* ]]
   then
+    create_npmrc
     if [[ -n ${NESTJS} ]]; then
       # https://keyholesoftware.com/2019/05/13/aws-lambda-with-nestjs/
-      run_log_and_exit_on_failure "npm install --silent"
+      if [[ -n ${DEBUG} ]]; then
+        run_log_and_exit_on_failure "npm install"
+      else
+        run_log_and_exit_on_failure "npm install --silent"
+      fi
       run_log_and_exit_on_failure "npm run build"
       run_log_and_exit_on_failure "npm prune --production"
       run_log_and_exit_on_failure "mv -f dist node_modules /builddir"
@@ -632,7 +645,11 @@ s3_lambda_build_and_push() {
       [[ -e ${LAMBDA_FUNCTION_FILE:-index.js} ]] && run_log_and_exit_on_failure "mv -f ${LAMBDA_FUNCTION_FILE:-index.js} /builddir"
       if [[ -f package.json ]]
       then
-        run_log_and_exit_on_failure "npm install --silent"
+        if [[ -n ${DEBUG} ]]; then
+          run_log_and_exit_on_failure "npm install"
+        else
+          run_log_and_exit_on_failure "npm install --silent"
+        fi
         run_log_and_exit_on_failure "npm prune --production"
         [[ -e node_modules ]] && run_log_and_exit_on_failure "mv -f node_modules /builddir"
       fi
@@ -650,14 +667,25 @@ s3_lambda_build_and_push() {
         run_log_and_exit_on_failure "cp -rp ${dir} /builddir"
       done
     fi
+    if [[ -n ${FILES_TO_ADD_TO_ZIP} ]]; then
+      for file in ${FILES_TO_ADD_TO_ZIP}; do
+        echo "### ${FUNCNAME[0]} - Copying ${file} to /builddir ###"
+        run_log_and_exit_on_failure "cp -rp ${file} /builddir"
+      done
+    fi
 
-    if [[ -f requirements.txt ]]; then
+    if [[ -n ${CICD_REQUIREMENTS} && -f ${CICD_REQUIREMENTS} ]]; then
+        echo "### ${FUNCNAME[0]} - CICD requirements file ${CICD_REQUIREMENTS} found, using this file to build dependencies ###"
+        run_log_and_exit_on_failure "pip install -r ${CICD_REQUIREMENTS} --target /builddir"
+    elif [[ -f requirements.txt ]]; then
       if [[ -z ${SKIP_PIP_INSTALL} || ${SKIP_PIP_INSTALL} -eq 0 ]]; then
         run_log_and_exit_on_failure "pip install --quiet --target /builddir -r requirements.txt"
       else
         info "${FUNCNAME[0]} - Skipped dependency build because SKIP_PIP_INSTALL is set to ${SKIP_PIP_INSTALL}"
       fi
     fi
+    echo "### ${FUNCNAME[0]} - Remove boto stuff from the installed dependencies ###"
+    run_log_and_exit_on_failure "rm -rf /builddir/boto* || true"
   fi
 
   ### Upload the Lambda artifact to S3
