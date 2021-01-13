@@ -51,6 +51,11 @@ maven_create_settings_xml() {
       echo "</settings>"
     } > "${MAVEN_SETTINGS_PATH}/settings.xml"
   fi
+  if is_debug_enabled; then
+    debug "Dump of content of ${MAVEN_SETTINGS_PATH}/settings.xml -- start"
+    cat ${MAVEN_SETTINGS_PATH}/settings.xml
+    debug "Dump of content of ${MAVEN_SETTINGS_PATH}/settings.xml -- end"
+  fi
 }
 
 maven_minor_bump() {
