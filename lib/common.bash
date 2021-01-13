@@ -46,7 +46,7 @@ is_debug_enabled() {
 #   None
 #######################################
 check_command() {
-  if ! which ${1:-not_present} >/dev/null 2>&1; then
+  if ! command -v "${1:-not_present}" >/dev/null 2>&1; then
     error "Command ${1} is required but not found."
     return 1
   else
@@ -71,7 +71,10 @@ check_command() {
 #   None
 #######################################
 check_envvar() {
-  info "Start checking envvar ${@}"
+  local envvar
+  local mode
+  local default
+  info "Start checking envvar ${*}"
   ### Check first argument: name of the envvar
   if [[ -n ${1} ]]; then
     envvar=${1}
