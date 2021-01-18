@@ -14,3 +14,9 @@
 [[ -z ${LIB_GRADLE_LOADED} ]]    && source ${LIB_DIR:-lib}/gradle.bash    || true
 # shellcheck source=../../bb-aws-utils/lib/install.bash
 [[ -z ${LIB_INSTALL_LOADED} ]]   && source ${LIB_DIR:-lib}/install.bash   || true
+
+install_set_linux_distribution_type
+aws_set_service_account_config
+aws_set_codeartifact_token
+maven_create_settings_xml
+gradle_create_gradle_properties
