@@ -3,6 +3,7 @@
 echo "### Starting $(basename "${0}") ###"
 
 scriptdir=$(dirname "${0}")
+export LIB_DIR="${scriptdir}/lib"
 source ${scriptdir}/lib.bash
 
 install_jq
