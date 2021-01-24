@@ -80,9 +80,7 @@ install_awscli() {
     if [[ ${DEBIANDISTRO} -eq 1 ]]; then
       info "${FUNCNAME[0]} - Installing aws cli on Debian"
       install_apt_get_update
-      apt-get -qq -y install python-dev
-      curl -O https://bootstrap.pypa.io/get-pip.py
-      python get-pip.py
+      apt-get -qq -y install python-dev python-pip
       pip install --quiet awscli
       AWSCLI_INSTALLED=1
       success "${FUNCNAME[0]} - Installed aws cli on Debian"
