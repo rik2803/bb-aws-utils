@@ -157,11 +157,14 @@ maven_get_next_develop_version() {
 }
 
 maven_get_current_version_from_pom() {
-  if is_debug_enabled; then
-    mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec
-  fi
+  run_cmd mkdir -p /tmp
+  echo "PLACEHOLDER" > /tmp/curversion
+  mvn -B -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version \
+    -Dexec.executable=sed \
+    -Dexec.args='-i -e "s/PLACEHOLDER/${project.version}/" /tmp/curversion' \
+    --non-recursive exec:exec
 
-  MAVEN_CURRENT_VERSION_FROM_POM=$(mvn -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+  MAVEN_CURRENT_VERSION_FROM_POM=$(cat /tmp/curversion)
   export MAVEN_CURRENT_VERSION_FROM_POM
 }
 
