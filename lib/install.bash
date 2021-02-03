@@ -75,13 +75,9 @@ install_apt_get_update() {
 install_awscli() {
   info "Installing AWS CLI v2 (if not already installed)"
 
-  local AWSCLI_V1_INSTALLED=0
-
   if command -v aws > /dev/null 2>&1; then
     if aws --version | grep -q "aws-cli/2"; then
       AWSCLI_INSTALLED=1
-    else
-      AWSCLI_V1_INSTALLED=1
     fi
   fi
 
