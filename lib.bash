@@ -296,6 +296,9 @@ ecr_login() {
   local region="${2}"
   local docker_server="${account_id}.dkr.ecr.${region:-eu-central-1}.amazonaws.com"
   info "Logging into ECR ${docker_server}"
+
+  install_awscli
+
   if aws ecr get-login-password \
            --region "${region:-eu-central-1}" | \
                docker login \
@@ -328,7 +331,7 @@ set_dest_ecr_credentials() {
   if [[ -z ${AWS_ACCOUNTID_TARGET} ]]; then
     fail "Unable to login to ECR because AWS_ACCOUNTID_TARGET is not set"
   else
-    ecr_login "${AWS_ACCOUNTID_DST}" "${AWS_REGION_SOURCE:-eu-central-1}"
+    ecr_login "${AWS_ACCOUNTID_TARGET}" "${AWS_REGION_SOURCE:-eu-central-1}"
   fi
 }
 
@@ -353,8 +356,8 @@ docker_build() {
     info "${FUNCNAME[0]} - AWS_ACCOUNTID_TARGET set, using it (${AWS_ACCOUNTID_TARGET})"
   fi
 
-  install_awscli
-  eval "$(aws ecr get-login --no-include-email --region "${AWS_REGION_SOURCE:-eu-central-1}")"
+  ecr_login "${AWS_ACCOUNTID_TARGET}" "${AWS_REGION_SOURCE:-eu-central-1}"
+
   ### The Dockerfile is supposed to be in a subdirectory docker of the repo
   MYDIR=$(pwd)
   if [[ -e /${BITBUCKET_CLONE_DIR}/docker/Dockerfile ]]
