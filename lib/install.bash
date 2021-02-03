@@ -72,10 +72,6 @@ install_apt_get_update() {
   fi
 }
 
-remove_awscli_v1() {
-  true
-}
-
 install_awscli() {
   info "Installing AWS CLI v2 (if not already installed)"
 
@@ -89,19 +85,15 @@ install_awscli() {
     fi
   fi
 
-  if [[ ${AWSCLI_V1_INSTALLED} -eq 1 ]]; then
-    info "AWS CLI v1 is installed, removing ..."
-    remove_awscli_v1
-  fi
-
   if [[ ${AWSCLI_INSTALLED} -eq 0 ]]; then
     mkdir -p /tmp
     install_sw curl
     install_zip
     run_cmd curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
-    run_cmd unzip -q awscliv2.zip -d /tmp
+    run_cmd unzip -q /tmp/awscliv2.zip -d /tmp
     run_cmd /tmp/aws/install
-    [[ ${PATH} = "*/usr/local/bin*" ]] || export PATH="/usr/local/bin:${PATH}"
+    info "Adding /usr/local/bin to beginning of PATH"
+    export PATH="/usr/local/bin:${PATH}"
   else
     info "${FUNCNAME[0]} - awscli already installed"
   fi
