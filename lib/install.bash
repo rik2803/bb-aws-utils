@@ -72,29 +72,36 @@ install_apt_get_update() {
   fi
 }
 
+remove_awscli_v1() {
+  true
+}
+
 install_awscli() {
-  info "Installing AWS CLI (if not already installed)"
+  info "Installing AWS CLI v2 (if not already installed)"
+
+  local AWSCLI_V1_INSTALLED=0
+
   if command -v aws > /dev/null 2>&1; then
-    AWSCLI_INSTALLED=1
-  elif [[ ${AWSCLI_INSTALLED} -eq 0 ]]; then
-    if [[ ${DEBIANDISTRO} -eq 1 ]]; then
-      info "${FUNCNAME[0]} - Installing aws cli on Debian"
-      install_apt_get_update
-      apt-get -qq -y install python-dev python-pip
-      pip install --quiet awscli
+    if aws --version | grep -q "aws-cli/2"; then
       AWSCLI_INSTALLED=1
-      success "${FUNCNAME[0]} - Installed aws cli on Debian"
-    elif [[ ${ALPINEDISTRO} -eq 1 ]]; then
-      info "${FUNCNAME[0]} - Installing aws cli on Alpine"
-      apk --quiet --update --no-cache add python py-pip
-      pip install --quiet --no-cache-dir awscli
-      success "${FUNCNAME[0]} - Installed aws cli on Alpine"
     else
-      info "${FUNCNAME[0]} - Installing aws cli on CentOS"
-      yum -y -q install awscli
-      AWSCLI_INSTALLED=1
-      success "${FUNCNAME[0]} - Installed aws cli on CentOS"
+      AWSCLI_V1_INSTALLED=1
     fi
+  fi
+
+  if [[ ${AWSCLI_V1_INSTALLED} -eq 1 ]]; then
+    info "AWS CLI v1 is installed, removing ..."
+    remove_awscli_v1
+  fi
+
+  if [[ ${AWSCLI_INSTALLED} -eq 0 ]]; then
+    mkdir -p /tmp
+    install_sw curl
+    install_zip
+    run_cmd curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+    run_cmd unzip -q awscliv2.zip -d /tmp
+    run_cmd /tmp/aws/install
+    [[ ${PATH} = "*/usr/local/bin*" ]] || export PATH="/usr/local/bin:${PATH}"
   else
     info "${FUNCNAME[0]} - awscli already installed"
   fi

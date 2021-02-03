@@ -291,10 +291,45 @@ set_credentials() {
   fi
 }
 
+ecr_login() {
+  local account_id="${1}"
+  local region="${2}"
+  local docker_server="${account_id}.dkr.ecr.${region:-eu-central-1}.amazonaws.com"
+  info "Logging into ECR ${docker_server}"
+  if aws ecr get-login-password \
+           --region "${region:-eu-central-1}" | \
+               docker login \
+                 --username AWS \
+                 --password-stdin "${docker_server}"; then
+    success "Successfully logged in to ${docker_server}"
+  else
+    fail "Error logging in to ${docker_server}, exiting ..."
+  fi
+}
+
 set_source_ecr_credentials() {
   set_credentials "${AWS_ACCESS_KEY_ID_ECR_SOURCE}" "${AWS_SECRET_ACCESS_KEY_ECR_SOURCE}"
   info "${FUNCNAME[0]} - Logging in to AWS ECR source"
-  eval "$(aws ecr get-login --no-include-email --region ${AWS_REGION_SOURCE:-eu-central-1})"
+  if [[ -z ${AWS_ACCOUNTID_SRC} ]]; then
+    info "Skip ECR login because AWS_ACCOUNTID_SRC is not set."
+    info "This typically means that the source image is on docker hub and will be fetched from there."
+  else
+    ecr_login "${AWS_ACCOUNTID_SRC}" "${AWS_REGION_SOURCE:-eu-central-1}"
+  fi
+}
+
+set_dest_ecr_credentials() {
+  if [[ ${SERVICE_ACCOUNT} -eq 0 ]]; then
+    info "${FUNCNAME[0]} - Fallback to AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY if AWS_ACCESS_KEY_ID_ECR_TARGET or AWS_SECRET_ACCESS_KEY_ECR_TARGET are not defined"
+    [[ -z ${AWS_ACCESS_KEY_ID_ECR_TARGET} ]] && [[ -n ${AWS_ACCESS_KEY_ID} ]] && AWS_ACCESS_KEY_ID_ECR_TARGET=${AWS_ACCESS_KEY_ID}
+    [[ -z ${AWS_SECRET_ACCESS_KEY_ECR_TARGET} ]] && [[ -n ${AWS_SECRET_ACCESS_KEY} ]] && AWS_SECRET_ACCESS_KEY_ECR_TARGET=${AWS_SECRET_ACCESS_KEY}
+  fi
+  set_credentials "${AWS_ACCESS_KEY_ID_ECR_TARGET}" "${AWS_SECRET_ACCESS_KEY_ECR_TARGET}"
+  if [[ -z ${AWS_ACCOUNTID_TARGET} ]]; then
+    fail "Unable to login to ECR because AWS_ACCOUNTID_TARGET is not set"
+  else
+    ecr_login "${AWS_ACCOUNTID_DST}" "${AWS_REGION_SOURCE:-eu-central-1}"
+  fi
 }
 
 docker_build() {
@@ -360,17 +395,6 @@ docker_build_application_image() {
   docker info
   info "${FUNCNAME[0]} - Start build of docker image ${DOCKER_IMAGE}"
   _docker_build "${DOCKER_IMAGE}"
-}
-
-set_dest_ecr_credentials() {
-  if [[ ${SERVICE_ACCOUNT} -eq 0 ]]; then
-    info "${FUNCNAME[0]} - Fallback to AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY if AWS_ACCESS_KEY_ID_ECR_TARGET or AWS_SECRET_ACCESS_KEY_ECR_TARGET are not defined"
-    [[ -z ${AWS_ACCESS_KEY_ID_ECR_TARGET} ]] && [[ -n ${AWS_ACCESS_KEY_ID} ]] && AWS_ACCESS_KEY_ID_ECR_TARGET=${AWS_ACCESS_KEY_ID}
-    [[ -z ${AWS_SECRET_ACCESS_KEY_ECR_TARGET} ]] && [[ -n ${AWS_SECRET_ACCESS_KEY} ]] && AWS_SECRET_ACCESS_KEY_ECR_TARGET=${AWS_SECRET_ACCESS_KEY}
-  fi
-  set_credentials "${AWS_ACCESS_KEY_ID_ECR_TARGET}" "${AWS_SECRET_ACCESS_KEY_ECR_TARGET}"
-  info "${FUNCNAME[0]} - Logging in to AWS ECR target."
-  eval "$(aws ecr get-login --no-include-email --region "${AWS_REGION_TARGET:-eu-central-1}")"
 }
 
 docker_build_deploy_image() {
