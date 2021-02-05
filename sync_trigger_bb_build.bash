@@ -1,5 +1,7 @@
 #! /bin/bash
 
+unset LIB_COMMON_LOADED LIB_AWS_LOADED LIB_DOCKERHUB_LOADED LIB_GIT_LOADED LIB_MAVEN_LOADED LIB_GRADLE_LOADED LIB_INSTALL_LOADED
+
 echo "### Starting $(basename "${0}") ###"
 
 scriptdir=$(dirname "${0}")
