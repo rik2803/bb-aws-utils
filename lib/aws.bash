@@ -4,6 +4,17 @@ export SERVICE_ACCOUNT=0
 
 check_envvar AWS_DEFAULT_REGION O eu-central-1
 
+if [[ -e /usr/local/bin/docker-credential-ecr-login ]]; then
+  info "docker-credential-ecr-login already installed"
+else
+  info "Install docker-credential-ecr-login"
+  run_cmd curl "https://amazon-ecr-credential-helper-releases.s3.us-east-2.amazonaws.com/0.5.0/linux-amd64/docker-credential-ecr-login" -o "/usr/local/bin/docker-credential-ecr-login"
+  run_cmd chmod 0755 "/usr/local/bin/docker-credential-ecr-login"
+fi
+info "Configure ~/.docker/config.json to use docker-credential-ecr-login"
+run_cmd mkdir -p ~/.docker
+echo '{ "credsStore": "ecr-login" }' > ~/.docker/config.json
+
 #######################################
 # Restart a service while forcing a reload,
 # which will cause the image to be downloaded

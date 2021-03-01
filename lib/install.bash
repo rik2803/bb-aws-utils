@@ -81,16 +81,6 @@ install_awscli() {
     fi
   fi
 
-  if [[ -e /usr/local/bin/docker-credential-ecr-login ]]; then
-    info "docker-credential-ecr-login already installed"
-  else
-    info "Install docker-credential-ecr-login"
-    run_cmd curl "https://amazon-ecr-credential-helper-releases.s3.us-east-2.amazonaws.com/0.5.0/linux-amd64/docker-credential-ecr-login" -o "/usr/local/bin/docker-credential-ecr-login"
-    run_cmd chmod 0755 "/usr/local/bin/docker-credential-ecr-login"
-    run_cmd mkdir -p ~/.docker
-    echo '{ "credsStore": "ecr-login" }' > ~/.docker/config.json
-  fi
-
   if [[ ${AWSCLI_INSTALLED} -eq 0 ]]; then
     mkdir -p /tmp
     install_sw curl
