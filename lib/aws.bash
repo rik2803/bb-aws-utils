@@ -22,7 +22,7 @@ check_envvar AWS_DEFAULT_REGION O eu-central-1
 aws_force_restart_service() {
   check_envvar AWS_DEFAULT_REGION R
   [[ -z ${1} || -z ${2} ]] && \
-    fail "aws_force_restart_service aws_ecs_cluster_name aws_ecs_service_name"
+    fail "Usage: aws_force_restart_service aws_ecs_cluster_name aws_ecs_service_name"
   local cluster=${1}; shift
   local service=${1}; shift
   local full_service_name
@@ -44,7 +44,7 @@ aws_force_restart_service() {
 aws_update_service() {
   check_envvar AWS_DEFAULT_REGION R
   [[ -z ${1} || -z ${2} || -z ${3} || -z ${4} || -z ${5} ]] && \
-    fail "aws_update_service aws_ecs_cluster_name aws_ecs_service_name aws_ecs_task_family image_tag image_basename"
+    fail "Usage: aws_update_service <aws_ecs_cluster_name> <aws_ecs_service_name> <aws_ecs_task_family> <image_tag> <image_basename>"
   local aws_ecs_cluster_name=${1}; shift
   local aws_ecs_service_name=${1}; shift
   local aws_ecs_task_family=${1}; shift
@@ -67,6 +67,19 @@ aws_update_service() {
   success "Successfully updated service ${aws_ecs_service_name} in cluster ${aws_ecs_cluster_name}"
 }
 
+aws_update_service_substr() {
+  check_envvar AWS_DEFAULT_REGION R
+  [[ -z ${1} || -z ${2} || -z ${3} || -z ${4} || -z ${5} ]] && \
+    fail "Usage: aws_update_service_substr <aws_ecs_cluster_name> <aws_ecs_service_substr> <aws_ecs_task_family> <image_tag> <image_basename>"
+  local aws_ecs_cluster_name=${1}
+  local aws_ecs_service_substr=${2}
+  local aws_ecs_service_name=$(aws ecs list-services --cluster "${aws_ecs_cluster_name}" --output text | grep "${aws_ecs_service_substr}" | awk -F'/' '{print $3}')
+
+  echo "aws_update_service \"${aws_ecs_cluster_name}\" \"${aws_ecs_service_name}\" \"${3}\" \"${4}\" \"${5}\""
+  aws_update_service "${aws_ecs_cluster_name}" "${aws_ecs_service_name}" "${3}" "${4}" "${5}"
+}
+
+
 
 #######################################
 # Create a task definition file based on
@@ -84,18 +97,18 @@ aws_update_service() {
 aws_ecs_create_task_definition_file() {
   check_command aws || install_awscli
   check_command jq || install_sw jq
-  [[ -z ${1} || -z ${2} ]] && fail "aws_ecs_create_task_definition_file aws_ecs_task_family docker_image"
+  [[ -z ${1} || -z ${2} ]] && fail "Usage: aws_ecs_create_task_definition_file <aws_ecs_task_family> <docker_image>"
   local aws_ecs_task_family=${1}; shift
   local aws_image=${1}; shift
 
   aws ecs describe-task-definition --task-definition "${aws_ecs_task_family}" \
                                    --query 'taskDefinition' | \
                                    jq "del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities)" | \
-                                   jq ".containerDefinitions[0].image = \"${aws_image}\"" > /taskdefinition.json
+                                   jq ".containerDefinitions[0].image = \"${aws_image}\"" > /tmp/taskdefinition.json
 
   if is_debug_enabled; then
     debug "Content of task definition file -- START"
-    cat /taskdefinition.json
+    cat /tmp/taskdefinition.json
     debug "Content of task definition file -- END"
   fi
 }
@@ -104,12 +117,12 @@ aws_ecs_register_taskdefinition() {
   # Limitation: only supports task definitions with 1 containerDefinition
   check_command aws || install_awscli
   check_command jq || install_sw jq
-  [[ -z ${1} ]] && fail "aws_ecs_create_task_definition_file aws_ecs_task_family docker_image"
+  [[ -z ${1} ]] && fail "Usage: aws_ecs_register_taskdefinition <aws_ecs_task_family>"
   local aws_ecs_task_family=${1}; shift
   local RESULT
 
   info "Registering a new task definition for ${aws_ecs_task_family}"
-  RESULT=$(aws ecs register-task-definition --family "${aws_ecs_task_family}" --cli-input-json file:///taskdefinition.json)
+  RESULT=$(aws ecs register-task-definition --family "${aws_ecs_task_family}" --cli-input-json file:///tmp/taskdefinition.json)
   AWS_ECS_NEW_TASK_DEFINITION_ARN=$(echo "${RESULT}" | jq -r '.taskDefinition.taskDefinitionArn')
   success "Successfully registered new task definition for ${aws_ecs_task_family}"
   info "New task definition ARN is ${AWS_ECS_NEW_TASK_DEFINITION_ARN}"

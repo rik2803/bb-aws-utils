@@ -15,6 +15,9 @@
 # shellcheck source=../../bb-aws-utils/lib/install.bash
 [[ -z ${LIB_INSTALL_LOADED} ]]   && source ${LIB_DIR:-lib}/install.bash   || true
 
+export AWS_PAGER=""
+[[ -e /tmp ]] || mkdir -p /tmp
+
 install_set_linux_distribution_type
 aws_set_service_account_config
 aws_set_codeartifact_token
