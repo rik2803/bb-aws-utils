@@ -299,6 +299,9 @@ ecr_login() {
 
   install_awscli
 
+  info "Skipping aws ecr login because docker-credential-ecr-login is used for authentication"
+  return 0
+
   if aws ecr get-login-password \
            --region "${region:-eu-central-1}" | \
                docker login \
