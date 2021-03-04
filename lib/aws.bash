@@ -251,5 +251,5 @@ aws_s3_deploy() {
   aws s3 cp --acl "${ACL}" --recursive . "s3://${S3_BUCKET}/${S3_PREFIX:-}"
   info "${FUNCNAME[0]} - Finished deploying the payload in ${LOCAL_PATH} to s3://${S3_BUCKET}/${S3_PREFIX:-} with ACL ${ACL}"
 
-  cd - || fail "Previous (cd -) directory does not exist. Exiting ..."
+  cd - > /dev/null || fail "Previous (cd -) directory does not exist. Exiting ..."
 }
