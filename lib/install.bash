@@ -96,13 +96,14 @@ install_awscli() {
 }
 
 install_zip() {
-  if [[ ${ZIP_INSTALLED} -eq 0 ]]
-  then
-    if [[ ${DEBIANDISTRO} -eq 1 ]]
-    then
+  if [[ ${ZIP_INSTALLED} -eq 0 ]]; then
+    if [[ ${DEBIANDISTRO} -eq 1 ]]; then
       info "${FUNCNAME[0]} - Installing zip on debian"
       run_apt_get_update
       run_log_and_exit_on_failure "apt-get -qq -y install zip"
+      ZIP_INSTALLED=1
+    elif [[ ${ALPINEDISTRO} = "1" ]]; then
+      run_log_and_exit_on_failure "apk --quiet --update --no-cache add zip unzip"
       ZIP_INSTALLED=1
     else
       info "${FUNCNAME[0]} - Installing zip on CentOS"
@@ -116,8 +117,7 @@ install_zip() {
 
 install_maven2() {
   info "${FUNCNAME[0]} - Start maven2 installation"
-  if [[ ${DEBIANDISTRO} -eq 1 ]]
-  then
+  if [[ ${DEBIANDISTRO} -eq 1 ]]; then
     run_apt_get_update
     run_log_and_exit_on_failure "apt-get -qq -y install maven2"
   else
@@ -126,20 +126,19 @@ install_maven2() {
 }
 
 install_jq() {
-  if [[ ${JQ_INSTALLED} -eq 0 ]]
-  then
+  if [[ ${JQ_INSTALLED} -eq 0 ]]; then
     info "${FUNCNAME[0]} - Start jq installation"
-    if [[ ${DEBIANDISTRO} -eq 1 ]]
-    then
+    if [[ ${DEBIANDISTRO} -eq 1 ]]; then
       run_apt_get_update
       run_log_and_exit_on_failure "apt-get -qq -y install jq"
+    elif [[ ${ALPINEDISTRO} = "1" ]]; then
+      run_log_and_exit_on_failure "apk --quiet --update --no-cache add jq"
     else
       run_log_and_exit_on_failure "yum -y -q install jq"
     fi
 
     ### jq is required
-    if ! command -v jq >/dev/null 2>&1
-    then
+    if ! command -v jq >/dev/null 2>&1; then
       fail "${FUNCNAME[0]} - jq is required"
     else
       success "${FUNCNAME[0]} - jq is installed"

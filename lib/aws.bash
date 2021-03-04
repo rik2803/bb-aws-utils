@@ -225,3 +225,31 @@ aws_set_codeartifact_token() {
     info "  and/or AWS_CODEARTIFACT_DOMAIN_OWNER are not set"
   fi
 }
+
+aws_credentials_ok() {
+  install_awscli
+
+  if aws sts get-caller-identity >/dev/null 2>&1; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+aws_s3_deploy() {
+  check_envvar S3_BUCKET R
+  check_envvar LOCAL_PATH O "workdir"
+  check_envvar ACL O "private"
+
+  install_awscli
+
+  aws_credentials_ok || fail "No valid AWS credentials found. Exiting ..."
+  [[ ! -d ${LOCAL_PATH} ]] && fail "Directory ${LOCAL_PATH} does not exist. Exiting ..."
+
+  cd "${LOCAL_PATH}"
+  info "${FUNCNAME[0]} - Starting deploy of the payload in ${LOCAL_PATH} to s3://${S3_BUCKET}/${S3_PREFIX:-} with ACL ${ACL}"
+  aws s3 cp --acl "${ACL}" --recursive . "s3://${S3_BUCKET}/${S3_PREFIX:-}"
+  info "${FUNCNAME[0]} - Finished deploying the payload in ${LOCAL_PATH} to s3://${S3_BUCKET}/${S3_PREFIX:-} with ACL ${ACL}"
+
+  cd - > /dev/null || fail "Previous (cd -) directory does not exist. Exiting ..."
+}
