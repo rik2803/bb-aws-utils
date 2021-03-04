@@ -238,18 +238,16 @@ aws_credentials_ok() {
 
 aws_s3_deploy() {
   check_envvar S3_BUCKET R
-  check_envvar S3_PREFIX O ""
   check_envvar LOCAL_PATH O "workdir"
   check_envvar ACL O "private"
 
   install_awscli
 
   aws_credentials_ok || fail "No valid AWS credentials found. Exiting ..."
-
   [[ ! -d ${LOCAL_PATH} ]] && fail "Directory ${LOCAL_PATH} does not exist. Exiting ..."
 
   cd "${LOCAL_PATH}"
-  info "${FUNCNAME[0]} - Deploying the payload in ${LOCAL_PATH} to s3://${S3_BUCKET}/${S3_PREFIX} with ACL ${ACL}"
-  aws s3 cp --quiet --acl "${ACL}" --recursive . "s3://${S3_BUCKET}/${S3_PREFIX}"
+  info "${FUNCNAME[0]} - Deploying the payload in ${LOCAL_PATH} to s3://${S3_BUCKET}/${S3_PREFIX:-} with ACL ${ACL}"
+  aws s3 cp --quiet --acl "${ACL}" --recursive . "s3://${S3_BUCKET}/${S3_PREFIX:-}"
   cd - || fail "Previous (cd -) directory does not exist. Exiting ..."
 }
