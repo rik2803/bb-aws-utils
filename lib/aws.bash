@@ -247,7 +247,9 @@ aws_s3_deploy() {
   [[ ! -d ${LOCAL_PATH} ]] && fail "Directory ${LOCAL_PATH} does not exist. Exiting ..."
 
   cd "${LOCAL_PATH}"
-  info "${FUNCNAME[0]} - Deploying the payload in ${LOCAL_PATH} to s3://${S3_BUCKET}/${S3_PREFIX:-} with ACL ${ACL}"
-  aws s3 cp --quiet --acl "${ACL}" --recursive . "s3://${S3_BUCKET}/${S3_PREFIX:-}"
+  info "${FUNCNAME[0]} - Starting deploy of the payload in ${LOCAL_PATH} to s3://${S3_BUCKET}/${S3_PREFIX:-} with ACL ${ACL}"
+  aws s3 cp --acl "${ACL}" --recursive . "s3://${S3_BUCKET}/${S3_PREFIX:-}"
+  info "${FUNCNAME[0]} - Finished deploying the payload in ${LOCAL_PATH} to s3://${S3_BUCKET}/${S3_PREFIX:-} with ACL ${ACL}"
+
   cd - || fail "Previous (cd -) directory does not exist. Exiting ..."
 }
