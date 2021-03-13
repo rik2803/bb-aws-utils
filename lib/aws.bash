@@ -114,7 +114,7 @@ aws_ecs_create_task_definition_file() {
 
   aws ecs describe-task-definition --task-definition "${aws_ecs_task_family}" \
                                    --query 'taskDefinition' | \
-                                   jq "del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities)" | \
+                                   jq "del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)" | \
                                    jq ".containerDefinitions[0].image = \"${aws_image}\"" > /tmp/taskdefinition.json
 
   if is_debug_enabled; then
@@ -252,4 +252,17 @@ aws_s3_deploy() {
   info "${FUNCNAME[0]} - Finished deploying the payload in ${LOCAL_PATH} to s3://${S3_BUCKET}/${S3_PREFIX:-} with ACL ${ACL}"
 
   cd - > /dev/null || fail "Previous (cd -) directory does not exist. Exiting ..."
+}
+
+aws_create_or_update_ssm_parameter() {
+  local name="${1:-}"
+  local value="${2:-}"
+
+  check_envvar name R
+  check_envvar value R
+
+  install_awscli
+
+  info "${FUNCNAME[0]} - Set SSM parameter \"${name}\" to \"${value}\"."
+  aws ssm put-parameter --name "${name}" --value "${value}" --type String --overwrite
 }
