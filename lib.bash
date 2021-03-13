@@ -96,7 +96,7 @@ create_TAG_file_in_remote_url() {
       ### In this situation, a commit to the remote repository should trigger the build,
       ### but since the TAG file was not changed, a build will not be triggered, and the
       ### monitor_automatic_remote_pipeline_start will monitor a build that will never start.
-      ### To solve this, we force tha TAG to change by setting a dummy content and
+      ### To solve this, we force the TAG to change by setting a dummy content and
       ### Committing with [skip ci] in thr commit message.
       ### The next step is to change the TAG again and commit with a normal message.
 
@@ -435,6 +435,7 @@ docker_build_deploy_image() {
   #   To support images in docker hub, the image is pulled from docker hub when the envvar
   #   AWS_ACCOUNTID_SRC is not defined
   if [[ -z ${AWS_ACCOUNTID_SRC} ]]; then
+    warning "Envvar AWS_ACCOUNTID_SRC not set, assuming source image is in Docker Hub."
     SOURCE_IMAGE="${DOCKER_IMAGE}:${TAG:-latest}"
     IMAGE_REPOSITORY="Docker Hub"
   else
