@@ -266,3 +266,13 @@ aws_create_or_update_ssm_parameter() {
   info "${FUNCNAME[0]} - Set SSM parameter \"${name}\" to \"${value}\"."
   aws ssm put-parameter --name "${name}" --value "${value}" --type String --overwrite
 }
+
+aws_cloudfront_invalidate() {
+  check_envvar CLOUDFRONT_DISTRIBUTION_ID R
+  check_envvar PATHS O "/*"
+
+  install_awscli
+
+  info "Invalidating path ${PATHS} on CloudFront distribution with ID ${CLOUDFRONT_DISTRIBUTION_ID}"
+  aws cloudfront create-invalidation --distribution-id "${CLOUDFRONT_DISTRIBUTION_ID}" --paths "${PATHS}"
+}

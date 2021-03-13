@@ -815,7 +815,7 @@ s3_cloudfront_invalidate() {
 
 s3_build_once_deploy_once() {
   ### This is for legacy stuff and Q&D pipeline migrations
-  ###   * clone a repository REMOTE_REPO_SLUG for REMOTE_REPO_OWNER and branch REMOTE_REPO_BRANCH )default is master)
+  ###   * clone a repository REMOTE_REPO_SLUG for REMOTE_REPO_OWNER and branch REMOTE_REPO_BRANCH (default is master)
   ###   * run the BUILD_COMMAND
   ###   * copy all files in PAYLOAD_LOCATION (default is dist) to s3://${S3_DEST_BUCKET}/${S3_PREFIX:-} with ACL ${AWS_ACCESS_CONTROL:-private}
   ###   * invalidate the CloudFront Distribution CLOUDFRONT_DISTRIBUTION_ID
