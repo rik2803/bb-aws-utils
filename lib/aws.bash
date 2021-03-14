@@ -78,18 +78,36 @@ aws_update_service() {
   success "Successfully updated service ${aws_ecs_service_name} in cluster ${aws_ecs_cluster_name}"
 }
 
-aws_update_service_substr() {
-  check_envvar AWS_DEFAULT_REGION R
-  [[ -z ${1} || -z ${2} || -z ${3} || -z ${4} || -z ${5} ]] && \
-    fail "Usage: aws_update_service_substr <aws_ecs_cluster_name> <aws_ecs_service_substr> <aws_ecs_task_family> <image_tag> <image_basename>"
-  local aws_ecs_cluster_name=${1}
-  local aws_ecs_service_substr=${2}
-  local aws_ecs_service_name=$(aws ecs list-services --cluster "${aws_ecs_cluster_name}" --output text | grep "${aws_ecs_service_substr}" | awk -F'/' '{print $3}')
-
-  echo "aws_update_service \"${aws_ecs_cluster_name}\" \"${aws_ecs_service_name}\" \"${3}\" \"${4}\" \"${5}\""
-  aws_update_service "${aws_ecs_cluster_name}" "${aws_ecs_service_name}" "${3}" "${4}" "${5}"
+aws_get_accountid_from_sts_getidentity() {
+  aws sts get-caller-identity --query Account --output text
 }
 
+aws_update_service_substr() {
+  check_envvar AWS_DEFAULT_REGION R
+  check_envvar ENVIRONMENT R
+  check_envvar AWS_DEFAULT_REGION O "eu-central-1"
+
+  [[ -z ${1} || -z ${2} || -z ${3} || -z ${4} || -z ${5} ]] && \
+    fail "Usage: aws_update_service_substr <aws_ecs_cluster_name> <aws_ecs_service_substr> <aws_ecs_task_family> <image_tag> <image_basename>"
+
+  if [[ -z ${AWS_ACCOUNTID_TARGET} ]]; then
+    AWS_ACCOUNTID_TARGET=$(aws_get_accountid_from_sts_getidentity)
+  fi
+
+  local aws_ecs_cluster_name="${1}"
+  local aws_ecs_service_substr="${2}"
+  local aws_ecs_task_family="${3}"
+  local docker_image_tag="${4}"
+  local docker_image_basename="${5}"
+
+  local aws_ecs_service_name
+  aws_ecs_service_name=$(aws ecs list-services --cluster "${aws_ecs_cluster_name}" --output text | grep "${aws_ecs_service_substr}" | awk -F'/' '{print $3}')
+
+  local docker_image="${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${docker_image_basename}-${ENVIRONMENT}"
+
+  echo "aws_update_service \"${aws_ecs_cluster_name}\" \"${aws_ecs_service_name}\" \"${aws_ecs_task_family}\" \"${docker_image_tag}\" \"${docker_image}\""
+  aws_update_service "${aws_ecs_cluster_name}" "${aws_ecs_service_name}" "${aws_ecs_task_family}" "${docker_image_tag}" "${docker_image}"
+}
 
 
 #######################################
