@@ -881,7 +881,7 @@ _docker_build() {
 
   [[ -z ${image_name} ]] && { echo "### ${FUNCNAME[0]} - DOCKER_IMAGE is required ###"; exit 1; }
 
-  info "${FUNCNAME[0]} - Start build of docker image ${DOCKER_IMAGE}#"
+  info "${FUNCNAME[0]} - Start build of docker image ${DOCKER_IMAGE}"
   if [[ -e /opt/atlassian/pipelines/agent/data/id_rsa ]]; then
     info "${FUNCNAME[0]} - The private ssh key file exists, passing its contents as docker build arg.#"
     docker build --build-arg="BITBUCKET_COMMIT=${BITBUCKET_COMMIT:-NA}" \
