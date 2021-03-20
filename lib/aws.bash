@@ -309,15 +309,19 @@ aws_cdk_deploy() {
 
   [[ ${aws_cdk_env} == master ]] && aws_cdk_env="prd"
 
-  info "Create or update the /service/${BITBUCKET_REPO_SLUG}/image SSM parameter"
-  aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG}/image" "${docker_image}:${BITBUCKET_COMMIT}$(maven_get_saved_current_version)"
-
   info "Clone the infra deploy repo"
   git clone -b "${aws_cdk_infra_repo_branch}" "${aws_cdk_infra_repo}" ./aws-cdk-deploy
   cd aws-cdk-deploy
 
+  # Set correct profile for role on destination account to be assumed
   aws_prev_profile="${AWS_PROFILE:-}"
   export AWS_PROFILE="${aws_profile}"
+
+  # Update the SSM parameter /service/${BITBUCKET_REPO_SLUG}/image to trigger service update
+  # when running the aws cdk infrastructure deploy
+  info "Create or update the /service/${BITBUCKET_REPO_SLUG}/image SSM parameter"
+  aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG}/image" "${docker_image}:${BITBUCKET_COMMIT}$(maven_get_saved_current_version)"
+
   npm install --quiet --no-progress
   cdk deploy --all -c ENV="${aws_cdk_env}" --request-approval=never
   export AWS_PROFILE="${aws_prev_profile}"
