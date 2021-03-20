@@ -161,7 +161,7 @@ maven_get_current_version_from_pom() {
   echo "PLACEHOLDER" > "${BITBUCKET_CLONE_DIR}/artifacts/curversion"
   mvn -B -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version \
     -Dexec.executable=sed \
-    -Dexec.args='-i -e "s/PLACEHOLDER/${project.version}/" ${BITBUCKET_CLONE_DIR}/artifacts/curversion' \
+    -Dexec.args='-i -e "s/PLACEHOLDER/${project.version}/" ${env.BITBUCKET_CLONE_DIR}/artifacts/curversion' \
     --non-recursive exec:exec
 
   MAVEN_CURRENT_VERSION_FROM_POM=$(cat ${BITBUCKET_CLONE_DIR}/artifacts/curversion)
