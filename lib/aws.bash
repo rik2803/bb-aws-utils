@@ -294,3 +294,38 @@ aws_cloudfront_invalidate() {
   info "Invalidating path ${PATHS} on CloudFront distribution with ID ${CLOUDFRONT_DISTRIBUTION_ID}"
   aws cloudfront create-invalidation --distribution-id "${CLOUDFRONT_DISTRIBUTION_ID}" --paths "${PATHS}"
 }
+
+
+aws_cdk_deploy() {
+  [[ -z ${1} || -z ${2} || -z ${3} || -z ${4} ]] && \
+    fail "aws_cdk_deploy aws_profile deployrepo deployrepobranch dockeimage"
+
+  local aws_profile="${1}"
+  local aws_prev_profile
+  local aws_cdk_infra_repo="${2}"
+  local aws_cdk_infra_repo_branch="${3}"
+  local docker_image="${4}"
+  local aws_cdk_env="${aws_cdk_infra_repo_branch}"
+
+  [[ ${aws_cdk_env} == master ]] && aws_cdk_env="prd"
+
+  info "Clone the infra deploy repo"
+  git clone -b "${aws_cdk_infra_repo_branch}" "${aws_cdk_infra_repo}" ./aws-cdk-deploy
+  cd aws-cdk-deploy
+
+  # Set correct profile for role on destination account to be assumed
+  aws_prev_profile="${AWS_PROFILE:-}"
+  export AWS_PROFILE="${aws_profile}"
+
+  # Update the SSM parameter /service/${BITBUCKET_REPO_SLUG}/image to trigger service update
+  # when running the aws cdk infrastructure deploy
+  local ssm_parameter_value="${docker_image}:${BITBUCKET_COMMIT}-$(maven_get_saved_current_version)"
+  info "Create or update the /service/${BITBUCKET_REPO_SLUG}/image SSM parameter with value:"
+  info "  ${ssm_parameter_value}"
+  aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG}/image" "${ssm_parameter_value}"
+
+  npm install --quiet --no-progress
+  npm install --quiet --no-progress -g aws-cdk@${AWS_CDK_VERSION:-1.91.0}
+  cdk deploy --all -c ENV="${aws_cdk_env}" --request-approval=never
+  export AWS_PROFILE="${aws_prev_profile}"
+}
