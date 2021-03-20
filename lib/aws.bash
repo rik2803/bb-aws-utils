@@ -323,6 +323,7 @@ aws_cdk_deploy() {
   aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG}/image" "${docker_image}:${BITBUCKET_COMMIT}$(maven_get_saved_current_version)"
 
   npm install --quiet --no-progress
+  npm install --quiet --no-progress -g aws-cdk@${AWS_CDK_VERSION:-1.91.0}
   cdk deploy --all -c ENV="${aws_cdk_env}" --request-approval=never
   export AWS_PROFILE="${aws_prev_profile}"
 }
