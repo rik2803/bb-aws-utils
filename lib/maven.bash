@@ -157,15 +157,23 @@ maven_get_next_develop_version() {
 }
 
 maven_get_current_version_from_pom() {
-  run_cmd mkdir -p /tmp
-  echo "PLACEHOLDER" > /tmp/curversion
+  run_cmd mkdir -p "${BITBUCKET_CLONE_DIR}/artifacts"
+  echo "PLACEHOLDER" > "${BITBUCKET_CLONE_DIR}/artifacts/curversion"
   mvn -B -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version \
     -Dexec.executable=sed \
-    -Dexec.args='-i -e "s/PLACEHOLDER/${project.version}/" /tmp/curversion' \
+    -Dexec.args='-i -e "s/PLACEHOLDER/${project.version}/" ${BITBUCKET_CLONE_DIR}/artifacts/curversion' \
     --non-recursive exec:exec
 
-  MAVEN_CURRENT_VERSION_FROM_POM=$(cat /tmp/curversion)
+  MAVEN_CURRENT_VERSION_FROM_POM=$(cat ${BITBUCKET_CLONE_DIR}/artifacts/curversion)
   export MAVEN_CURRENT_VERSION_FROM_POM
+}
+
+maven_get_saved_current_version() {
+  if [[ -e ${BITBUCKET_CLONE_DIR}/artifacts/curversion ]]; then
+    cat ${BITBUCKET_CLONE_DIR}/artifacts/curversion
+  else
+    fail "Cannot determine current version because ${BITBUCKET_CLONE_DIR}/artifacts/curversion does not exist."
+  fi
 }
 
 maven_build() {
