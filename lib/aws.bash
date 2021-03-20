@@ -320,7 +320,7 @@ aws_cdk_deploy() {
   # Update the SSM parameter /service/${BITBUCKET_REPO_SLUG}/image to trigger service update
   # when running the aws cdk infrastructure deploy
   info "Create or update the /service/${BITBUCKET_REPO_SLUG}/image SSM parameter"
-  aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG}/image" "${docker_image}:${BITBUCKET_COMMIT}$(maven_get_saved_current_version)"
+  aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG}/image" "${docker_image}:${BITBUCKET_COMMIT}-$(maven_get_saved_current_version)"
 
   npm install --quiet --no-progress
   npm install --quiet --no-progress -g aws-cdk@${AWS_CDK_VERSION:-1.91.0}
