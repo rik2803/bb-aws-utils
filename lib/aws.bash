@@ -295,16 +295,49 @@ aws_cloudfront_invalidate() {
   aws cloudfront create-invalidation --distribution-id "${CLOUDFRONT_DISTRIBUTION_ID}" --paths "${PATHS}"
 }
 
-
+#######################################
+# Run cdk deploy to update a service.
+#
+# Expects:
+#     * Project was built with maven_build or maven_release_build from
+#       the maven.lib in this repo (because it saves the maven version to a file)
+#     * Docker image is tagged with ${BITBUCKET_COMMIT}-<version>
+#     * If the deploy step using this function is different from the build step,
+#       the build step should have:
+#           artifacts:
+#             - artifacts/**
+#
+# Globals:
+#
+# Arguments:
+#   Aws profile: The name of the AWS profile to set for the aws cdk permissions.
+#       This only works if Service Accounts are used and the appropriate pipeline
+#       environment variables are set in the BB project
+#   Deploy Repo: The git repository that contains the aws-cdk code for the project
+#       and that will be used to update the environment.
+#   Deploy Repo Branch: The branch of the deploy repository to checkout. This
+#       depends on the target environment and is standardized to:
+#           * tst: for the test environment
+#           * stg: for the staging environment
+#           * master: for production
+#   DockerImage: The docker image to use, without the tag, but with the host part
+#       (for non docker hub registries). If this argument is not present, a IaC only
+#       deploy is performed, without any change to any service.
+#       An example:
+#           123456789012.dkr.ecr.eu-central-1.amazonaws.com/org/myimage
+#
+# Returns:
+#
+#######################################
 aws_cdk_deploy() {
-  [[ -z ${1} || -z ${2} || -z ${3} || -z ${4} ]] && \
-    fail "aws_cdk_deploy aws_profile deployrepo deployrepobranch dockeimage"
+  [[ -z ${1} || -z ${2} || -z ${3} ]] && \
+    fail "aws_cdk_deploy aws_profile deploy_repo deploy_repo_branch docker_image"
 
   local aws_profile="${1}"
   local aws_prev_profile
   local aws_cdk_infra_repo="${2}"
   local aws_cdk_infra_repo_branch="${3}"
-  local docker_image="${4}"
+  local docker_image="${4:-}"
   local aws_cdk_env="${aws_cdk_infra_repo_branch}"
 
   [[ ${aws_cdk_env} == master ]] && aws_cdk_env="prd"
@@ -318,14 +351,20 @@ aws_cdk_deploy() {
   export AWS_PROFILE="${aws_profile}"
 
   # Update the SSM parameter /service/${BITBUCKET_REPO_SLUG}/image to trigger service update
-  # when running the aws cdk infrastructure deploy
-  local ssm_parameter_value="${docker_image}:${BITBUCKET_COMMIT}-$(maven_get_saved_current_version)"
-  info "Create or update the /service/${BITBUCKET_REPO_SLUG}/image SSM parameter with value:"
-  info "  ${ssm_parameter_value}"
-  aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG}/image" "${ssm_parameter_value}"
+  # when running the aws cdk infrastructure deploy, but only if docker_image is not empty
+  if [[ -n ${docker_image} ]]; then
+    local ssm_parameter_value
+    ssm_parameter_value="${docker_image}:${BITBUCKET_COMMIT}-$(maven_get_saved_current_version)"
+    info "${FUNCNAME[0]} - Create or update the /service/${BITBUCKET_REPO_SLUG}/image SSM parameter with value:"
+    info "  ${ssm_parameter_value}"
+    aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG}/image" "${ssm_parameter_value}"
+  else
+    info "${FUNCNAME[0]} - IaC only deploy, no service will be updated"
+  fi
 
   npm install --quiet --no-progress
-  npm install --quiet --no-progress -g aws-cdk@${AWS_CDK_VERSION:-1.91.0}
+  npm install --quiet --no-progress -g "aws-cdk@${AWS_CDK_VERSION:-1.91.0}"
   cdk deploy --all -c ENV="${aws_cdk_env}" --request-approval=never
   export AWS_PROFILE="${aws_prev_profile}"
+  info "${FUNCNAME[0]} - IaC deploy successfully executed."
 }
