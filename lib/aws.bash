@@ -322,7 +322,9 @@ aws_cloudfront_invalidate() {
 #           * master: for production
 #   DockerImage: The docker image to use, without the tag, but with the host part
 #       (for non docker hub registries). If this argument is not present, a IaC only
-#       deploy is performed, without any change to any service.
+#       deploy is performed, without any change to any service, and without performing
+#       the clone of the IaC repo (because this only makes sense in the pipeline for
+#       the IaC repo.
 #       An example:
 #           123456789012.dkr.ecr.eu-central-1.amazonaws.com/org/myimage
 #
@@ -330,23 +332,29 @@ aws_cloudfront_invalidate() {
 #
 #######################################
 aws_cdk_deploy() {
-  [[ -z ${1} || -z ${2} || -z ${3} ]] && \
-    fail "aws_cdk_deploy aws_profile deploy_repo deploy_repo_branch docker_image"
+  [[ -z ${1} || -z ${2} || -z ${3}  ]] && \
+    fail "${FUNCNAME[0]} - aws_cdk_deploy aws_profile deploy_repo deploy_repo_branch [docker_image]"
 
   local aws_profile="${1}"
   local aws_prev_profile
-  local aws_cdk_infra_repo="${2}"
-  local aws_cdk_infra_repo_branch="${3}"
+  local aws_cdk_infra_repo="${2:-}"
+  local aws_cdk_infra_repo_branch="${3:-}"
   local docker_image="${4:-}"
   local aws_cdk_env="${aws_cdk_infra_repo_branch}"
 
   [[ ${aws_cdk_env} == master ]] && aws_cdk_env="prd"
 
-  info "Clone the infra deploy repo"
-  git clone -b "${aws_cdk_infra_repo_branch}" "${aws_cdk_infra_repo}" ./aws-cdk-deploy
-  cd aws-cdk-deploy
+  if [[ -n ${aws_cdk_infra_repo} ]]; then
+    info "Clone the infra deploy repo"
+    git clone -b "${aws_cdk_infra_repo_branch}" "${aws_cdk_infra_repo}" ./aws-cdk-deploy
+    cd aws-cdk-deploy
+  else
+    info "${FUNCNAME[0]} - Using current repo ${BITBUCKET_REPO_SLUG}";
+    info "${FUNCNAME[0]} -   and branch ${aws_cdk_infra_repo_branch} as IaC code repo";
+  fi
 
   # Set correct profile for role on destination account to be assumed
+  info "${FUNCNAME[0]} - Use ${aws_profile} as AWS_PROFILE"
   aws_prev_profile="${AWS_PROFILE:-}"
   export AWS_PROFILE="${aws_profile}"
 
