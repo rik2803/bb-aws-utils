@@ -326,7 +326,7 @@ aws_cloudfront_invalidate() {
 #       the clone of the IaC repo (because this only makes sense in the pipeline for
 #       the IaC repo.
 #       An example:
-#           123456789012.dkr.ecr.eu-central-1.amazonaws.com/org/myimage
+#           123456789012.dkr.ecr.eu-central-1.amazonaws.com/org/my-image
 #
 # Returns:
 #
@@ -372,7 +372,7 @@ aws_cdk_deploy() {
 
   npm install --quiet --no-progress
   npm install --quiet --no-progress -g "aws-cdk@${AWS_CDK_VERSION:-1.91.0}"
-  cdk deploy --all -c ENV="${aws_cdk_env}" --request-approval=never
+  cdk deploy --all -c ENV="${aws_cdk_env}" --require-approval=never
   export AWS_PROFILE="${aws_prev_profile}"
   info "${FUNCNAME[0]} - IaC deploy successfully executed."
 }
