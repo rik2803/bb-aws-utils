@@ -169,6 +169,7 @@ maven_get_current_version_from_pom() {
 }
 
 maven_get_saved_current_version() {
+  set -x
   if [[ -e ${BITBUCKET_CLONE_DIR}/artifacts/curversion ]]; then
     cat ${BITBUCKET_CLONE_DIR}/artifacts/curversion
   else
