@@ -362,6 +362,7 @@ aws_cdk_deploy() {
 
   # Update the SSM parameter /service/${BITBUCKET_REPO_SLUG}/image to trigger service update
   # when running the aws cdk infrastructure deploy, but only if docker_image is not empty
+  set -x
   if [[ -n ${docker_image} ]]; then
     local ssm_parameter_value
     local docker_image_tag
