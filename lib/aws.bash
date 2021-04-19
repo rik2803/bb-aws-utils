@@ -320,6 +320,7 @@ aws_cloudfront_invalidate() {
 #           * tst: for the test environment
 #           * stg: for the staging environment
 #           * master: for production
+#       This is also the value used in "-c ENV=xxxx"
 #   DockerImage: The docker image to use, without the tag, but with the host part
 #       (for non docker hub registries). If this argument is not present, a IaC only
 #       deploy is performed, without any change to any service, and without performing
@@ -347,6 +348,7 @@ aws_cdk_deploy() {
   if [[ -n ${aws_cdk_infra_repo} ]]; then
     info "Clone the infra deploy repo"
     git clone -b "${aws_cdk_infra_repo_branch}" "${aws_cdk_infra_repo}" ./aws-cdk-deploy
+    # shellcheck disable=SC2164
     cd aws-cdk-deploy
   else
     info "${FUNCNAME[0]} - Using current repo ${BITBUCKET_REPO_SLUG}";
@@ -362,7 +364,14 @@ aws_cdk_deploy() {
   # when running the aws cdk infrastructure deploy, but only if docker_image is not empty
   if [[ -n ${docker_image} ]]; then
     local ssm_parameter_value
-    ssm_parameter_value="${docker_image}:${BITBUCKET_COMMIT}-$(maven_get_saved_current_version)"
+    local docker_image_tag
+    if maven_get_saved_current_version >/dev/null; then
+      docker_image_tag="${BITBUCKET_COMMIT}-$(maven_get_saved_current_version)"
+    else
+      docker_image_tag="${BITBUCKET_COMMIT}"
+    fi
+    info "Use tag ${docker_image_tag}"
+    ssm_parameter_value="${docker_image}:${docker_image_tag}"
     info "${FUNCNAME[0]} - Create or update the /service/${BITBUCKET_REPO_SLUG}/image SSM parameter with value:"
     info "  ${ssm_parameter_value}"
     aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG}/image" "${ssm_parameter_value}"
@@ -370,8 +379,9 @@ aws_cdk_deploy() {
     info "${FUNCNAME[0]} - IaC only deploy, no service will be updated"
   fi
 
-  npm install --quiet --no-progress
   npm install --quiet --no-progress -g "aws-cdk@${AWS_CDK_VERSION:-1.91.0}"
+  npm install --quiet --no-progress
+  info "Starting command \"cdk deploy --all -c ENV=\"${aws_cdk_env}\" --require-approval=never\""
   cdk deploy --all -c ENV="${aws_cdk_env}" --require-approval=never
   export AWS_PROFILE="${aws_prev_profile}"
   info "${FUNCNAME[0]} - IaC deploy successfully executed."
