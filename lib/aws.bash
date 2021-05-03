@@ -379,10 +379,14 @@ aws_cdk_deploy() {
     info "${FUNCNAME[0]} - IaC only deploy, no service will be updated"
   fi
 
-  npm install --quiet --no-progress -g "aws-cdk@${AWS_CDK_VERSION:-1.91.0}"
-  npm install --quiet --no-progress
-  info "Starting command \"cdk deploy --all -c ENV=\"${aws_cdk_env}\" --require-approval=never\""
-  cdk deploy --all -c ENV="${aws_cdk_env}" --require-approval=never
-  export AWS_PROFILE="${aws_prev_profile}"
-  info "${FUNCNAME[0]} - IaC deploy successfully executed."
+  if [[ ${AWS_CDK_DEPLOY_SKIP_CDK_DEPLOY:-0} -ne 1 ]]; then
+    npm install --quiet --no-progress -g "aws-cdk@${AWS_CDK_VERSION:-1.91.0}"
+    npm install --quiet --no-progress
+    info "Starting command \"cdk deploy --all -c ENV=\"${aws_cdk_env}\" --require-approval=never\""
+    cdk deploy --all -c ENV="${aws_cdk_env}" --require-approval=never
+    export AWS_PROFILE="${aws_prev_profile}"
+    info "${FUNCNAME[0]} - IaC deploy successfully executed."
+  else
+    info "Skipping cdk deploy because AWS_CDK_DEPLOY_SKIP_CDK_DEPLOY is set to ${AWS_CDK_DEPLOY_SKIP_CDK_DEPLOY}"
+  fi
 }
