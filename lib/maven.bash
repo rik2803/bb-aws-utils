@@ -214,8 +214,8 @@ maven_release_build() {
   success "Successfully checked out ${MAVEN_BRANCH}"
 
   COMMAND="mvn -B -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS} -Dresume=false \
-      -DreleaseVersion='2.1.1-HF' \
-      -DdevelopmentVersion='2.1.2-HF-SNAPSHOT' \
+      -DreleaseVersion='2.0.3-HF' \
+      -DdevelopmentVersion='2.0.4-HF-SNAPSHOT' \
       -DscmCommentPrefix='[skip ci]' \
       ${MAVEN_RELEASE_COMMAND}"
 
