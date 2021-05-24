@@ -287,7 +287,7 @@ aws_create_or_update_ssm_parameter() {
 
 aws_get_ssm_parameter_by_name() {
   local name="${1:-}"
-  local jmesexp="${1:-}"
+  local jmesexp="${2:-}"
   check_envvar name R
 
   info "Retrieving parameter ${name} from SSM."
