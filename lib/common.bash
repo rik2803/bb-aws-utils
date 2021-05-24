@@ -11,12 +11,12 @@ green="\\e[32m"
 orange="\\e[33m"
 reset="\\e[0m"
 
-info()    { echo -e "${blue}INFO: $*${reset}"; }
-warning() { echo -e "${orange}WARN: $*${reset}"; }
-error()   { echo -e "${red}ERROR: $*${reset}"; }
-success() { echo -e "${green}✔ $*${reset}"; }
-fail()    { echo -e "${red}✖ $*${reset}"; exit 1; }
-debug()   { [[ "${DEBUG}" == "true" ]] && echo -e "${gray}DEBUG: $*${reset}" || true; }
+info()    { echo -e "${blue}INFO: $*${reset}" 1>&2; }
+warning() { echo -e "${orange}WARN: $*${reset}" 1>&2; }
+error()   { echo -e "${red}ERROR: $*${reset}" 1>&2; }
+success() { echo -e "${green}✔ $*${reset}" 1>&2; }
+fail()    { echo -e "${red}✖ $*${reset}" 1>&2; exit 1; }
+debug()   { [[ "${DEBUG}" == "true" ]] && echo -e "${gray}DEBUG: $*${reset}"  1>&2 || true; }
 
 ## Enable debug mode.
 enable_debug() {
