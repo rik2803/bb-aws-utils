@@ -105,7 +105,7 @@ aws_update_service_substr() {
 
   local docker_image="${AWS_ACCOUNTID_TARGET}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${docker_image_basename}-${ENVIRONMENT}"
 
-  echo "aws_update_service \"${aws_ecs_cluster_name}\" \"${aws_ecs_service_name}\" \"${aws_ecs_task_family}\" \"${docker_image_tag}\" \"${docker_image}\""
+  info "aws_update_service \"${aws_ecs_cluster_name}\" \"${aws_ecs_service_name}\" \"${aws_ecs_task_family}\" \"${docker_image_tag}\" \"${docker_image}\""
   aws_update_service "${aws_ecs_cluster_name}" "${aws_ecs_service_name}" "${aws_ecs_task_family}" "${docker_image_tag}" "${docker_image}"
 }
 
@@ -283,6 +283,26 @@ aws_create_or_update_ssm_parameter() {
 
   info "${FUNCNAME[0]} - Set SSM parameter \"${name}\" to \"${value}\"."
   aws ssm put-parameter --name "${name}" --value "${value}" --type String --overwrite
+}
+
+aws_get_ssm_parameter_by_name() {
+  local name="${1:-}"
+  local jmesexp="${2:-}"
+  check_envvar name R
+
+  info "Retrieving parameter ${name} from SSM."
+  local ssm_parameter_value=$(aws ssm get-parameters --names "${name}"  --query "Parameters[].Value" --output text)
+  success "Parameter ${name} successfully retrieved from SSM, with value:"
+  success "    ${ssm_parameter_value}"
+  if [[ -n ${jmesexp} ]]; then
+    info "Applying ${jmesexp} to the output"
+    # The output is considered JSON and the jmesexp expression is applied
+    check_command jq || install_sw jq
+    ssm_parameter_value=$(echo ${ssm_parameter_value} | jq -r "${jmesexp}")
+    success " Successfully applied ${jmesexp} resulting in  ${ssm_parameter_value} "
+  fi
+
+  echo "$ssm_parameter_value"
 }
 
 aws_cloudfront_invalidate() {

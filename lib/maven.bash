@@ -157,14 +157,7 @@ maven_get_next_develop_version() {
 }
 
 maven_get_current_version_from_pom() {
-  run_cmd mkdir -p "${BITBUCKET_CLONE_DIR}/artifacts"
-  echo "PLACEHOLDER" > "${BITBUCKET_CLONE_DIR}/artifacts/curversion"
-  mvn -B -s ${MAVEN_SETTINGS_PATH}/settings.xml build-helper:parse-version \
-    -Dexec.executable=sed \
-    -Dexec.args='-i -e "s/PLACEHOLDER/${project.version}/" ${env.BITBUCKET_CLONE_DIR}/artifacts/curversion' \
-    --non-recursive exec:exec
-
-  MAVEN_CURRENT_VERSION_FROM_POM=$(cat ${BITBUCKET_CLONE_DIR}/artifacts/curversion)
+  MAVEN_CURRENT_VERSION_FROM_POM=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version)
   export MAVEN_CURRENT_VERSION_FROM_POM
 }
 
@@ -223,4 +216,58 @@ maven_release_build() {
   eval ${COMMAND}
   success "mvn successfully executed"
   maven_save_current_versions "${RELEASE_VERSION}" "${DEVELOP_VERSION}"
+}
+
+maven_deploy() {
+  check_envvar MAVEN_DEVELOP_COMMAND O "clean deploy"
+  check_envvar MAVEN_EXTRA_ARGS O " "
+  check_envvar MAVEN_SETTINGS_PATH O /
+  check_command mvn || install_sw maven
+
+  COMMAND="mvn ${MAVEN_DEVELOP_COMMAND} -B -s ${MAVEN_SETTINGS_PATH}/settings.xml -DscmCommentPrefix=\"[skip ci]\" ${MAVEN_EXTRA_ARGS}"
+
+  info "${COMMAND}"
+  eval ${COMMAND}
+  success "mvn successfully executed"
+  maven_save_current_versions "NA" "$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version)"
+}
+
+maven_release_deploy() {
+  check_envvar MAVEN_EXTRA_ARGS O " "
+  check_envvar MAVEN_SETTINGS_PATH O /
+  check_envvar MAVEN_BRANCH O master
+  check_command mvn || install_sw maven
+
+  git remote set-url origin "${BITBUCKET_GIT_SSH_ORIGIN}"
+  git config --global --add status.displayCommentPrefix true
+
+  info "Checking out branch ${MAVEN_BRANCH}"
+  git checkout "${MAVEN_BRANCH}"
+  success "Successfully checked out ${MAVEN_BRANCH}"
+
+  [[ -n ${RELEASE_VERSION_OVERRIDE} ]] && MAVEN_EXTRA_ARGS="-DreleaseVersion=${RELEASE_VERSION_OVERRIDE} ${MAVEN_EXTRA_ARGS}"
+  [[ -n ${DEVELOPMENT_VERSION_OVERRIDE} ]] && MAVEN_EXTRA_ARGS="-DdevelopmentVersion=${DEVELOPMENT_VERSION_OVERRIDE} ${MAVEN_EXTRA_ARGS}"
+  ## release:prepare
+  COMMAND="mvn -B -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS} -Dresume=false \
+      -DscmCommentPrefix='[skip ci]' release:prepare"
+  info "${COMMAND}"
+  eval ${COMMAND}
+  success "mvn release:prepare successfully executed"
+  info "Retrieving project.version ..."
+  maven_get_current_version_from_pom
+  RELEASE_VERSION="${MAVEN_CURRENT_VERSION_FROM_POM}"
+  success "project.version=${RELEASE_VERSION}"
+
+  ## release:perform
+  COMMAND="mvn -B -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS} -Dresume=false \
+      -DscmCommentPrefix='[skip ci]' release:perform"
+  info "${COMMAND}"
+  eval ${COMMAND}
+  success "mvn release:perform successfully executed"
+  info "Retrieving project.version ..."
+  maven_get_current_version_from_pom
+  DEVELOPMENT_VERSION="${MAVEN_CURRENT_VERSION_FROM_POM}"
+  success "project.version=${DEVELOPMENT_VERSION}"
+
+  maven_save_current_versions "${RELEASE_VERSION}" "${DEVELOPMENT_VERSION}"
 }

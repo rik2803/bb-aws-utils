@@ -71,10 +71,14 @@ The environment variable `${BB_AWS_UTILS_VERSION}` specifies the version of the 
 the `RELEASES.md` file for available versions and the changes. If not specified (i.e. if the command is
 `git clone https://github.com/rik2803/bb-aws-utils.git`), the `master` branch will be used.
 
-To perform a _Maven_ build, two functions are available:
+To perform a _Maven_ build, these functions are available:
+
 
 * `maven_build`
 * `maven_release_build`
+
+* `maven_deploy`
+* `maven_release_deploy`
 
 To determine the version to deploy, use the function `maven_get_current_versions` to
 set the environment variables `MAVEN_CURRENT_RELEASE_VERSION` and
@@ -85,20 +89,22 @@ take care of the deploy of your artifact.
 
 ### Overview of environment variables used in the `maven` module
 
-| Variable name                    | Req?| Description                                    | Default                           |
-|----------------------------------|-----|------------------------------------------------|-----------------------------------|
-| `MAVEN_BRANCH`                   | no  | Branch to checkout and to perform release on   | `master`                          |
-| `MAVEN_SETTINGS_ID`              | no  | Used to create `settings.xml` file             |                                   |
-| `MAVEN_SETTINGS_USERNAME`        | no  | Used to create `settings.xml` file             |                                   |
-| `MAVEN_SETTINGS_PASSWORD`        | no  | Used to create `settings.xml` file             |                                   |
-| `MAVEN_SETTINGS_EMAIL`           | no  | Used to create `settings.xml` file             |                                   |
-| `MAVEN_SETTINGS_PATH`            | no  | Path where `settings.xml` should be            | `/`                               |
-| `MAVEN_MINOR_BUMP_STRING`        | no  | String to determine if minor version is bumped | `bump_minor_version`              |
-| `MAVEN_DEVELOP_COMMAND`          | no  | Maven phases to run for snapshot build         | `clean deploy`                    |
-| `MAVEN_RELEASE_COMMAND`          | no  | Maven phases to run for release build          | `release:prepare release:perform` |
-| `MAVEN_EXTRA_ARGS`               | no  | Extra arguments to pass to the `mvn` command   |                                   |
-| `MAVEN_CURRENT_RELEASE_VERSION`  | no  | Fallback for release version in artifact file  | Deploy might fail if not set      |
-| `MAVEN_CURRENT_SNAPSHOT_VERSION` | no  | Fallback for snapshot version in artifact file | Deploy might fail if not set      |
+| Variable name                    | Req?| Description                                               | Default                             |
+|----------------------------------|-----|-----------------------------------------------------------|-------------------------------------|
+| `MAVEN_BRANCH`                   | no  | Branch to checkout and to perform release on              | `master`                            |
+| `MAVEN_SETTINGS_ID`              | no  | Used to create `settings.xml` file                        |                                     |
+| `MAVEN_SETTINGS_USERNAME`        | no  | Used to create `settings.xml` file                        |                                     |
+| `MAVEN_SETTINGS_PASSWORD`        | no  | Used to create `settings.xml` file                        |                                     |
+| `MAVEN_SETTINGS_EMAIL`           | no  | Used to create `settings.xml` file                        |                                     |
+| `MAVEN_SETTINGS_PATH`            | no  | Path where `settings.xml` should be                       | `/`                                 |
+| `MAVEN_MINOR_BUMP_STRING`        | no  | String to determine if minor version is bumped            | `bump_minor_version`                |
+| `MAVEN_DEVELOP_COMMAND`          | no  | Maven phases to run for snapshot build                    | `clean deploy`                      |
+| `MAVEN_RELEASE_COMMAND`          | no  | Maven phases to run for release build                     | `release:prepare release:perform`   |
+| `MAVEN_EXTRA_ARGS`               | no  | Extra arguments to pass to the `mvn` command              |                                     |
+| `MAVEN_CURRENT_RELEASE_VERSION`  | no  | Fallback for release version in artifact file             | Deploy might fail if not set        |
+| `MAVEN_CURRENT_SNAPSHOT_VERSION` | no  | Fallback for snapshot version in artifact file            | Deploy might fail if not set        |
+| `RELEASE_VERSION_OVERRIDE`       | no  | Override the default release version determined by maven  | Only used in `maven_release_deploy` |
+| `DEVELOPMENT_VERSION_OVERRIDE`   | no  | Override the default snapshot version determined by maven | Only used in `maven_release_deploy` |
 
 ### Generate the `settings.xml` file
 
