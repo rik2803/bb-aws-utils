@@ -78,6 +78,54 @@ aws_update_service() {
   success "Successfully updated service ${aws_ecs_service_name} in cluster ${aws_ecs_cluster_name}"
 }
 
+#######################################
+# Update a service using information from SSM parameter store
+#
+# Globals:
+#
+# Arguments:
+#   $1: AWS Profile name
+#   $2: The docker image name
+# Returns:
+#
+#######################################
+
+aws_update_service_ssm() {
+  check_envvar AWS_DEFAULT_REGION R
+
+  [[ -z ${1} || -z ${2} ]] && \
+    fail "${FUNCNAME[0]} - ${FUNCNAME[0]} aws_profile docker_image"
+
+  local aws_profile="${1}"
+  local aws_prev_profile
+  local docker_image="${2}"
+  local docker_image_tag
+  local aws_ecs_cluster_name
+  local aws_ecs_service_name
+  local aws_ecs_task_family
+
+  # Set correct profile for role on destination account to be assumed
+  info "${FUNCNAME[0]} - Use ${aws_profile} as AWS_PROFILE"
+  aws_prev_profile="${AWS_PROFILE:-}"
+  export AWS_PROFILE="${aws_profile}"
+
+  if maven_get_saved_current_version >/dev/null; then
+    docker_image_tag="${BITBUCKET_COMMIT}-$(maven_get_saved_current_version)"
+  else
+    docker_image_tag="${BITBUCKET_COMMIT}"
+  fi
+
+  aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG}/image" "${docker_image}:${docker_image_tag}"
+  aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG}/imagebasename" "${docker_image}"
+  aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG}/imagetag" "${docker_image_tag}"
+
+  aws_ecs_cluster_name=$(aws_get_ssm_parameter_by_name "/service/${BITBUCKET_REPO_SLUG}/ecs/clustername")
+  aws_ecs_service_name=$(aws_get_ssm_parameter_by_name "/service/${BITBUCKET_REPO_SLUG}/ecs/servicename")
+  aws_ecs_task_family=$(aws_get_ssm_parameter_by_name "/service/${BITBUCKET_REPO_SLUG}/ecs/taskfamily")
+
+  aws_update_service ${aws_ecs_cluster_name} ${aws_ecs_service_name} ${aws_ecs_task_family} ${docker_image_tag} ${docker_image}
+}
+
 aws_get_accountid_from_sts_getidentity() {
   aws sts get-caller-identity --query Account --output text
 }
@@ -395,6 +443,8 @@ aws_cdk_deploy() {
     info "${FUNCNAME[0]} - Create or update the /service/${BITBUCKET_REPO_SLUG}/image SSM parameter with value:"
     info "  ${ssm_parameter_value}"
     aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG}/image" "${ssm_parameter_value}"
+    aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG}/imagebasename" "${docker_image}"
+    aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG}/imagetag" "${docker_image_tag}"
   else
     info "${FUNCNAME[0]} - IaC only deploy, no service will be updated"
   fi
@@ -404,9 +454,10 @@ aws_cdk_deploy() {
     npm install --quiet --no-progress
     info "Starting command \"cdk deploy --all -c ENV=\"${aws_cdk_env}\" --require-approval=never\""
     cdk deploy --all -c ENV="${aws_cdk_env}" --require-approval=never
-    export AWS_PROFILE="${aws_prev_profile}"
     info "${FUNCNAME[0]} - IaC deploy successfully executed."
   else
     info "Skipping cdk deploy because AWS_CDK_DEPLOY_SKIP_CDK_DEPLOY is set to ${AWS_CDK_DEPLOY_SKIP_CDK_DEPLOY}"
   fi
+
+  export AWS_PROFILE="${aws_prev_profile}"
 }
