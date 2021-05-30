@@ -433,11 +433,22 @@ aws_cdk_deploy() {
   if [[ -n ${docker_image} ]]; then
     local ssm_parameter_value
     local docker_image_tag
-    if maven_get_saved_current_version >/dev/null; then
-      docker_image_tag="${BITBUCKET_COMMIT}-$(maven_get_saved_current_version)"
+
+    maven_get_current_versions
+    if  [[ "${MAVEN_CURRENT_RELEASE_VERSION}" -eq "NA" ]]; then
+      # The build was a snapshot build, use thr snapshot version in the tag
+      info "Release version from BB artifacts is NA, the build was a snapshot build, and the snapshot version is used in the tag"
+      docker_image_tag="${BITBUCKET_COMMIT}-${MAVEN_CURRENT_SNAPSHOT_VERSION}"
     else
-      docker_image_tag="${BITBUCKET_COMMIT}"
+      if [[ -n ${MAVEN_CURRENT_RELEASE_VERSION} ]]; then
+        info "Release version from BB artifacts is not NA and exists, the build was a release build, and the release version is used in the tag"
+        docker_image_tag="${BITBUCKET_COMMIT}-${MAVEN_CURRENT_RELEASE_VERSION}"
+      else
+        info "No versions have been foune in the BB artifacts, no version is used in the tag"
+        docker_image_tag="${BITBUCKET_COMMIT}"
+      fi
     fi
+
     info "Use tag ${docker_image_tag}"
     ssm_parameter_value="${docker_image}:${docker_image_tag}"
     info "${FUNCNAME[0]} - Create or update the /service/${BITBUCKET_REPO_SLUG}/image SSM parameter with value:"

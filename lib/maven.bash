@@ -125,15 +125,15 @@ maven_get_current_versions() {
   fi
 
   if [[ -z ${MAVEN_CURRENT_RELEASE_VERSION} ]]; then
-    fail "MAVEN_CURRENT_RELEASE_VERSION not available, unable to continue without MAVEN_CURRENT_RELEASE_VERSION"
+    warning "MAVEN_CURRENT_RELEASE_VERSION not available from BB artifacts, this might result in artifact tags or names not containing the correct maven version."
   fi
 
   if [[ -z ${MAVEN_CURRENT_SNAPSHOT_VERSION} ]]; then
-    fail "MAVEN_CURRENT_SNAPSHOT_VERSION not available, unable to continue without MAVEN_SNAPSHOT_RELEASE_VERSION"
+    warning "MAVEN_CURRENT_SNAPSHOT_VERSION not available from BB artifacts, this might result in artifact tags or names not containing the correct maven version."
   fi
 
-  info "MAVEN_CURRENT_SNAPSHOT_VERSION=${MAVEN_CURRENT_SNAPSHOT_VERSION}"
-  info "MAVEN_CURRENT_RELEASE_VERSION=${MAVEN_CURRENT_RELEASE_VERSION}"
+  info "MAVEN_CURRENT_SNAPSHOT_VERSION=${MAVEN_CURRENT_SNAPSHOT_VERSION:-NOT FOUND}"
+  info "MAVEN_CURRENT_RELEASE_VERSION=${MAVEN_CURRENT_RELEASE_VERSION:-NOT FOUND}"
 }
 
 maven_get_next_release_version() {
