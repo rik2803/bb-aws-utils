@@ -435,7 +435,7 @@ aws_cdk_deploy() {
     local docker_image_tag
 
     maven_get_current_versions
-    if  [[ "${MAVEN_CURRENT_RELEASE_VERSION}" -eq "NA" ]]; then
+    if  [[ "${MAVEN_CURRENT_RELEASE_VERSION}" = "NA" ]]; then
       # The build was a snapshot build, use thr snapshot version in the tag
       info "Release version from BB artifacts is NA, the build was a snapshot build, and the snapshot version is used in the tag"
       docker_image_tag="${BITBUCKET_COMMIT}-${MAVEN_CURRENT_SNAPSHOT_VERSION}"
@@ -444,7 +444,7 @@ aws_cdk_deploy() {
         info "Release version from BB artifacts is not NA and exists, the build was a release build, and the release version is used in the tag"
         docker_image_tag="${BITBUCKET_COMMIT}-${MAVEN_CURRENT_RELEASE_VERSION}"
       else
-        info "No versions have been foune in the BB artifacts, no version is used in the tag"
+        info "No versions have been found in the BB artifacts, no version is used in the tag"
         docker_image_tag="${BITBUCKET_COMMIT}"
       fi
     fi
@@ -469,6 +469,63 @@ aws_cdk_deploy() {
   else
     info "Skipping cdk deploy because AWS_CDK_DEPLOY_SKIP_CDK_DEPLOY is set to ${AWS_CDK_DEPLOY_SKIP_CDK_DEPLOY}"
   fi
+
+  export AWS_PROFILE="${aws_prev_profile}"
+}
+
+#######################################
+# Run cdk destroy to remove the stacks.
+#
+# Globals:
+#
+# Arguments:
+#   Aws profile: The name of the AWS profile to set for the aws cdk permissions.
+#       This only works if Service Accounts are used and the appropriate pipeline
+#       environment variables are set in the BB project
+#   Deploy Repo: The git repository that contains the aws-cdk code for the project
+#       and that will be used to update the environment.
+#   Deploy Repo Branch: The branch of the deploy repository to checkout. This
+#       depends on the target environment and is standardized to:
+#           * tst: for the test environment
+#           * stg: for the staging environment
+#           * master: for production
+#       This is also the value used in "-c ENV=xxxx"
+#
+# Returns:
+#
+#######################################
+aws_cdk_destroy() {
+  [[ -z ${1} || -z ${2} || -z ${3}  ]] && \
+    fail "${FUNCNAME[0]} - aws_cdk_deploy aws_profile deploy_repo deploy_repo_branch"
+
+  local aws_profile="${1}"
+  local aws_prev_profile
+  local aws_cdk_infra_repo="${2:-}"
+  local aws_cdk_infra_repo_branch="${3:-}"
+  local aws_cdk_env="${aws_cdk_infra_repo_branch}"
+
+  [[ ${aws_cdk_env} == master ]] && aws_cdk_env="prd"
+
+  if [[ -n ${aws_cdk_infra_repo} ]]; then
+    info "Clone the infra deploy repo"
+    git clone -b "${aws_cdk_infra_repo_branch}" "${aws_cdk_infra_repo}" ./aws-cdk-deploy
+    # shellcheck disable=SC2164
+    cd aws-cdk-deploy
+  else
+    info "${FUNCNAME[0]} - Using current repo ${BITBUCKET_REPO_SLUG}";
+    info "${FUNCNAME[0]} -   and branch ${aws_cdk_infra_repo_branch} as IaC code repo";
+  fi
+
+  # Set correct profile for role on destination account to be assumed
+  info "${FUNCNAME[0]} - Use ${aws_profile} as AWS_PROFILE"
+  aws_prev_profile="${AWS_PROFILE:-}"
+  export AWS_PROFILE="${aws_profile}"
+
+  npm install --quiet --no-progress -g "aws-cdk@${AWS_CDK_VERSION:-1.91.0}"
+  npm install --quiet --no-progress
+  info "Starting command \"cdk deploy --all -c ENV=\"${aws_cdk_env}\" --require-approval=never\""
+  cdk destroy --all -c ENV="${aws_cdk_env}" --require-approval=never
+  info "${FUNCNAME[0]} - IaC destroy successfully executed."
 
   export AWS_PROFILE="${aws_prev_profile}"
 }
