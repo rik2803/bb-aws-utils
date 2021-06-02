@@ -496,7 +496,7 @@ aws_cdk_deploy() {
 #######################################
 aws_cdk_destroy() {
   [[ -z ${1} || -z ${2} || -z ${3}  ]] && \
-    fail "${FUNCNAME[0]} - aws_cdk_deploy aws_profile deploy_repo deploy_repo_branch"
+    fail "${FUNCNAME[0]} - aws_cdk_destroy aws_profile deploy_repo deploy_repo_branch"
 
   local aws_profile="${1}"
   local aws_prev_profile
@@ -523,8 +523,8 @@ aws_cdk_destroy() {
 
   npm install --quiet --no-progress -g "aws-cdk@${AWS_CDK_VERSION:-1.91.0}"
   npm install --quiet --no-progress
-  info "Starting command \"cdk deploy --all -c ENV=\"${aws_cdk_env}\" --require-approval=never\""
-  cdk destroy --all -c ENV="${aws_cdk_env}" --require-approval=never
+  info "Starting command \"cdk destroy --force --all -c ENV=\"${aws_cdk_env}\" --require-approval=never\""
+  cdk destroy --force --all -c ENV="${aws_cdk_env}" --require-approval=never
   info "${FUNCNAME[0]} - IaC destroy successfully executed."
 
   export AWS_PROFILE="${aws_prev_profile}"
