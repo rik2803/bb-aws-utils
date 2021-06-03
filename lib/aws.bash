@@ -339,7 +339,8 @@ aws_get_ssm_parameter_by_name() {
   check_envvar name R
 
   info "Retrieving parameter ${name} from SSM."
-  local ssm_parameter_value=$(aws ssm get-parameters --names "${name}"  --query "Parameters[].Value" --output text)
+  local ssm_parameter_value
+  ssm_parameter_value=$(aws ssm get-parameters --names "${name}"  --query "Parameters[].Value" --output text)
   success "Parameter ${name} successfully retrieved from SSM, with value:"
   success "    ${ssm_parameter_value}"
   if [[ -n ${jmesexp} ]]; then
@@ -528,4 +529,26 @@ aws_cdk_destroy() {
   info "${FUNCNAME[0]} - IaC destroy successfully executed."
 
   export AWS_PROFILE="${aws_prev_profile}"
+}
+
+#######################################
+# Disable LB logs for the ALB ARN passed to the function
+#
+# Globals:
+#
+# Arguments:
+#   ALB ARN: The load balancer ARN
+#
+# Returns:
+#
+#######################################
+aws_disable_alb_logging() {
+  local alb_arn
+  alb_arn="${1:-}"
+
+  info "Disabling logging for load balancer ${alb_arn}"
+  aws elbv2 modify-load-balancer-attributes \
+    --load-balancer-arn "${alb_arn}" \
+    --attributes Key=access_logs.s3.enabled,Value=false
+  success "Logging for load balancer ${alb_arn} successfully disabled"
 }
