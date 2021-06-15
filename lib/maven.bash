@@ -157,6 +157,9 @@ maven_get_next_develop_version() {
 }
 
 maven_get_current_version_from_pom() {
+  if is_debug_enabled; then
+    mvn -DforceStdout help:evaluate -Dexpression=project.version
+  fi
   MAVEN_CURRENT_VERSION_FROM_POM=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version)
   export MAVEN_CURRENT_VERSION_FROM_POM
 }
