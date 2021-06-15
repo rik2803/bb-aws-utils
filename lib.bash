@@ -97,7 +97,7 @@ create_TAG_file_in_remote_url() {
       ### but since the TAG file was not changed, a build will not be triggered, and the
       ### monitor_automatic_remote_pipeline_start will monitor a build that will never start.
       ### To solve this, we force the TAG to change by setting a dummy content and
-      ### Committing with [skip ci] in thr commit message.
+      ### Committing with [skip ci] in the commit message.
       ### The next step is to change the TAG again and commit with a normal message.
 
       info "${FUNCNAME[0]} - Forcing the TAG to change by changing it twice."
