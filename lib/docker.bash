@@ -26,8 +26,7 @@ docker_build() {
 }
 
 docker_generate_dockerfile() {
-  set -x
-  echo "FROM ${DOCKER_IMAGE}:$(cat TAG)" > Dockerfile
+  echo "FROM ${AWS_ECR_ACCOUNTID}.dkr.ecr.${AWS_REGION:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:$(cat TAG)" > Dockerfile
 
   if [[ -e ./Dockerfile.template ]]; then
     info "Evaluating Dockerfile.template to add to Dockerfile"
