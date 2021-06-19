@@ -24,3 +24,15 @@ docker_build() {
   # Push the image
   docker push "${AWS_ECR_ACCOUNTID}.dkr.ecr.${AWS_REGION:-eu-central-1}.amazonaws.com/${DOCKER_IMAGE}:${DOCKER_TAG}"
 }
+
+docker_generate_dockerfile() {
+  echo "FROM ${DOCKER_IMAGE}:$(cat TAG)" > Dockerfile
+
+  if [[ -e ./Dockerfile.template ]]; then
+    info "Evaluating Dockerfile.template to add to Dockerfile"
+    sh -c 'echo "'"$(cat Dockerfile.template)"'"' >> Dockerfile
+    debug "Content of generated Dockerfile - START"
+    is_debug_enabled && cat Dockerfile
+    debug "Content of generated Dockerfile - END"
+  fi
+}
