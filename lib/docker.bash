@@ -26,6 +26,7 @@ docker_build() {
 }
 
 docker_generate_dockerfile() {
+  set -x
   echo "FROM ${DOCKER_IMAGE}:$(cat TAG)" > Dockerfile
 
   if [[ -e ./Dockerfile.template ]]; then
