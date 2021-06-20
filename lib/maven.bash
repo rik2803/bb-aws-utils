@@ -278,5 +278,6 @@ maven_release_deploy() {
 }
 
 maven_is_maven_project() {
-  return [[ -e "pom.xml" ]]
+   [[ -e "pom.xml" ]] && return 0
+   return 1
 }
