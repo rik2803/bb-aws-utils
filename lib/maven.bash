@@ -276,3 +276,7 @@ maven_release_deploy() {
 
   maven_save_current_versions "${RELEASE_VERSION}" "${DEVELOPMENT_VERSION}"
 }
+
+maven_is_maven_project() {
+  return [[ -e "pom.xml" ]]
+}
