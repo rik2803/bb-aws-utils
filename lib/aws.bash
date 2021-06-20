@@ -116,13 +116,13 @@ aws_update_service_ssm() {
     docker_image_tag="${BITBUCKET_COMMIT}"
   fi
 
-  aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG}/image" "${docker_image}:${docker_image_tag}"
-  aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG}/imagebasename" "${docker_image}"
-  aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG}/imagetag" "${docker_image_tag}"
+  aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG%%\.config\.*}/image" "${docker_image}:${docker_image_tag}"
+  aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG%%\.config\.*}/imagebasename" "${docker_image}"
+  aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG%%\.config\.*}/imagetag" "${docker_image_tag}"
 
-  aws_ecs_cluster_name=$(aws_get_ssm_parameter_by_name "/service/${BITBUCKET_REPO_SLUG}/ecs/clustername")
-  aws_ecs_service_name=$(aws_get_ssm_parameter_by_name "/service/${BITBUCKET_REPO_SLUG}/ecs/servicename")
-  aws_ecs_task_family=$(aws_get_ssm_parameter_by_name "/service/${BITBUCKET_REPO_SLUG}/ecs/taskfamily")
+  aws_ecs_cluster_name=$(aws_get_ssm_parameter_by_name "/service/${BITBUCKET_REPO_SLUG%%\.config\.*}/ecs/clustername")
+  aws_ecs_service_name=$(aws_get_ssm_parameter_by_name "/service/${BITBUCKET_REPO_SLUG%%\.config\.*}/ecs/servicename")
+  aws_ecs_task_family=$(aws_get_ssm_parameter_by_name "/service/${BITBUCKET_REPO_SLUG%%\.config\.*}/ecs/taskfamily")
 
   aws_update_service ${aws_ecs_cluster_name} ${aws_ecs_service_name} ${aws_ecs_task_family} ${docker_image_tag} ${docker_image}
 }
