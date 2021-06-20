@@ -1,3 +1,4 @@
+# shellcheck source=../../bb-aws-utils/lib/common.bash
 [[ -z ${LIB_COMMON_LOADED} ]] && { source "${LIB_DIR:-lib}/common.bash"; }
 export LIB_AWS_LOADED=1
 export SERVICE_ACCOUNT=0

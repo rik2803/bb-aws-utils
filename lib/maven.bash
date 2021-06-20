@@ -1,5 +1,7 @@
-[[ -z ${LIB_COMMON_LOADED} ]]    && { source ${LIB_DIR:-lib}/common.bash; }
-[[ -z ${LIB_GIT_LOADED} ]]       && { source ${LIB_DIR:-lib}/git.bash; }
+# shellcheck source=../../bb-aws-utils/lib/common.bash
+[[ -z ${LIB_COMMON_LOADED} ]] && { source "${LIB_DIR:-lib}/common.bash"; }
+# shellcheck source=../../bb-aws-utils/lib/git.bash
+[[ -z ${LIB_GIT_LOADED} ]]    && { source "${LIB_DIR:-lib}/git.bash"; }
 
 export LIB_MAVEN_LOADED=1
 export MAVEN_VERSION_VARS_SET=0
@@ -53,7 +55,7 @@ maven_create_settings_xml() {
   fi
   if is_debug_enabled; then
     debug "Dump of content of ${MAVEN_SETTINGS_PATH}/settings.xml -- start"
-    cat ${MAVEN_SETTINGS_PATH}/settings.xml
+    cat "${MAVEN_SETTINGS_PATH}/settings.xml"
     debug "Dump of content of ${MAVEN_SETTINGS_PATH}/settings.xml -- end"
   fi
 }
@@ -166,7 +168,7 @@ maven_get_current_version_from_pom() {
 
 maven_get_saved_current_version() {
   if [[ -e ${BITBUCKET_CLONE_DIR}/artifacts/curversion ]]; then
-    cat ${BITBUCKET_CLONE_DIR}/artifacts/curversion
+    cat "${BITBUCKET_CLONE_DIR}/artifacts/curversion"
     return 0
   else
     info "Cannot determine current version because ${BITBUCKET_CLONE_DIR}/artifacts/curversion does not exist."

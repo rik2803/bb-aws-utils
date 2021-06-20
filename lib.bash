@@ -29,12 +29,12 @@ create_TAG_file_in_remote_url() {
   #   - clones the remote repo
   #   - creates or updates a file named TAG in the root of the repo
   #   - the TAG file contains the commit hash of the SW git repo commit
-  #   - adds, commits ans pushes the changes
+  #   - adds, commits and pushes the changes
   # The pipeline of the config repo will then use the content of the file
   # to determine the tag of the docker image to pull and use to create
   # the deploy image.
   #
-  # This requires that pipeline to have a SSH key:
+  # This requires that pipeline have an SSH key:
   #   bb -> repo -> settings -> pipelines -> SSH keys
   #
   # That ssh key should be granted read/write permissions to the repo
@@ -65,8 +65,8 @@ create_TAG_file_in_remote_url() {
   git config --global user.email "bitbucketpipeline@wherever.com"
   git config --global user.name "Bitbucket Pipeline"
 
-  info "${FUNCNAME[0]} - Check what git user is being used"
-  ssh git@bitbucket.org
+    info "${FUNCNAME[0]} - Check what git user is being used"
+    ssh git@bitbucket.org
 
   info "${FUNCNAME[0]} - Trying to clone ${REMOTE_REPO_URL} into remote_repo"
   rm -rf remote_repo
