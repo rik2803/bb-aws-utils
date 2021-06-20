@@ -90,6 +90,7 @@ bb_update_tag_in_config_repo() {
   echo "${BITBUCKET_COMMIT}" > TAG
   git commit --allow-empty -m 'Update TAG with source repo commit hash' TAG || \
     fail "${FUNCNAME[0]} - Error committing TAG to ${remote_repo_url}"
+  git push || fail "${FUNCNAME[0]} - Error pushing to ${remote_repo_url}"
 
   ### If this build is triggered by a git tag, also put the tag on the config repo
   if [[ -n ${BITBUCKET_TAG} ]]
