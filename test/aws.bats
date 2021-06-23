@@ -1,10 +1,12 @@
 #!/usr/bin/env bats
 
-load 'libs/bats-support/load'
-load 'libs/bats-assert/load'
+load "libs/bats-support/load"
+load "libs/bats-assert/load"
 
 setup() {
+  # shellcheck source=../../bb-aws-utils/lib/common.bash
   source "${LIB_DIR}/common.bash"
+  # shellcheck source=../../bb-aws-utils/lib/aws.bash
   source "${LIB_DIR}/aws.bash"
   AWS_CONFIG_BASEDIR=~/tmp/.aws
   SA_ACCOUNT_LIST="IXOR_SANDBOX IXOR_SANDBOX2 IXOR_SANDBOX3"
@@ -61,27 +63,27 @@ teardown() {
   result=$(_indirection "${basename_var}" "${account}")
   assert_equal "${result}" "" "Expecting empty result when envvar does not exist"
 }
-#
-#@test "aws_force_restart_service_no_such_service" {
-#  function aws() {
-#    echo ""
-#  }
-#  export -f aws
-#  run aws_force_restart_service clustername servicename
-#  assert_failure "aws_force_restart_service should fail when service is not found"
-#  unset aws
-#}
-#
-#@test "aws_force_restart_service_01" {
-#  function aws() {
-#    if [[ ${2} == "list-services" ]]; then
-#      echo "Service-myService"
-#    elif [[ ${2} == "update-service" ]]; then
-#      return 0
-#    fi
-#  }
-#  export -f aws
-#  run aws_force_restart_service clustername myService
-#  assert_success "aws_force_restart_service failed"
-#  unset aws
-#}
+
+@test "aws_force_restart_service_no_such_service" {
+  function aws() {
+    echo ""
+  }
+  export -f aws
+  run aws_force_restart_service clustername servicename
+  assert_failure "aws_force_restart_service should fail when service is not found"
+  unset aws
+}
+
+@test "aws_force_restart_service_01" {
+  function aws() {
+    if [[ ${2} == "list-services" ]]; then
+      echo "//Service-myService"
+    elif [[ ${2} == "update-service" ]]; then
+      return 0
+    fi
+  }
+  export -f aws
+  run aws_force_restart_service clustername myService
+  assert_success "aws_force_restart_service failed"
+  unset aws
+}

@@ -20,14 +20,14 @@ debug()   { [[ "${DEBUG}" == "true" ]] && echo -e "${gray}DEBUG: $*${reset}"  1>
 
 ## Enable debug mode.
 enable_debug() {
-  if [[ "${DEBUG}" == "true" ]]; then
+  if [[ "${DEBUG}" == "true" || "${DEBUG}" == "1" ]]; then
     info "Enabling debug mode."
     set -x
   fi
 }
 
 is_debug_enabled() {
-  if [[ "${DEBUG}" == "true" ]]; then
+  if [[ "${DEBUG}" == "true" || "${DEBUG}" == "1" ]]; then
     return 0
   else
     return 1
@@ -105,7 +105,8 @@ check_envvar() {
       shift
       debug "check_envvar(): default = \"${default}\""
     else
-      fail "check_envvar(): default value is required for optional envvars"
+      info "check_envvar(): default value not present, using empty string"
+      default=""
     fi
   else
     debug "check_envvar(): default value not required for required envvars"
@@ -113,7 +114,7 @@ check_envvar() {
 
   eval check="\$$envvar"
 
-  if [[ "${mode}" = "R" && -z $check ]]; then
+  if [[ "${mode}" = "R" && -z ${check} ]]; then
     fail "check_envvar(): Required envvar ${envvar} is not set"
   elif [[ "${mode}" = "O" && -z $check ]]; then
     eval export $envvar=\"$default\"
@@ -132,6 +133,30 @@ run_cmd() {
   $@ 2>&1
   run_status=$?
   set -e
+}
+
+_indirection() {
+  local basename_var=${1}
+  local account=${2}
+  local var="${basename_var}_${account}"
+  echo "${!var}"
+}
+
+get_parent_slug_from_repo_slug() {
+  info "Determine parent slug from repo slug ${BITBUCKET_REPO_SLUG}"
+  echo "${BITBUCKET_REPO_SLUG%%\.config\.*}"
+}
+
+get_config_env_from_repo_slug() {
+  local env
+  info "Determine config environment name from repo slug ${BITBUCKET_REPO_SLUG}"
+  env="${BITBUCKET_REPO_SLUG##*\.config\.}"
+
+  if [[ "${env}" = "${BITBUCKET_REPO_SLUG}" ]]; then
+    echo ""
+  else
+    echo "${env}"
+  fi
 }
 
 # End standard 'imports'

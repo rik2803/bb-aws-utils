@@ -1,5 +1,7 @@
-[[ -z ${LIB_COMMON_LOADED} ]]    && { source ${LIB_DIR:-lib}/common.bash; }
-[[ -z ${LIB_GIT_LOADED} ]]       && { source ${LIB_DIR:-lib}/git.bash; }
+# shellcheck source=../../bb-aws-utils/lib/common.bash
+[[ -z ${LIB_COMMON_LOADED} ]] && { source "${LIB_DIR:-lib}/common.bash"; }
+# shellcheck source=../../bb-aws-utils/lib/git.bash
+[[ -z ${LIB_GIT_LOADED} ]]    && { source "${LIB_DIR:-lib}/git.bash"; }
 
 export LIB_GRADLE_LOADED=1
 
