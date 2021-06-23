@@ -20,14 +20,14 @@ debug()   { [[ "${DEBUG}" == "true" ]] && echo -e "${gray}DEBUG: $*${reset}"  1>
 
 ## Enable debug mode.
 enable_debug() {
-  if [[ "${DEBUG}" == "true" ]]; then
+  if [[ "${DEBUG}" == "true" || "${DEBUG}" == "1" ]]; then
     info "Enabling debug mode."
     set -x
   fi
 }
 
 is_debug_enabled() {
-  if [[ "${DEBUG}" == "true" ]]; then
+  if [[ "${DEBUG}" == "true" || "${DEBUG}" == "1" ]]; then
     return 0
   else
     return 1
@@ -114,7 +114,7 @@ check_envvar() {
 
   eval check="\$$envvar"
 
-  if [[ "${mode}" = "R" && -z $check ]]; then
+  if [[ "${mode}" = "R" && -z ${check} ]]; then
     fail "check_envvar(): Required envvar ${envvar} is not set"
   elif [[ "${mode}" = "O" && -z $check ]]; then
     eval export $envvar=\"$default\"

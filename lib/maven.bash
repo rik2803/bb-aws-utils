@@ -160,9 +160,9 @@ maven_get_next_develop_version() {
 
 maven_get_current_version_from_pom() {
   if is_debug_enabled; then
-    mvn -DforceStdout help:evaluate -Dexpression=project.version
+    mvn -s "${MAVEN_SETTINGS_PATH}/settings.xml" -DforceStdout help:evaluate -Dexpression=project.version
   fi
-  MAVEN_CURRENT_VERSION_FROM_POM=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version)
+  MAVEN_CURRENT_VERSION_FROM_POM=$(mvn -q -s "${MAVEN_SETTINGS_PATH}/settings.xml" -DforceStdout help:evaluate -Dexpression=project.version)
   export MAVEN_CURRENT_VERSION_FROM_POM
 }
 
@@ -186,7 +186,7 @@ maven_build() {
   maven_get_current_version_from_pom
   info "Finished retrieving the version number from the pom file"
 
-  COMMAND="mvn ${MAVEN_DEVELOP_COMMAND} -B -s ${MAVEN_SETTINGS_PATH}/settings.xml -DscmCommentPrefix=\"[skip ci]\" ${MAVEN_EXTRA_ARGS}"
+  COMMAND="mvn ${MAVEN_DEVELOP_COMMAND} -B -s "${MAVEN_SETTINGS_PATH}/settings.xml" -DscmCommentPrefix=\"[skip ci]\" ${MAVEN_EXTRA_ARGS}"
 
   info "${COMMAND}"
   eval ${COMMAND}
@@ -211,7 +211,7 @@ maven_release_build() {
   git checkout "${MAVEN_BRANCH}"
   success "Successfully checked out ${MAVEN_BRANCH}"
 
-  COMMAND="mvn -B -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS} -Dresume=false \
+  COMMAND="mvn -B -s "${MAVEN_SETTINGS_PATH}/settings.xml" ${MAVEN_EXTRA_ARGS} -Dresume=false \
       -DreleaseVersion=${RELEASE_VERSION} \
       -DdevelopmentVersion=${DEVELOP_VERSION} \
       -DscmCommentPrefix='[skip ci]' \
@@ -229,12 +229,12 @@ maven_deploy() {
   check_envvar MAVEN_SETTINGS_PATH O /
   check_command mvn || install_sw maven
 
-  COMMAND="mvn ${MAVEN_DEVELOP_COMMAND} -B -s ${MAVEN_SETTINGS_PATH}/settings.xml -DscmCommentPrefix=\"[skip ci]\" ${MAVEN_EXTRA_ARGS}"
+  COMMAND="mvn ${MAVEN_DEVELOP_COMMAND} -B -s "${MAVEN_SETTINGS_PATH}/settings.xml" -DscmCommentPrefix=\"[skip ci]\" ${MAVEN_EXTRA_ARGS}"
 
   info "${COMMAND}"
   eval ${COMMAND}
   success "mvn successfully executed"
-  maven_save_current_versions "NA" "$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version)"
+  maven_save_current_versions "NA" "$(mvn -q -s "${MAVEN_SETTINGS_PATH}/settings.xml" -DforceStdout help:evaluate -Dexpression=project.version)"
 }
 
 maven_release_deploy() {
@@ -253,7 +253,7 @@ maven_release_deploy() {
   [[ -n ${RELEASE_VERSION_OVERRIDE} ]] && MAVEN_EXTRA_ARGS="-DreleaseVersion=${RELEASE_VERSION_OVERRIDE} ${MAVEN_EXTRA_ARGS}"
   [[ -n ${DEVELOPMENT_VERSION_OVERRIDE} ]] && MAVEN_EXTRA_ARGS="-DdevelopmentVersion=${DEVELOPMENT_VERSION_OVERRIDE} ${MAVEN_EXTRA_ARGS}"
   ## release:prepare
-  COMMAND="mvn -B -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS} -Dresume=false \
+  COMMAND="mvn -B -s "${MAVEN_SETTINGS_PATH}/settings.xml" ${MAVEN_EXTRA_ARGS} -Dresume=false \
       -DscmCommentPrefix='[skip ci]' release:prepare"
   info "${COMMAND}"
   eval ${COMMAND}
@@ -264,7 +264,7 @@ maven_release_deploy() {
   success "project.version=${RELEASE_VERSION}"
 
   ## release:perform
-  COMMAND="mvn -B -s ${MAVEN_SETTINGS_PATH}/settings.xml ${MAVEN_EXTRA_ARGS} -Dresume=false \
+  COMMAND="mvn -B -s "${MAVEN_SETTINGS_PATH}/settings.xml" ${MAVEN_EXTRA_ARGS} -Dresume=false \
       -DscmCommentPrefix='[skip ci]' release:perform"
   info "${COMMAND}"
   eval ${COMMAND}
