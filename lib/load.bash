@@ -8,6 +8,8 @@
 [[ -z ${LIB_BITBUCKET_LOADED} ]]   && source ${LIB_DIR:-lib}/bitbucket.bash || true
 # shellcheck source=../../bb-aws-utils/lib/aws.bash
 [[ -z ${LIB_AWS_LOADED} ]]       && source ${LIB_DIR:-lib}/aws.bash         || true
+# shellcheck source=../../bb-aws-utils/lib/aws-s3-artifact.bash
+[[ -z ${LIB_AWS_S#_ARTIFACT_LOADED} ]] && source ${LIB_DIR:-lib}/aws-s3-artifact.bash || true
 # shellcheck source=../../bb-aws-utils/lib/dockerhub.bash
 [[ -z ${LIB_DOCKERHUB_LOADED} ]] && source ${LIB_DIR:-lib}/dockerhub.bash   || true
 # shellcheck source=../../bb-aws-utils/lib/maven.bash
@@ -27,3 +29,12 @@ aws_set_service_account_config
 aws_set_codeartifact_token
 maven_create_settings_xml
 gradle_create_gradle_properties
+
+### Keep this at the end
+# CONFIG_ENV:
+#   * The environment (tst, stg, acc, prd, ...) the config repo is used for.
+#   * Derived from BITBUCKET_REPO_SLUG (i.e. myproject.config.tst)
+#   * Used for naming artifacts (Docker images, ZIP artifacts)
+
+PARENT_SLUG="$(get_parent_slug_from_repo_slug)"
+CONFIG_ENV="$(get_config_env_from_repo_slug)"

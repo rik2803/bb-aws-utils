@@ -1,5 +1,6 @@
 # shellcheck source=../../bb-aws-utils/lib/common.bash
 [[ -z ${LIB_COMMON_LOADED} ]] && { source "${LIB_DIR:-lib}/common.bash"; }
+
 export LIB_AWS_LOADED=1
 export SERVICE_ACCOUNT=0
 
@@ -90,7 +91,6 @@ aws_update_service() {
 # Returns:
 #
 #######################################
-
 aws_update_service_ssm() {
   check_envvar AWS_DEFAULT_REGION R
 
@@ -116,13 +116,13 @@ aws_update_service_ssm() {
     docker_image_tag="${BITBUCKET_COMMIT}"
   fi
 
-  aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG%%\.config\.*}/image" "${docker_image}:${docker_image_tag}"
-  aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG%%\.config\.*}/imagebasename" "${docker_image}"
-  aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG%%\.config\.*}/imagetag" "${docker_image_tag}"
+  aws_create_or_update_ssm_parameter "/service/${AWS_ECS_SERVICE}/image" "${docker_image}:${docker_image_tag}"
+  aws_create_or_update_ssm_parameter "/service/${AWS_ECS_SERVICE}/imagebasename" "${docker_image}"
+  aws_create_or_update_ssm_parameter "/service/${AWS_ECS_SERVICE}/imagetag" "${docker_image_tag}"
 
-  aws_ecs_cluster_name=$(aws_get_ssm_parameter_by_name "/service/${BITBUCKET_REPO_SLUG%%\.config\.*}/ecs/clustername")
-  aws_ecs_service_name=$(aws_get_ssm_parameter_by_name "/service/${BITBUCKET_REPO_SLUG%%\.config\.*}/ecs/servicename")
-  aws_ecs_task_family=$(aws_get_ssm_parameter_by_name "/service/${BITBUCKET_REPO_SLUG%%\.config\.*}/ecs/taskfamily")
+  aws_ecs_cluster_name=$(aws_get_ssm_parameter_by_name "/service/${AWS_ECS_SERVICE}/ecs/clustername")
+  aws_ecs_service_name=$(aws_get_ssm_parameter_by_name "/service/${AWS_ECS_SERVICE}/ecs/servicename")
+  aws_ecs_task_family=$(aws_get_ssm_parameter_by_name "/service/${AWS_ECS_SERVICE}/ecs/taskfamily")
 
   aws_update_service ${aws_ecs_cluster_name} ${aws_ecs_service_name} ${aws_ecs_task_family} ${docker_image_tag} ${docker_image}
 }
@@ -204,13 +204,6 @@ aws_ecs_register_taskdefinition() {
   AWS_ECS_NEW_TASK_DEFINITION_ARN=$(echo "${RESULT}" | jq -r '.taskDefinition.taskDefinitionArn')
   success "Successfully registered new task definition for ${aws_ecs_task_family}"
   info "New task definition ARN is ${AWS_ECS_NEW_TASK_DEFINITION_ARN}"
-}
-
-_indirection() {
-  local basename_var=${1}
-  local account=${2}
-  local var="${basename_var}_${account}"
-  echo "${!var}"
 }
 
 aws_set_service_account_config() {
@@ -430,7 +423,7 @@ aws_cdk_deploy() {
   aws_prev_profile="${AWS_PROFILE:-}"
   export AWS_PROFILE="${aws_profile}"
 
-  # Update the SSM parameter /service/${BITBUCKET_REPO_SLUG}/image to trigger service update
+  # Update the SSM parameter /service/${AWS_ECS_SERVICE}/image to trigger service update
   # when running the aws cdk infrastructure deploy, but only if docker_image is not empty
   if [[ -n ${docker_image} ]]; then
     local ssm_parameter_value
@@ -461,11 +454,11 @@ aws_cdk_deploy() {
 
     info "Use tag ${docker_image_tag}"
     ssm_parameter_value="${docker_image}:${docker_image_tag}"
-    info "${FUNCNAME[0]} - Create or update the /service/${BITBUCKET_REPO_SLUG}/image SSM parameter with value:"
+    info "${FUNCNAME[0]} - Create or update the /service/${AWS_ECS_SERVICE}/image SSM parameter with value:"
     info "  ${ssm_parameter_value}"
-    aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG%%\.config\.*}/image" "${ssm_parameter_value}"
-    aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG%%\.config\.*}/imagebasename" "${docker_image}"
-    aws_create_or_update_ssm_parameter "/service/${BITBUCKET_REPO_SLUG%%\.config\.*}/imagetag" "${docker_image_tag}"
+    aws_create_or_update_ssm_parameter "/service/${AWS_ECS_SERVICE}/image" "${ssm_parameter_value}"
+    aws_create_or_update_ssm_parameter "/service/${AWS_ECS_SERVICE}/imagebasename" "${docker_image}"
+    aws_create_or_update_ssm_parameter "/service/${AWS_ECS_SERVICE}/imagetag" "${docker_image_tag}"
   else
     info "${FUNCNAME[0]} - IaC only deploy, no service will be updated"
   fi

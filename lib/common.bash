@@ -105,7 +105,8 @@ check_envvar() {
       shift
       debug "check_envvar(): default = \"${default}\""
     else
-      fail "check_envvar(): default value is required for optional envvars"
+      info "check_envvar(): default value not present, using empty string"
+      default=""
     fi
   else
     debug "check_envvar(): default value not required for required envvars"
@@ -132,6 +133,30 @@ run_cmd() {
   $@ 2>&1
   run_status=$?
   set -e
+}
+
+_indirection() {
+  local basename_var=${1}
+  local account=${2}
+  local var="${basename_var}_${account}"
+  echo "${!var}"
+}
+
+get_parent_slug_from_repo_slug() {
+  info "Determine parent slug from repo slug ${BITBUCKET_REPO_SLUG}"
+  echo "${BITBUCKET_REPO_SLUG%%\.config\.*}"
+}
+
+get_config_env_from_repo_slug() {
+  local env
+  info "Determine config environment name from repo slug ${BITBUCKET_REPO_SLUG}"
+  env="${BITBUCKET_REPO_SLUG##*\.config\.}"
+
+  if [[ "${env}" = "${BITBUCKET_REPO_SLUG}" ]]; then
+    echo ""
+  else
+    echo "${env}"
+  fi
 }
 
 # End standard 'imports'

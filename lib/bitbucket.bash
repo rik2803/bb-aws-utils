@@ -7,10 +7,6 @@
 
 export LIB_BITBUCKET_LOADED=1
 
-bb_dummy() {
- :
-}
-
 bb_fail_if_no_private_ssh_key() {
   if [[ ! -e /opt/atlassian/pipelines/agent/data/id_rsa ]]
   then
@@ -34,6 +30,16 @@ bb_printenv() {
 
 bb_get_config_repo_url() {
   echo "git@bitbucket.org:${BITBUCKET_REPO_OWNER}/${1}.git"
+}
+
+bb_is_config_repo() {
+  [[ ${BITBUCKET_REPO_SLUG} = *\.config\.* ]] && echo slugoke
+  [[ -e "${BITBUCKET_CLONE_DIR}/TAG" ]] && echo tagoke
+  if [[ ${BITBUCKET_REPO_SLUG} = *\.config\.* && -e "${BITBUCKET_CLONE_DIR}/TAG" ]]; then
+    return 0
+  else
+    return 1
+  fi
 }
 
 bb_print_user() {
