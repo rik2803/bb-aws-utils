@@ -36,5 +36,5 @@ gradle_create_gradle_properties
 #   * Derived from BITBUCKET_REPO_SLUG (i.e. myproject.config.tst)
 #   * Used for naming artifacts (Docker images, ZIP artifacts)
 
-PARENT_SLUG="$(get_parent_slug_from_repo_slug)"
-CONFIG_ENV="$(get_config_env_from_repo_slug)"
+PARENT_SLUG="${PARENT_SLUG:-$(get_parent_slug_from_repo_slug)}"
+CONFIG_ENV="${CONFIG_ENV:-$(get_config_env_from_repo_slug)}"

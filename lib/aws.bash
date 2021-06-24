@@ -116,13 +116,13 @@ aws_update_service_ssm() {
     docker_image_tag="${BITBUCKET_COMMIT}"
   fi
 
-  aws_create_or_update_ssm_parameter "/service/${AWS_ECS_SERVICE}/image" "${docker_image}:${docker_image_tag}"
-  aws_create_or_update_ssm_parameter "/service/${AWS_ECS_SERVICE}/imagebasename" "${docker_image}"
-  aws_create_or_update_ssm_parameter "/service/${AWS_ECS_SERVICE}/imagetag" "${docker_image_tag}"
+  aws_create_or_update_ssm_parameter "/service/${PARENT_SLUG}/image" "${docker_image}:${docker_image_tag}"
+  aws_create_or_update_ssm_parameter "/service/${PARENT_SLUG}/imagebasename" "${docker_image}"
+  aws_create_or_update_ssm_parameter "/service/${PARENT_SLUG}/imagetag" "${docker_image_tag}"
 
-  aws_ecs_cluster_name=$(aws_get_ssm_parameter_by_name "/service/${AWS_ECS_SERVICE}/ecs/clustername")
-  aws_ecs_service_name=$(aws_get_ssm_parameter_by_name "/service/${AWS_ECS_SERVICE}/ecs/servicename")
-  aws_ecs_task_family=$(aws_get_ssm_parameter_by_name "/service/${AWS_ECS_SERVICE}/ecs/taskfamily")
+  aws_ecs_cluster_name=$(aws_get_ssm_parameter_by_name "/service/${PARENT_SLUG}/ecs/clustername")
+  aws_ecs_service_name=$(aws_get_ssm_parameter_by_name "/service/${PARENT_SLUG}/ecs/servicename")
+  aws_ecs_task_family=$(aws_get_ssm_parameter_by_name "/service/${PARENT_SLUG}/ecs/taskfamily")
 
   aws_update_service ${aws_ecs_cluster_name} ${aws_ecs_service_name} ${aws_ecs_task_family} ${docker_image_tag} ${docker_image}
 }
@@ -423,7 +423,7 @@ aws_cdk_deploy() {
   aws_prev_profile="${AWS_PROFILE:-}"
   export AWS_PROFILE="${aws_profile}"
 
-  # Update the SSM parameter /service/${AWS_ECS_SERVICE}/image to trigger service update
+  # Update the SSM parameter /service/${PARENT_SLUG}/image to trigger service update
   # when running the aws cdk infrastructure deploy, but only if docker_image is not empty
   if [[ -n ${docker_image} ]]; then
     local ssm_parameter_value
@@ -454,11 +454,11 @@ aws_cdk_deploy() {
 
     info "Use tag ${docker_image_tag}"
     ssm_parameter_value="${docker_image}:${docker_image_tag}"
-    info "${FUNCNAME[0]} - Create or update the /service/${AWS_ECS_SERVICE}/image SSM parameter with value:"
+    info "${FUNCNAME[0]} - Create or update the /service/${PARENT_SLUG}/image SSM parameter with value:"
     info "  ${ssm_parameter_value}"
-    aws_create_or_update_ssm_parameter "/service/${AWS_ECS_SERVICE}/image" "${ssm_parameter_value}"
-    aws_create_or_update_ssm_parameter "/service/${AWS_ECS_SERVICE}/imagebasename" "${docker_image}"
-    aws_create_or_update_ssm_parameter "/service/${AWS_ECS_SERVICE}/imagetag" "${docker_image_tag}"
+    aws_create_or_update_ssm_parameter "/service/${PARENT_SLUG}/image" "${ssm_parameter_value}"
+    aws_create_or_update_ssm_parameter "/service/${PARENT_SLUG}/imagebasename" "${docker_image}"
+    aws_create_or_update_ssm_parameter "/service/${PARENT_SLUG}/imagetag" "${docker_image_tag}"
   else
     info "${FUNCNAME[0]} - IaC only deploy, no service will be updated"
   fi
