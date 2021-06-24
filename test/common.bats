@@ -143,6 +143,14 @@ setup() {
   assert_equal "${PARENT_SLUG}" ""
 }
 
+@test "global_var_PARENT_SLUG_use_set_value" {
+  BITBUCKET_REPO_SLUG="myproject.config.stg"
+  PARENT_SLUG="overridden"
+  # shellcheck source=../../bb-aws-utils/lib/common.bash
+  source "${LIB_DIR}/load.bash"
+  assert_equal "${PARENT_SLUG}" "overridden"
+}
+
 @test "global_var_CONFIG_ENV_01" {
   BITBUCKET_REPO_SLUG="myproject.config.stg"
   # shellcheck source=../../bb-aws-utils/lib/common.bash
@@ -162,4 +170,12 @@ setup() {
   # shellcheck source=../../bb-aws-utils/lib/common.bash
   source "${LIB_DIR}/load.bash"
   assert_equal "${CONFIG_ENV}" ""
+}
+
+@test "global_var_CONFIG_ENV_use_set_value" {
+  BITBUCKET_REPO_SLUG="myproject.config.stg"
+  CONFIG_ENV="overridden"
+  # shellcheck source=../../bb-aws-utils/lib/common.bash
+  source "${LIB_DIR}/load.bash"
+  assert_equal "${CONFIG_ENV}" "overridden"
 }
