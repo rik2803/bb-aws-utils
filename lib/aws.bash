@@ -84,6 +84,7 @@ aws_update_service() {
 # Update a service using information from SSM parameter store
 #
 # Globals:
+#   * AWS_SKIP_DEPLOY: Do not update the service, only update the image related SSM parameters
 #
 # Arguments:
 #   $1: AWS Profile name
@@ -120,11 +121,14 @@ aws_update_service_ssm() {
   aws_create_or_update_ssm_parameter "/service/${PARENT_SLUG}/imagebasename" "${docker_image}"
   aws_create_or_update_ssm_parameter "/service/${PARENT_SLUG}/imagetag" "${docker_image_tag}"
 
-  aws_ecs_cluster_name=$(aws_get_ssm_parameter_by_name "/service/${PARENT_SLUG}/ecs/clustername")
-  aws_ecs_service_name=$(aws_get_ssm_parameter_by_name "/service/${PARENT_SLUG}/ecs/servicename")
-  aws_ecs_task_family=$(aws_get_ssm_parameter_by_name "/service/${PARENT_SLUG}/ecs/taskfamily")
+  if [[ "${AWS_SKIP_DEPLOY:-0}" = "0" ]]; then
+    aws_ecs_cluster_name=$(aws_get_ssm_parameter_by_name "/service/${PARENT_SLUG}/ecs/clustername")
+    aws_ecs_service_name=$(aws_get_ssm_parameter_by_name "/service/${PARENT_SLUG}/ecs/servicename")
+    aws_ecs_task_family=$(aws_get_ssm_parameter_by_name "/service/${PARENT_SLUG}/ecs/taskfamily")
 
-  aws_update_service ${aws_ecs_cluster_name} ${aws_ecs_service_name} ${aws_ecs_task_family} ${docker_image_tag} ${docker_image}
+    aws_update_service "${aws_ecs_cluster_name}" "${aws_ecs_service_name}" \
+                       "${aws_ecs_task_family}" "${docker_image_tag}" "${docker_image}"
+  fi
 }
 
 aws_get_accountid_from_sts_getidentity() {
