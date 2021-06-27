@@ -30,7 +30,7 @@ teardown() {
 @test "bb_is_config_repo_failure_no_TAG_file" {
   BITBUCKET_REPO_SLUG="myproject.config.tst"
   run bb_is_config_repo
-  assert_failure "Test should fail!"
+  assert_success "TAG does not exist the very first time!!"
 }
 
 @test "bb_is_config_repo_failure_no_config_repo" {

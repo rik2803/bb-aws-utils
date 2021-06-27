@@ -33,9 +33,9 @@ bb_get_config_repo_url() {
 }
 
 bb_is_config_repo() {
-  [[ ${BITBUCKET_REPO_SLUG} = *\.config\.* ]] && echo slugoke
-  [[ -e "${BITBUCKET_CLONE_DIR}/TAG" ]] && echo tagoke
-  if [[ ${BITBUCKET_REPO_SLUG} = *\.config\.* && -e "${BITBUCKET_CLONE_DIR}/TAG" ]]; then
+#  [[ ${BITBUCKET_REPO_SLUG} = *\.config\.* ]] && echo slugoke
+#  [[ -e "${BITBUCKET_CLONE_DIR}/TAG" ]] && echo tagoke
+  if [[ ${BITBUCKET_REPO_SLUG} = *\.config\.* ]]; then
     return 0
   else
     return 1

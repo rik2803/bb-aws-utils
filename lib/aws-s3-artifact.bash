@@ -10,7 +10,7 @@ export LIB_AWS_S3_ARTIFACT_LOADED=1
 aws_s3_generate_zip_filename() {
   check_envvar PARENT_SLUG R
 
-  if [[ -e "./TAG" ]]; then
+  if bb_is_config_repo; then
     info "This is a config repo"
     echo "${PARENT_SLUG}-$(cat TAG)-${BITBUCKET_COMMIT}.zip"
   else
@@ -22,7 +22,7 @@ aws_s3_generate_zip_filename() {
 aws_s3_generate_parent_zip_filename() {
   check_envvar PARENT_SLUG R
 
-  if [[ -e "./TAG" ]]; then
+  if bb_is_config_repo; then
     info "This is a config repo"
     echo "${PARENT_SLUG}-$(cat TAG).zip"
   else
