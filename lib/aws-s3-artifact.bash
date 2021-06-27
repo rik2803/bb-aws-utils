@@ -180,7 +180,7 @@ aws_s3_update_artifact() {
 #     * The destination bucket is retrieved from the SSM Parameter store parameter passed in AWS_SSM_S3_DEST_BUCKET
 #
 # Globals:
-#     * S3_DEST_PREFIX: Should be set in pipeline or in pipeline variable
+#     * S3_DEST_PREFIX (optional, defaults to empty string): Should be set in pipeline or in pipeline variable
 #     * AWS_SSM_S3_DEST_BUCKET: Should be set in pipeline or in pipeline variable
 #
 # Arguments:
