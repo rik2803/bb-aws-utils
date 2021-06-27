@@ -38,3 +38,8 @@ gradle_create_gradle_properties
 
 PARENT_SLUG="${PARENT_SLUG:-$(get_parent_slug_from_repo_slug)}"
 CONFIG_ENV="${CONFIG_ENV:-$(get_config_env_from_repo_slug)}"
+# The directory we're in when the pipeline begins, should be where the repo is cloned
+# if the pipelines clones a demo (which is not necessarily the case)
+BB_AWS_UTILS_CLONE_DIR=$(pwd)
+
+export BB_AWS_UTILS_CLONE_DIR PARENT_SLUG CONFIG_ENV

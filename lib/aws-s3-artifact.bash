@@ -12,7 +12,7 @@ aws_s3_generate_zip_filename() {
 
   if bb_is_config_repo; then
     info "This is a config repo"
-    echo "${PARENT_SLUG}-$(cat TAG)-${BITBUCKET_COMMIT}.zip"
+    echo "${PARENT_SLUG}-$(cat ${BB_AWS_UTILS_CLONE_DIR}/TAG)-${BITBUCKET_COMMIT}.zip"
   else
     info "This is not a config repo"
     echo "${PARENT_SLUG}-${BITBUCKET_COMMIT}.zip"
@@ -24,7 +24,7 @@ aws_s3_generate_parent_zip_filename() {
 
   if bb_is_config_repo; then
     info "This is a config repo"
-    echo "${PARENT_SLUG}-$(cat TAG).zip"
+    echo "${PARENT_SLUG}-$(cat ${BB_AWS_UTILS_CLONE_DIR}/TAG).zip"
   else
     info "This is not a config repo"
     echo "${PARENT_SLUG}-${BITBUCKET_COMMIT}.zip"
