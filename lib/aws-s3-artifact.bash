@@ -205,7 +205,10 @@ aws_s3_deploy_artifact() {
   success "Destination bucket ${dest_bucket} successfully retrieved from AWS SSM Parameter Store"
   info "Unzip the zipfile in workdir"
   (mkdir workdir && cd workdir && unzip "${BITBUCKET_CLONE_DIR}/$(aws_s3_generate_zip_filename)")
-  (cd workdir && aws s3 cp --acl private --recursive . "s3://${dest_bucket}/${S3_DEST_PREFIX:-}")
+  info "Recursively deploy the content of workdir to s3://${dest_bucket}/${S3_DEST_PREFIX:-}."
+  (cd workdir && aws s3 cp --quiet --acl private --recursive . "s3://${dest_bucket}/${S3_DEST_PREFIX:-}")
+  success "Deploy was successful."
   info "Cleaning up ..."
   rm -rf workdir
+  success "Successfully cleaned up workdir"
 }
