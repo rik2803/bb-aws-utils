@@ -94,6 +94,7 @@ bb_update_tag_in_config_repo() {
   cd "${remote_repo_dir}"
   info "${FUNCNAME[0]} - Update the TAG file in ${remote_repo_url}"
   echo "${BITBUCKET_COMMIT}" > TAG
+  git add TAG
   git commit --allow-empty -m 'Update TAG with source repo commit hash' TAG || \
     fail "${FUNCNAME[0]} - Error committing TAG to ${remote_repo_url}"
   git push || fail "${FUNCNAME[0]} - Error pushing to ${remote_repo_url}"
