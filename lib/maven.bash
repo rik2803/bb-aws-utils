@@ -207,9 +207,20 @@ maven_release_build() {
   git remote set-url origin "${BITBUCKET_GIT_SSH_ORIGIN}"
   git config --global --add status.displayCommentPrefix true
 
-  info "Checking out branch ${MAVEN_BRANCH}"
-  git checkout "${MAVEN_BRANCH}"
-  success "Successfully checked out ${MAVEN_BRANCH}"
+  info "Checking out branch ${MAVEN_BRANCH} for manually triggered pipeline, because"
+  info "a release build should not be run on ay branch."
+  if [[ -z "${BITBUCKET_BRANCH}" && -z "${BITBUCKET_TAG}" ]]; then
+    info "Checking out branch ${MAVEN_BRANCH}"
+    git checkout "${MAVEN_BRANCH}"
+    success "Successfully checked out ${MAVEN_BRANCH}"
+  else
+    if [[ -z "${BITBUCKET_BRANCH}" ]]; then
+      info "Build was triggered by push or merge to branch ${BITBUCKET_BRANCH}; no need to check out ${MAVEN_BRANCH} branch"
+    fi
+    if [[ -z "${BITBUCKET_TAG}" ]]; then
+      info "Build was triggered by tag ${BITBUCKET_TAG}; no need to check out ${MAVEN_BRANCH} branch"
+    fi
+  fi
 
   COMMAND="mvn -B -s "${MAVEN_SETTINGS_PATH}/settings.xml" ${MAVEN_EXTRA_ARGS} -Dresume=false \
       -DreleaseVersion=${RELEASE_VERSION} \
