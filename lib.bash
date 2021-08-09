@@ -668,6 +668,7 @@ s3_lambda_build_and_push() {
       run_log_and_exit_on_failure "mv -f dist node_modules /builddir"
     else
       [[ -e ${LAMBDA_FUNCTION_FILE:-index.js} ]] && run_log_and_exit_on_failure "mv -f ${LAMBDA_FUNCTION_FILE:-index.js} /builddir"
+      [[ -e ${LAMBDA_FUNCTION_DIR:-dist} ]] && run_log_and_exit_on_failure "cp -rp ${LAMBDA_FUNCTION_DIR:-dist}/* /builddir"
       if [[ -f package.json ]]
       then
         if [[ -n ${DEBUG} ]]; then
