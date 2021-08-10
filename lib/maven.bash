@@ -208,7 +208,7 @@ maven_release_build() {
   git config --global --add status.displayCommentPrefix true
 
   info "Checking out branch ${MAVEN_BRANCH} for manually triggered pipeline, because"
-  info "a release build should not be run on ay branch."
+  info "    a release build should not be run on any branch."
   if [[ -z "${BITBUCKET_BRANCH}" && -z "${BITBUCKET_TAG}" ]]; then
     info "Checking out branch ${MAVEN_BRANCH}"
     git checkout "${MAVEN_BRANCH}"

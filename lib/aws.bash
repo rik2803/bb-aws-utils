@@ -439,7 +439,7 @@ aws_cdk_deploy() {
       if maven_is_maven_project; then
         maven_get_current_versions
         if  [[ "${MAVEN_CURRENT_RELEASE_VERSION}" = "NA" ]]; then
-          # The build was a snapshot build, use thr snapshot version in the tag
+          # The build was a snapshot build, use the snapshot version in the tag
           info "Release version from BB artifacts is NA, the build was a snapshot build, and the snapshot version is used in the tag"
           docker_image_tag="${BITBUCKET_COMMIT}-${MAVEN_CURRENT_SNAPSHOT_VERSION}"
         else
