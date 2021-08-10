@@ -678,7 +678,7 @@ s3_lambda_build_and_push() {
         fi
         run_log_and_exit_on_failure "npm run build --if-present"
         [[ -e ${LAMBDA_FUNCTION_DIR:-dist} ]] && run_log_and_exit_on_failure "cp -rp ${LAMBDA_FUNCTION_DIR:-dist}/* /builddir"
-        # run_log_and_exit_on_failure "npm prune --production"
+        run_log_and_exit_on_failure "npm prune --production"
         [[ -e node_modules ]] && run_log_and_exit_on_failure "mv -f node_modules /builddir"
       fi
     fi
