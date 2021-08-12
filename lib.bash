@@ -643,7 +643,7 @@ s3_lambda_build_and_push() {
     done
   fi
 
-  ### Java8
+  ### Java
   if [[ ${LAMBDA_RUNTIME} = java* ]]
   then
     ### These envvars are required, exit 1 if not
@@ -725,7 +725,11 @@ s3_lambda_build_and_push() {
 
   if [[ ${LAMBDA_RUNTIME} = java* ]]
   then
-    EXTENSION="jar"
+    if [[ "${JAR_FILE: -4}" == ".zip" ]]; then
+      EXTENSION="zip"
+    else
+      EXTENSION="jar"
+    fi
     SOURCE="${JAR_PATH:-.}/${JAR_FILE}"
   else
     EXTENSION="zip"

@@ -20,6 +20,8 @@
 [[ -z ${LIB_MAVEN_LOADED} ]]     && source ${LIB_DIR:-lib}/maven.bash       || true
 # shellcheck source=../../bb-aws-utils/lib/maven.bash
 [[ -z ${LIB_GRADLE_LOADED} ]]    && source ${LIB_DIR:-lib}/gradle.bash      || true
+# shellcheck source=../../bb-aws-utils/lib/npm.bash
+[[ -z ${LIB_NPM_LOADED} ]]       && source ${LIB_DIR:-lib}/npm.bash      || true
 
 export AWS_PAGER=""
 [[ -e /tmp ]] || mkdir -p /tmp
@@ -29,6 +31,7 @@ aws_set_service_account_config
 aws_set_codeartifact_token
 maven_create_settings_xml
 gradle_create_gradle_properties
+npm_create_npmrc
 
 ### Keep this at the end
 # CONFIG_ENV:
