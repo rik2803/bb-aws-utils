@@ -133,7 +133,7 @@ aws_s3_download_artifact() {
 #   (if not already done) and add the file (1st argument) inside the ZIP as 2nd argument.
 #
 # Expects:
-#     * To be used in configuration repositories (i.e. myproject.config.stg)
+#     * To be used in configuration repositories (i.e. my-project.config.stg)
 #     * TAG file should exist in the repo, and is used to construct the filename to download
 #     * The source and target bucket is defined by the envvar ARTIFACT_BUCKET
 #     * Can be called multiple times, 1x for each file to add
@@ -193,16 +193,21 @@ aws_s3_update_artifact() {
 #
 #######################################
 aws_s3_deploy_artifact() {
-  check_envvar AWS_SSM_S3_DEST_BUCKET R
   check_envvar S3_DEST_PREFIX O
   install_zip
 
   local dest_bucket
 
   aws_s3_download_artifact "$(aws_s3_generate_zip_filename)" "$(aws_s3_generate_zip_filename)"
-  info "Retrieve the SSM parameter ${AWS_SSM_S3_DEST_BUCKET} from the parameter store"
-  dest_bucket=$(aws_get_ssm_parameter_by_name "${AWS_SSM_S3_DEST_BUCKET}")
-  success "Destination bucket ${dest_bucket} successfully retrieved from AWS SSM Parameter Store"
+  if [[ -n "${S3_DEST_BUCKET}" ]]; then
+    dest_bucket="${S3_DEST_BUCKET}"
+  elif [[ -n "${AWS_SSM_S3_DEST_BUCKET}" ]]; then
+    info "Retrieve the SSM parameter ${AWS_SSM_S3_DEST_BUCKET} from the parameter store"
+    dest_bucket=$(aws_get_ssm_parameter_by_name "${AWS_SSM_S3_DEST_BUCKET}")
+    success "Destination bucket ${dest_bucket} successfully retrieved from AWS SSM Parameter Store"
+  else
+    fail "Unable to determine destination bucket because S3_DEST_BUCKET nor AWS_SSM_S3_DEST_BUCKET are set."
+  fi
   info "Unzip the zipfile in workdir"
   (mkdir workdir && cd workdir && unzip "${BITBUCKET_CLONE_DIR}/$(aws_s3_generate_zip_filename)")
   info "Recursively deploy the content of workdir to s3://${dest_bucket}/${S3_DEST_PREFIX:-}."
