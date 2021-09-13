@@ -12,10 +12,19 @@ aws_s3_generate_zip_filename() {
 
   if bb_is_config_repo; then
     info "This is a config repo"
-    echo "${PARENT_SLUG}-$(cat ${BB_AWS_UTILS_CLONE_DIR}/TAG)-${BITBUCKET_COMMIT}.zip"
+    if [[ -z ${AWS_S3_FILENAME_SUFFIX} ]]; then
+      echo "${PARENT_SLUG}-$(cat ${BB_AWS_UTILS_CLONE_DIR}/TAG)-${BITBUCKET_COMMIT}.zip"
+    else
+      info "Adding AWS_S3_FILENAME_SUFFIX to artifact name"
+      echo "${PARENT_SLUG}-${AWS_S3_FILENAME_SUFFIX}-$(cat ${BB_AWS_UTILS_CLONE_DIR}/TAG)-${BITBUCKET_COMMIT}.zip"
+    fi
   else
     info "This is not a config repo"
-    echo "${PARENT_SLUG}-${BITBUCKET_COMMIT}.zip"
+    if [[ -z ${AWS_S3_FILENAME_SUFFIX} ]]; then
+      echo "${PARENT_SLUG}-${BITBUCKET_COMMIT}.zip"
+    else
+      info "Adding AWS_S3_FILENAME_SUFFIX to artifact name"
+      echo "${PARENT_SLUG}-${AWS_S3_FILENAME_SUFFIX}-${BITBUCKET_COMMIT}.zip"
   fi
 }
 
@@ -24,10 +33,20 @@ aws_s3_generate_parent_zip_filename() {
 
   if bb_is_config_repo; then
     info "This is a config repo"
-    echo "${PARENT_SLUG}-$(cat ${BB_AWS_UTILS_CLONE_DIR}/TAG).zip"
+    if [[ -z ${AWS_S3_FILENAME_SUFFIX} ]]; then
+      echo "${PARENT_SLUG}-$(cat ${BB_AWS_UTILS_CLONE_DIR}/TAG).zip"
+    else
+      info "Adding AWS_S3_FILENAME_SUFFIX to artifact name"
+      echo "${PARENT_SLUG}-${AWS_S3_FILENAME_SUFFIX}-$(cat ${BB_AWS_UTILS_CLONE_DIR}/TAG).zip"
+    fi
   else
     info "This is not a config repo"
-    echo "${PARENT_SLUG}-${BITBUCKET_COMMIT}.zip"
+    if [[ -z ${AWS_S3_FILENAME_SUFFIX} ]]; then
+      echo "${PARENT_SLUG}-${BITBUCKET_COMMIT}.zip"
+    else
+      info "Adding AWS_S3_FILENAME_SUFFIX to artifact name"
+      echo "${PARENT_SLUG}-${AWS_S3_FILENAME_SUFFIX}-${BITBUCKET_COMMIT}.zip"
+    fi
   fi
 }
 
