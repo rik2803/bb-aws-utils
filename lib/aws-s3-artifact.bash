@@ -25,6 +25,7 @@ aws_s3_generate_zip_filename() {
     else
       info "Adding AWS_S3_FILENAME_SUFFIX to artifact name"
       echo "${PARENT_SLUG}-${AWS_S3_FILENAME_SUFFIX}-${BITBUCKET_COMMIT}.zip"
+    fi
   fi
 }
 
