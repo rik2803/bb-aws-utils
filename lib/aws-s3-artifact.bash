@@ -124,7 +124,7 @@ aws_s3_download_artifact() {
   if aws s3 cp --quiet "s3://${ARTIFACT_BUCKET}/${1}" "${BITBUCKET_CLONE_DIR}/${2}"; then
     success "Successfully copied s3://${ARTIFACT_BUCKET}/${1} to ${2}"
   else
-    fail "An error occurred while copying 3://${ARTIFACT_BUCKET}/${1} to ${2}"
+    fail "An error occurred while copying s3://${ARTIFACT_BUCKET}/${1} to ${2}"
   fi
 }
 
