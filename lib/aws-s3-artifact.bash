@@ -108,7 +108,7 @@ aws_s3_upload_artifact() {
   check_envvar ARTIFACT_BUCKET R
 
   info "Starting upload of $(aws_s3_generate_zip_filename) to S3 bucket ${ARTIFACT_BUCKET}"
-  if aws s3 cp --quiet --acl private "${BITBUCKET_CLONE_DIR}/$(aws_s3_generate_zip_filename)" "s3://${ARTIFACT_BUCKET}/$(aws_s3_generate_zip_filename)"; then
+  if aws s3 cp --quiet --acl bucket-owner-full-control "${BITBUCKET_CLONE_DIR}/$(aws_s3_generate_zip_filename)" "s3://${ARTIFACT_BUCKET}/$(aws_s3_generate_zip_filename)"; then
     success "Successfully copied $(aws_s3_generate_zip_filename) to s3://${ARTIFACT_BUCKET}/$(aws_s3_generate_zip_filename)"
   else
     fail "An error occurred while copying $(aws_s3_generate_zip_filename) to s3://${ARTIFACT_BUCKET}/$(aws_s3_generate_zip_filename)"
