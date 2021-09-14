@@ -8,7 +8,11 @@
 export LIB_AWS_S3_ARTIFACT_LOADED=1
 
 AWS_S3_CLI_OPTS=""
-is_debug_enabled || AWS_S3_CLI_OPTS="--quiet"
+if ! is_debug_enabled; then
+  AWS_S3_CLI_OPTS="--quiet"
+else
+  AWS_S3_CLI_OPTS="--debug"
+fi
 
 aws_s3_generate_zip_filename() {
   check_envvar PARENT_SLUG R
