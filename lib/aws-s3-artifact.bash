@@ -7,15 +7,32 @@
 
 export LIB_AWS_S3_ARTIFACT_LOADED=1
 
+AWS_S3_CLI_OPTS=""
+if ! is_debug_enabled; then
+  AWS_S3_CLI_OPTS="--quiet"
+else
+  AWS_S3_CLI_OPTS="--debug"
+fi
+
 aws_s3_generate_zip_filename() {
   check_envvar PARENT_SLUG R
 
   if bb_is_config_repo; then
     info "This is a config repo"
-    echo "${PARENT_SLUG}-$(cat ${BB_AWS_UTILS_CLONE_DIR}/TAG)-${BITBUCKET_COMMIT}.zip"
+    if [[ -z ${AWS_S3_FILENAME_SUFFIX} ]]; then
+      echo "${PARENT_SLUG}-$(cat ${BB_AWS_UTILS_CLONE_DIR}/TAG)-${BITBUCKET_COMMIT}.zip"
+    else
+      info "Adding AWS_S3_FILENAME_SUFFIX to artifact name"
+      echo "${PARENT_SLUG}-${AWS_S3_FILENAME_SUFFIX}-$(cat ${BB_AWS_UTILS_CLONE_DIR}/TAG)-${BITBUCKET_COMMIT}.zip"
+    fi
   else
     info "This is not a config repo"
-    echo "${PARENT_SLUG}-${BITBUCKET_COMMIT}.zip"
+    if [[ -z ${AWS_S3_FILENAME_SUFFIX} ]]; then
+      echo "${PARENT_SLUG}-${BITBUCKET_COMMIT}.zip"
+    else
+      info "Adding AWS_S3_FILENAME_SUFFIX to artifact name"
+      echo "${PARENT_SLUG}-${AWS_S3_FILENAME_SUFFIX}-${BITBUCKET_COMMIT}.zip"
+    fi
   fi
 }
 
@@ -24,10 +41,20 @@ aws_s3_generate_parent_zip_filename() {
 
   if bb_is_config_repo; then
     info "This is a config repo"
-    echo "${PARENT_SLUG}-$(cat ${BB_AWS_UTILS_CLONE_DIR}/TAG).zip"
+    if [[ -z ${AWS_S3_FILENAME_SUFFIX} ]]; then
+      echo "${PARENT_SLUG}-$(cat ${BB_AWS_UTILS_CLONE_DIR}/TAG).zip"
+    else
+      info "Adding AWS_S3_FILENAME_SUFFIX to artifact name"
+      echo "${PARENT_SLUG}-${AWS_S3_FILENAME_SUFFIX}-$(cat ${BB_AWS_UTILS_CLONE_DIR}/TAG).zip"
+    fi
   else
     info "This is not a config repo"
-    echo "${PARENT_SLUG}-${BITBUCKET_COMMIT}.zip"
+    if [[ -z ${AWS_S3_FILENAME_SUFFIX} ]]; then
+      echo "${PARENT_SLUG}-${BITBUCKET_COMMIT}.zip"
+    else
+      info "Adding AWS_S3_FILENAME_SUFFIX to artifact name"
+      echo "${PARENT_SLUG}-${AWS_S3_FILENAME_SUFFIX}-${BITBUCKET_COMMIT}.zip"
+    fi
   fi
 }
 
@@ -88,7 +115,7 @@ aws_s3_upload_artifact() {
   check_envvar ARTIFACT_BUCKET R
 
   info "Starting upload of $(aws_s3_generate_zip_filename) to S3 bucket ${ARTIFACT_BUCKET}"
-  if aws s3 cp --quiet --acl private "${BITBUCKET_CLONE_DIR}/$(aws_s3_generate_zip_filename)" "s3://${ARTIFACT_BUCKET}/$(aws_s3_generate_zip_filename)"; then
+  if aws s3 cp ${AWS_S3_CLI_OPTS} --acl bucket-owner-full-control "${BITBUCKET_CLONE_DIR}/$(aws_s3_generate_zip_filename)" "s3://${ARTIFACT_BUCKET}/$(aws_s3_generate_zip_filename)"; then
     success "Successfully copied $(aws_s3_generate_zip_filename) to s3://${ARTIFACT_BUCKET}/$(aws_s3_generate_zip_filename)"
   else
     fail "An error occurred while copying $(aws_s3_generate_zip_filename) to s3://${ARTIFACT_BUCKET}/$(aws_s3_generate_zip_filename)"
@@ -121,7 +148,7 @@ aws_s3_download_artifact() {
   [[ -z ${1} || -z ${2} ]] && fail "aws_s3_download_artifact requires 2 arguments: key on bucket and local filename"
 
   info "Starting download of s3://${ARTIFACT_BUCKET}/${1} to ${2}"
-  if aws s3 cp --quiet "s3://${ARTIFACT_BUCKET}/${1}" "${BITBUCKET_CLONE_DIR}/${2}"; then
+  if aws s3 cp ${AWS_S3_CLI_OPTS} "s3://${ARTIFACT_BUCKET}/${1}" "${BITBUCKET_CLONE_DIR}/${2}"; then
     success "Successfully copied s3://${ARTIFACT_BUCKET}/${1} to ${2}"
   else
     fail "An error occurred while copying s3://${ARTIFACT_BUCKET}/${1} to ${2}"
@@ -211,7 +238,7 @@ aws_s3_deploy_artifact() {
   info "Unzip the zipfile in workdir"
   (mkdir workdir && cd workdir && unzip "${BITBUCKET_CLONE_DIR}/$(aws_s3_generate_zip_filename)")
   info "Recursively deploy the content of workdir to s3://${dest_bucket}/${S3_DEST_PREFIX:-}."
-  (cd workdir && aws s3 cp --quiet --acl private --recursive . "s3://${dest_bucket}/${S3_DEST_PREFIX:-}")
+  (cd workdir && aws s3 cp ${AWS_S3_CLI_OPTS} --acl private --recursive . "s3://${dest_bucket}/${S3_DEST_PREFIX:-}")
   success "Deploy was successful."
   info "Cleaning up ..."
   rm -rf workdir
