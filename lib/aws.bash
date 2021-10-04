@@ -412,6 +412,14 @@ aws_cdk_deploy() {
 
   [[ ${aws_cdk_env} == master ]] && aws_cdk_env="prd"
 
+  if [[ ${aws_cdk_infra_repo_branch} =~ pr.*d ]]; then
+    # If probably a production branch and it does not exist: use master
+    if ! git_branch_exists "${aws_cdk_infra_repo}" "${aws_cdk_infra_repo_branch}"; then
+      info "No branch ${aws_cdk_infra_repo_branch} in repo ${aws_cdk_infra_repo}, using master instead."
+      aws_cdk_infra_repo_branch="master"
+    fi
+  fi
+
   if [[ -n ${aws_cdk_infra_repo} ]]; then
     info "Clone the infra deploy repo"
     git clone -b "${aws_cdk_infra_repo_branch}" "${aws_cdk_infra_repo}" ./aws-cdk-deploy

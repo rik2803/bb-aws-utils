@@ -34,3 +34,14 @@ git_set_tag() {
   git tag "${1}"
   git push --tags
 }
+
+git_branch_exists() {
+  local repo_url="${1}"
+  local branch="${2:-master}"
+
+  if git ls-remote --heads "${repo_url}" 2>/dev/null | grep -q "refs/heads/${branch}$"; then
+    return 0
+  else
+    return 1
+  fi
+}
