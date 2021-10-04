@@ -123,6 +123,7 @@ bb_sync_trigger_build() {
   local remote_repo_slug
   local custom_pipeline_pattern
 
+  # ToDo: validation
   remote_repo_slug="${1}"
   custom_pipeline_pattern="${2:-build_and_deploy}"
 
