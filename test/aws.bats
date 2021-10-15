@@ -87,3 +87,24 @@ teardown() {
   assert_success "aws_force_restart_service failed"
   unset aws
 }
+
+@test "aws_is_service_account_available_01" {
+  export AWS_PROFILE="IXOR_SANDBOX2"
+  run aws_is_service_account_available
+  assert_success "aws_is_service_account_available_01 failed"
+  unset aws
+}
+
+@test "aws_is_service_account_available_02" {
+  export AWS_PROFILE="IXOR_NO_SA"
+  run aws_is_service_account_available
+  assert_failure "aws_is_service_account_available_02 failed"
+  unset aws
+}
+
+@test "aws_is_service_account_available_03" {
+  unset AWS_PROFILE
+  run aws_is_service_account_available
+  assert_success "aws_is_service_account_available_03 failed"
+  unset aws
+}
