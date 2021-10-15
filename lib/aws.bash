@@ -210,6 +210,22 @@ aws_ecs_register_taskdefinition() {
   info "New task definition ARN is ${AWS_ECS_NEW_TASK_DEFINITION_ARN}"
 }
 
+# Check if the value of AWS_PROFILE is configured as a Service Account in the
+# repo this is run in
+aws_is_service_account_available() {
+  if [[ -n "${AWS_PROFILE}" ]]; then
+    for profile in ${SA_ACCOUNT_LIST:-empty}; do
+      if [[ "${profile}" == "${AWS_PROFILE}" ]]; then
+        return 0
+      fi
+    done
+  else
+    return 0
+  fi
+
+  return 1
+}
+
 aws_set_service_account_config() {
   local account
 
