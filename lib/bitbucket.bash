@@ -7,6 +7,23 @@
 
 export LIB_BITBUCKET_LOADED=1
 
+# Copy the pipeline private key to a given destination (or current directory by default)
+bb_cp_ssh_privkey() {
+  local priv_key_location="/opt/atlassian/pipelines/agent/ssh/id_rsa"
+
+  if [[ -e ${priv_key_location} ]]; then
+    info "Repo has a private key in ${priv_key_location}, copying to ${1:-.}."
+    cp -f "${priv_key_location}" "${1:-.}"
+    if [[ -d "${1:-.}" ]]; then
+      chmod 0600 "${1:-.}/id_rsa"
+    else
+      chmod 0600 "${1}/id_rsa"
+    fi
+  else
+    fail "No private SSH key is configured for this repo. Failing because you seem to rely on it. Bye bye."
+  fi
+}
+
 bb_fail_if_no_private_ssh_key() {
   if [[ ! -e /opt/atlassian/pipelines/agent/data/id_rsa ]]
   then
