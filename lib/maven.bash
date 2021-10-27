@@ -214,10 +214,10 @@ maven_release_build() {
     git checkout "${MAVEN_BRANCH}"
     success "Successfully checked out ${MAVEN_BRANCH}"
   else
-    if [[ -z "${BITBUCKET_BRANCH}" ]]; then
+    if [[ -n "${BITBUCKET_BRANCH}" ]]; then
       info "Build was triggered by push or merge to branch ${BITBUCKET_BRANCH}; no need to check out ${MAVEN_BRANCH} branch"
     fi
-    if [[ -z "${BITBUCKET_TAG}" ]]; then
+    if [[ -n "${BITBUCKET_TAG}" ]]; then
       info "Build was triggered by tag ${BITBUCKET_TAG}; no need to check out ${MAVEN_BRANCH} branch"
     fi
   fi
