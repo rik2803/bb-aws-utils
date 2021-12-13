@@ -488,14 +488,15 @@ aws_cdk_deploy() {
     aws_create_or_update_ssm_parameter "/service/${PARENT_SLUG}/imagebasename" "${docker_image}"
     aws_create_or_update_ssm_parameter "/service/${PARENT_SLUG}/imagetag" "${docker_image_tag}"
   else
-    info "${FUNCNAME[0]} - IaC only deploy, no service will be updated"
+    info "${FUNCNAME[0]} - IaC only deploy, no service will be updated, unless the service's image"
+    info "${FUNCNAME[0]} - in SSM parameter store was updated manually or by using this function"
+    info "${FUNCNAME[0]} - with the envvar AWS_CDK_DEPLOY_SKIP_CDK_DEPLOY set to 1."
   fi
 
   if [[ ${AWS_CDK_DEPLOY_SKIP_CDK_DEPLOY:-0} -ne 1 ]]; then
-    npm install --quiet --no-progress -g "aws-cdk@${AWS_CDK_VERSION:-1.91.0}"
     npm install --quiet --no-progress
-    info "Starting command \"cdk deploy --all -c ENV=\"${aws_cdk_env}\" --require-approval=never\""
-    cdk deploy --all -c ENV="${aws_cdk_env}" --require-approval=never
+    info "Starting command \"npx aws-cdk@${AWS_CDK_VERSION:-1.91.0} deploy --all -c ENV=\"${aws_cdk_env}\" --require-approval=never\""
+    npx aws-cdk@${AWS_CDK_VERSION:-1.91.0} deploy --all -c ENV="${aws_cdk_env}" --require-approval=never
     info "${FUNCNAME[0]} - IaC deploy successfully executed."
   else
     info "Skipping cdk deploy because AWS_CDK_DEPLOY_SKIP_CDK_DEPLOY is set to ${AWS_CDK_DEPLOY_SKIP_CDK_DEPLOY}"
