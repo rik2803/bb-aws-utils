@@ -462,8 +462,8 @@ aws_cdk_deploy() {
   fi
 
   # Determine the aws-cdk version to use
-  npm list aws-cdk
-  npm list aws-cdk-lib
+  npm list aws-cdk || true
+  npm list aws-cdk-lib || true
 
   if npm list aws-cdk > /dev/null 2>&1; then
     local aws_cdk_pkg=$(npm list aws-cdk)
