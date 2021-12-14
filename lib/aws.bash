@@ -479,7 +479,6 @@ aws_cdk_deploy() {
     else
       warning "Could not determine aws-cdk version from package.json, using ${AWS_CDK_VERSION:-1.91.0}"
     fi
-    warning "Could not determine aws-cdk version from package.json, using ${AWS_CDK_VERSION:-1.91.0}"
   fi
 
   # Set correct profile for role on destination account to be assumed
