@@ -233,6 +233,8 @@ aws_set_service_account_config() {
   [[ -z ${AWS_CONFIG_BASEDIR} ]] && AWS_CONFIG_BASEDIR=~/.aws
   if [[ -n ${SA_ACCOUNT_LIST} ]]; then
     check_command aws || install_awscli
+
+
     mkdir -p "${AWS_CONFIG_BASEDIR}"
     info "Start creation of ${AWS_CONFIG_BASEDIR}/credentials"
     {
@@ -391,9 +393,6 @@ aws_cloudfront_invalidate() {
 #######################################
 aws_cdk_determine_version() {
   # Determine the aws-cdk version to use
-  npx npm list aws-cdk || true
-  npx npm list aws-cdk-lib || true
-
   if npx npm list aws-cdk >/dev/null 2>&1; then
     local aws_cdk_pkg=$(npx npm list aws-cdk)
     AWS_CDK_VERSION="${aws_cdk_pkg##*@}"

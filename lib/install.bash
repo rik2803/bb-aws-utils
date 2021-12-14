@@ -94,6 +94,11 @@ install_awscli() {
   else
     info "${FUNCNAME[0]} - awscli already installed"
   fi
+
+  if ! command -v aws > /dev/null 2>&1; then
+    fail "The aws cli is not found after installation. Please restart the pipeline. Contact your administrator if this continues to happen"
+  fi
+
 }
 
 install_zip() {
