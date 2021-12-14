@@ -379,6 +379,39 @@ aws_cloudfront_invalidate() {
 }
 
 #######################################
+# Run aws_cdk_determine_version
+#
+# Globals:
+#
+# Arguments:
+#
+# Returns:
+#    * Sets AWS_CDK_VERSION to aws-cdk version found in package.json, if any
+#
+#######################################
+aws_cdk_determine_version() {
+  # Determine the aws-cdk version to use
+  npx npm list aws-cdk || true
+  npx npm list aws-cdk-lib || true
+
+  if npx npm list aws-cdk >/dev/null 2>&1; then
+    local aws_cdk_pkg=$(npx npm list aws-cdk)
+    AWS_CDK_VERSION="${aws_cdk_pkg##*@}"
+    info "Found aws-cdk version in package.json: ${AWS_CDK_VERSION}"
+    info "Will use this version to deploy the infrastructure"
+  else
+    if npx npm list aws-cdk-lib >/dev/null 2>&1; then
+      local aws_cdk_pkg=$(npx npm list aws-cdk-lib)
+      AWS_CDK_VERSION="${aws_cdk_pkg##*@}"
+      info "Found aws-cdk version in package.json: ${AWS_CDK_VERSION}"
+      info "Will use this version to deploy the infrastructure"
+    else
+      warning "Could not determine aws-cdk version from package.json, using ${AWS_CDK_VERSION:-1.91.0}"
+    fi
+  fi
+}
+
+#######################################
 # Use the aws_cdk_deploy function to:
 #
 #     * Deploy a single service, if used in a service repository. Optionally (when
@@ -461,26 +494,6 @@ aws_cdk_deploy() {
     info "${FUNCNAME[0]} -   and branch ${aws_cdk_infra_repo_branch} as IaC code repo";
   fi
 
-  # Determine the aws-cdk version to use
-  npx npm list aws-cdk || true
-  npx npm list aws-cdk-lib || true
-
-  if npx npm list aws-cdk > /dev/null 2>&1; then
-    local aws_cdk_pkg=$(npx npm list aws-cdk)
-    AWS_CDK_VERSION="${aws_cdk_pkg##*@}"
-    info "Found aws-cdk version in package.json: ${AWS_CDK_VERSION}"
-    info "Will use this version to deploy the infrastructure"
-  else
-    if npx npm list aws-cdk-lib > /dev/null 2>&1; then
-      local aws_cdk_pkg=$(npx npm list aws-cdk-lib)
-      AWS_CDK_VERSION="${aws_cdk_pkg##*@}"
-      info "Found aws-cdk version in package.json: ${AWS_CDK_VERSION}"
-      info "Will use this version to deploy the infrastructure"
-    else
-      warning "Could not determine aws-cdk version from package.json, using ${AWS_CDK_VERSION:-1.91.0}"
-    fi
-  fi
-
   # Set correct profile for role on destination account to be assumed
   info "${FUNCNAME[0]} - Use ${aws_profile} as AWS_PROFILE"
   aws_prev_profile="${AWS_PROFILE:-}"
@@ -530,6 +543,7 @@ aws_cdk_deploy() {
 
   if [[ ${AWS_CDK_DEPLOY_SKIP_CDK_DEPLOY:-0} -ne 1 ]]; then
     npm install --quiet --no-progress
+    aws_cdk_determine_version
     info "Starting command \"npx aws-cdk@${AWS_CDK_VERSION:-1.91.0} deploy --all -c ENV=\"${aws_cdk_env}\" --require-approval=never\""
     npx aws-cdk@${AWS_CDK_VERSION:-1.91.0} deploy --all -c ENV="${aws_cdk_env}" --require-approval=never
     info "${FUNCNAME[0]} - IaC deploy successfully executed."
