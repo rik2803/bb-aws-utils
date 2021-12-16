@@ -233,6 +233,8 @@ aws_set_service_account_config() {
   [[ -z ${AWS_CONFIG_BASEDIR} ]] && AWS_CONFIG_BASEDIR=~/.aws
   if [[ -n ${SA_ACCOUNT_LIST} ]]; then
     check_command aws || install_awscli
+
+
     mkdir -p "${AWS_CONFIG_BASEDIR}"
     info "Start creation of ${AWS_CONFIG_BASEDIR}/credentials"
     {
@@ -379,14 +381,59 @@ aws_cloudfront_invalidate() {
 }
 
 #######################################
-# Run cdk deploy to update a service.
+# Run aws_cdk_determine_version
+#
+# Globals:
+#
+# Arguments:
+#
+# Returns:
+#    * Sets AWS_CDK_VERSION to aws-cdk version found in package.json, if any
+#
+#######################################
+aws_cdk_determine_version() {
+  # Determine the aws-cdk version to use
+  if npx npm list aws-cdk >/dev/null 2>&1; then
+    local aws_cdk_pkg=$(npx npm list aws-cdk)
+    AWS_CDK_VERSION="${aws_cdk_pkg##*@}"
+    info "Found aws-cdk version in package.json: ${AWS_CDK_VERSION}"
+    info "Will use this version to deploy the infrastructure"
+  else
+    if npx npm list aws-cdk-lib >/dev/null 2>&1; then
+      local aws_cdk_pkg=$(npx npm list aws-cdk-lib)
+      AWS_CDK_VERSION="${aws_cdk_pkg##*@}"
+      info "Found aws-cdk version in package.json: ${AWS_CDK_VERSION}"
+      info "Will use this version to deploy the infrastructure"
+    else
+      warning "Could not determine aws-cdk version from package.json, using ${AWS_CDK_VERSION:-1.91.0}"
+    fi
+  fi
+}
+
+#######################################
+# Use the aws_cdk_deploy function to:
+#
+#     * Deploy a single service, if used in a service repository. Optionally (when
+#       the envvar AWS_CDK_DEPLOY_SKIP_CDK_DEPLOY is set and <> 0), the ECS service
+#       will not be deployed, only the SSM parameter holding the container image to use
+#       will be changed.
+#     * Deploy the complete aws-cdk stack (when called without the optional DockerImage
+#       parameter.
+#
+# NOTES:
+#     * The repo ${aws_cdk_infra_repo} will always be cloned and the branch
+#       ${aws_cdk_infra_repo_branch} will be checked out. ALSO WHEN THIS FUNCTION
+#       IS STARTED BY THE PIPELINE OF THE ${aws_cdk_infra_repo} REPO !!!!!!
+#     * The function will try to determine the aws-cdk version to use from the
+#       NPM dependencies of ${aws_cdk_infra_repo}. Only if the version cannot be
+#       determined will the ${AWS_CDK_VERSION} envvar be used.
 #
 # Expects:
 #     * Project was built with maven_build or maven_release_build from
 #       the maven.lib in this repo (because it saves the maven version to a file)
 #     * Docker image is tagged with ${BITBUCKET_COMMIT}-<version>
-#     * If the deploy step using this function is different from the build step,
-#       the build step should have:
+#     * If the BB pipeline deploy step using this function is different from the build step
+#       in the pipeline, the build step should have:
 #           artifacts:
 #             - artifacts/**
 #
@@ -404,7 +451,7 @@ aws_cloudfront_invalidate() {
 #           * stg: for the staging environment
 #           * master: for production
 #       This is also the value used in "-c ENV=xxxx"
-#   DockerImage: The docker image to use, without the tag, but with the host part
+#   DockerImage (optional): The docker image to use, without the tag, but with the host part
 #       (for non docker hub registries). If this argument is not present, a IaC only
 #       deploy is performed, without any change to any service, and without performing
 #       the clone of the IaC repo (because this only makes sense in the pipeline for
@@ -428,8 +475,8 @@ aws_cdk_deploy() {
 
   [[ ${aws_cdk_env} == master ]] && aws_cdk_env="prd"
 
+  # If probably a production branch and it does not exist: use master
   if [[ ${aws_cdk_infra_repo_branch} =~ pr.*d ]]; then
-    # If probably a production branch and it does not exist: use master
     if ! git_branch_exists "${aws_cdk_infra_repo}" "${aws_cdk_infra_repo_branch}"; then
       info "No branch ${aws_cdk_infra_repo_branch} in repo ${aws_cdk_infra_repo}, using master instead."
       aws_cdk_infra_repo_branch="master"
@@ -495,6 +542,7 @@ aws_cdk_deploy() {
 
   if [[ ${AWS_CDK_DEPLOY_SKIP_CDK_DEPLOY:-0} -ne 1 ]]; then
     npm install --quiet --no-progress
+    aws_cdk_determine_version
     info "Starting command \"npx aws-cdk@${AWS_CDK_VERSION:-1.91.0} deploy --all -c ENV=\"${aws_cdk_env}\" --require-approval=never\""
     npx aws-cdk@${AWS_CDK_VERSION:-1.91.0} deploy --all -c ENV="${aws_cdk_env}" --require-approval=never
     info "${FUNCNAME[0]} - IaC deploy successfully executed."
