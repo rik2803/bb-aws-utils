@@ -13,6 +13,7 @@ reset="\\e[0m"
 
 info()    { echo -e "${blue}INFO: $*${reset}" 1>&2; }
 warning() { echo -e "${orange}WARN: $*${reset}" 1>&2; }
+plain()   { echo -e "${green}$*${reset}"; }
 error()   { echo -e "${red}ERROR: $*${reset}" 1>&2; }
 success() { echo -e "${green}✔ $*${reset}" 1>&2; }
 fail()    { echo -e "${red}✖ $*${reset}" 1>&2; exit 1; }

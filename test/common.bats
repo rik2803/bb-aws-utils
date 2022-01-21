@@ -5,6 +5,7 @@ load "libs/bats-assert/load"
 
 setup() {
   # shellcheck source=../../bb-aws-utils/lib/common.bash
+  export MAVEN_SETTINGS_PATH="/tmp"
   source "${LIB_DIR}/common.bash"
 }
 

@@ -4,6 +4,7 @@ load 'libs/bats-support/load'
 load 'libs/bats-assert/load'
 
 setup() {
+  export MAVEN_SETTINGS_PATH="/tmp"
   source "${LIB_DIR}/common.bash"
   source "${LIB_DIR}/maven.bash"
   mkdir -p ./artifacts
@@ -12,6 +13,7 @@ setup() {
 teardown() {
   rm -f ./settings.xml || true
   rm -rf ./artifacts   || true
+  unset MAVEN_SETTINGS_PATH
   true
 }
 
