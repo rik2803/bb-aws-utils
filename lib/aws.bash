@@ -583,6 +583,7 @@ aws_cdk_destroy() {
   local aws_cdk_infra_repo="${2:-}"
   local aws_cdk_infra_repo_branch="${3:-}"
   local aws_cdk_env="${aws_cdk_infra_repo_branch}"
+  local aws_cdk_stacks="${4:-}"
 
   [[ ${aws_cdk_env} == master ]] && aws_cdk_env="prd"
 
@@ -603,8 +604,13 @@ aws_cdk_destroy() {
 
   npm install --quiet --no-progress -g "aws-cdk@${AWS_CDK_VERSION:-1.91.0}"
   npm install --quiet --no-progress
-  info "Starting command \"cdk destroy --force --all -c ENV=\"${aws_cdk_env}\" --require-approval=never\""
-  cdk destroy --force --all -c ENV="${aws_cdk_env}" --require-approval=never
+  if [[ -n ${aws_cdk_stacks} ]]; then
+    info "Starting command \"cdk destroy --force -c ENV=\"${aws_cdk_env}\" --require-approval=never\" ${aws_cdk_stacks}"
+    cdk destroy --force -c ENV="${aws_cdk_env}" --require-approval=never ${aws_cdk_stacks}
+  else
+    info "Starting command \"cdk destroy --force --all -c ENV=\"${aws_cdk_env}\" --require-approval=never\""
+    cdk destroy --force --all -c ENV="${aws_cdk_env}" --require-approval=never
+  fi
   info "${FUNCNAME[0]} - IaC destroy successfully executed."
 
   export AWS_PROFILE="${aws_prev_profile}"
