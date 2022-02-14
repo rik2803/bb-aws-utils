@@ -18,8 +18,10 @@ datadog_deploy_monitors() {
   cd "${BITBUCKET_CLONE_DIR}/bb-aws-utils/ansible_datadog"
   info "Start creating the playbook from the template and the config"
   ansible-playbook playbook.yml
-  info "Display created Ansible playbook."
-  cat playbook_dd_monitors.yml
+  if is_debug_enabled; then
+    info "Display created Ansible playbook."
+    cat playbook_dd_monitors.yml
+  fi
   info "Deploying the DD monitors."
   ansible-playbook playbook_dd_monitors.yml
 
