@@ -120,9 +120,9 @@ install_ansible() {
     ansible-galaxy collection install community.general
     pip install datadog
   elif [[ ${DEBIANDISTRO} = "1" ]]; then
-    apt-get -qq update && apt-get -qq -y install "ansible"
+    apt-get -qq update && apt-get -qq -y install "ansible" "pip3"
     ansible-galaxy collection install community.general
-    pip install datadog
+    /usr/bin/python3 -m pip install datadog
   elif [[ ${ALPINEDISTRO} = "1" ]]; then
     apk --quiet --update --no-cache add "ansible"
     ansible-galaxy collection install community.general
