@@ -12,7 +12,7 @@ JQ_INSTALLED=0
 APT_GET_UPDATE_OK=0
 
 install_set_linux_distribution_type() {
-  if grep -q 'Amazon Linux 2' /etc/os_releasae > /dev/null 2>&1; then
+  if grep -q 'Amazon Linux 2' /etc/os_release > /dev/null 2>&1; then
     AMZN2DISTRO=1
   elif command -v yum > /dev/null 2>&1; then
     CENTOSDISTRO=1
