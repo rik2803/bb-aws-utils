@@ -16,8 +16,8 @@ datadog_deploy_monitors() {
   install_ansible
   cp "${BITBUCKET_CLONE_DIR}/dd_monitors.yml" "${BITBUCKET_CLONE_DIR}/bb-aws-utils/ansible_datadog/dd_monitors.yml"
   cd "${BITBUCKET_CLONE_DIR}/bb-aws-utils/ansible_datadog"
-  ansible_playbook playbook.yml
-  ansible_playbook playbook_dd_monitors.yml
+  ansible-playbook playbook.yml
+  ansible-playbook playbook_dd_monitors.yml
 
   cd -
 }
