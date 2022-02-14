@@ -112,12 +112,16 @@ install_ansible() {
 
   if [[ ${AMZN2DISTRO} = "1" ]]; then
     amazon-linux-extras install ansible2
+    ansible-galaxy collection install community.general
   elif [[ ${CENTOSDISTRO} = "1" ]]; then
-    yum -y -q install "${1}"
+    yum -y -q install "ansible"
+    ansible-galaxy collection install community.general
   elif [[ ${DEBIANDISTRO} = "1" ]]; then
-    apt-get -qq update && apt-get -qq -y install "${1}"
+    apt-get -qq update && apt-get -qq -y install "ansible"
+    ansible-galaxy collection install community.general
   elif [[ ${ALPINEDISTRO} = "1" ]]; then
-    apk --quiet --update --no-cache add "${1}"
+    apk --quiet --update --no-cache add "ansible"
+    ansible-galaxy collection install community.general
   else
     info "Unknown distribution, continuing without installing ${1}"
   fi
