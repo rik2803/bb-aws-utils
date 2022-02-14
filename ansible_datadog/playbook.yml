@@ -1,0 +1,13 @@
+---
+- name: "Create the playbook to create the monitors"
+  hosts: localhost
+  gather_facts: false
+
+  vars_files:
+    - "./dd_monitors.yml"
+
+  tasks:
+    - name: "Create the playbook"
+      template:
+        src: "./template_01.yml"
+        dest: "./playbook_dd_monitors.yml"

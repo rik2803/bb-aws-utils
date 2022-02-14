@@ -12,6 +12,8 @@
 [[ -z ${LIB_AWS_S#_ARTIFACT_LOADED} ]] && source ${LIB_DIR:-lib}/aws-s3-artifact.bash || true
 # shellcheck source=../../bb-aws-utils/lib/dockerhub.bash
 [[ -z ${LIB_DOCKERHUB_LOADED} ]] && source ${LIB_DIR:-lib}/dockerhub.bash   || true
+# shellcheck source=../../bb-aws-utils/lib/datadog.bash
+[[ -z ${LIB_DATADOG_LOADED} ]] && source ${LIB_DIR:-lib}/datadog.bash   || true
 # shellcheck source=../../bb-aws-utils/lib/maven.bash
 [[ -z ${LIB_DOCKER_LOADED} ]]    && source ${LIB_DIR:-lib}/docker.bash      || true
 # shellcheck source=../../bb-aws-utils/lib/git.bash
@@ -32,6 +34,7 @@ aws_set_codeartifact_token
 maven_create_settings_xml
 gradle_create_gradle_properties
 npm_create_npmrc
+datadog_deploy_monitors
 
 ### Keep this at the end
 # CONFIG_ENV:
