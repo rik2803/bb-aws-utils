@@ -9,5 +9,5 @@
   tasks:
     - name: "Create the playbook"
       template:
-        src: "./template_01.yml"
+        src: "./datadog_monitors_template.j2"
         dest: "./playbook_dd_monitors.yml"
