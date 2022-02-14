@@ -113,15 +113,20 @@ install_ansible() {
   if [[ ${AMZN2DISTRO} = "1" ]]; then
     amazon-linux-extras install ansible2
     ansible-galaxy collection install community.general
+    yum install -y python2-pip
+    pip install datadog
   elif [[ ${CENTOSDISTRO} = "1" ]]; then
     yum -y -q install "ansible"
     ansible-galaxy collection install community.general
+    pip install datadog
   elif [[ ${DEBIANDISTRO} = "1" ]]; then
     apt-get -qq update && apt-get -qq -y install "ansible"
     ansible-galaxy collection install community.general
+    pip install datadog
   elif [[ ${ALPINEDISTRO} = "1" ]]; then
     apk --quiet --update --no-cache add "ansible"
     ansible-galaxy collection install community.general
+    pip install datadog
   else
     info "Unknown distribution, continuing without installing ${1}"
   fi
