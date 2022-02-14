@@ -3,6 +3,7 @@
 LIB_INSTALL_LOADED=1
 
 CENTOSDISTRO=0
+AMZN2DISTRO=0
 DEBIANDISTRO=0
 ALPINEDISTRO=0
 AWSCLI_INSTALLED=0
@@ -11,7 +12,9 @@ JQ_INSTALLED=0
 APT_GET_UPDATE_OK=0
 
 install_set_linux_distribution_type() {
-  if command -v yum > /dev/null 2>&1; then
+  if grep -q 'Amazon Linux 2' /etc/os_releasae > /dev/null 2>&1; then
+    AMZN2DISTRO=1
+  elif command -v yum > /dev/null 2>&1; then
     CENTOSDISTRO=1
   elif command -v apt-get > /dev/null 2>&1; then
     DEBIANDISTRO=1
@@ -19,6 +22,7 @@ install_set_linux_distribution_type() {
     ALPINEDISTRO=1
   fi
 
+  info "AMZN2DISTRO=${AMZN2DISTRO}"
   info "CENTOSDISTRO=${CENTOSDISTRO}"
   info "DEBIANDISTRO=${DEBIANDISTRO}"
   info "ALPINEDISTRO=${ALPINEDISTRO}"
@@ -50,7 +54,9 @@ install_sw() {
 
   [[ -z ${1} ]] && fail "install_sw sw_to_install"
 
-  if [[ ${CENTOSDISTRO} = "1" ]]; then
+  if [[ ${AMZN2DISTRO} = "1" ]]; then
+    yum -y -q install "${1}"
+  elif [[ ${CENTOSDISTRO} = "1" ]]; then
     yum -y -q install "${1}"
   elif [[ ${DEBIANDISTRO} = "1" ]]; then
     apt-get -qq update && apt-get -qq -y install "${1}"
@@ -99,6 +105,22 @@ install_awscli() {
     fail "The aws cli is not found after installation. Please restart the pipeline. Contact your administrator if this continues to happen"
   fi
 
+}
+
+install_ansible() {
+  info "Installing Ansible"
+
+  if [[ ${AMZN2DISTRO} = "1" ]]; then
+    amazon-linux-extras install ansible2
+  elif [[ ${CENTOSDISTRO} = "1" ]]; then
+    yum -y -q install "${1}"
+  elif [[ ${DEBIANDISTRO} = "1" ]]; then
+    apt-get -qq update && apt-get -qq -y install "${1}"
+  elif [[ ${ALPINEDISTRO} = "1" ]]; then
+    apk --quiet --update --no-cache add "${1}"
+  else
+    info "Unknown distribution, continuing without installing ${1}"
+  fi
 }
 
 install_zip() {

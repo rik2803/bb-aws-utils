@@ -5,15 +5,15 @@ export LIB_DATADOG_LOADED=1
 datadog_deploy_monitors() {
   info "datadog: Check for ${BITBUCKET_CLONE_DIR}/dd_monitors.yml"
   if [[ ! -e "${BITBUCKET_CLONE_DIR}/dd_monitors.yml" ]]; then
-    info "datadog: ${BITBUCKET_CLONE_DIR}/dd_monitors.yml not found, will create/update DD monitors"
+    info "datadog: ${BITBUCKET_CLONE_DIR}/dd_monitors.yml not found, will not create/update DD monitors"
     return 0
   fi
 
-  info "datadog: ${BITBUCKET_CLONE_DIR}/dd_monitors.yml not found, will create/update DD monitors"
+  info "datadog: ${BITBUCKET_CLONE_DIR}/dd_monitors.yml found, will create/update DD monitors"
   check_envvar DD_API_KEY R
   check_envvar DD_APP_KEY R
 
-  install_sw ansible
+  install_ansible
   cp "${BITBUCKET_CLONE_DIR}/dd_monitors.yml" "${BITBUCKET_CLONE_DIR}/bb-aws-utils/ansible_datadog/dd_monitors.yml"
   cd "${BITBUCKET_CLONE_DIR}/bb-aws-utils/ansible_datadog"
   ansible_playbook playbook.yml
