@@ -601,10 +601,10 @@ aws_cdk_destroy() {
   aws_prev_profile="${AWS_PROFILE:-}"
   export AWS_PROFILE="${aws_profile}"
 
-  npm install --quiet --no-progress -g "aws-cdk@${AWS_CDK_VERSION:-1.91.0}"
   npm install --quiet --no-progress
-  info "Starting command \"cdk destroy --force --all -c ENV=\"${aws_cdk_env}\" --require-approval=never\""
-  cdk destroy --force --all -c ENV="${aws_cdk_env}" --require-approval=never
+  aws_cdk_determine_version
+  info "Starting command \"npx aws-cdk@${AWS_CDK_VERSION:-1.91.0} destroy --force --all -c ENV=\"${aws_cdk_env}\" --require-approval=never\""
+  npx aws-cdk@${AWS_CDK_VERSION:-1.91.0} destroy --force --all -c ENV="${aws_cdk_env}" --require-approval=never
   info "${FUNCNAME[0]} - IaC destroy successfully executed."
 
   export AWS_PROFILE="${aws_prev_profile}"
