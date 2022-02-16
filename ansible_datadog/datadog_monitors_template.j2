@@ -7,7 +7,7 @@
 {% for dd_monitor in dd_monitors %}
 {%   for environment in dd_monitor.environments %}
 {%     for matcher in dd_monitor.matchers %}
-{%       if lookup('env', 'ENVIRONMENT') == 'all' or lookup('env', 'ENVIRONMENT') == environment.name %}
+{%       if lookup('env', 'DATADOG_MONITOR_ENVIRONMENT') == 'all' or lookup('env', 'DATADOG_MONITOR_ENVIRONMENT') == environment.name %}
 {%         if lookup('env', 'BITBUCKET_DEPLOYMENT_ENVIRONMENT') == 'all' or lookup('env', 'BITBUCKET_DEPLOYMENT_ENVIRONMENT') == environment.deployment | default('default') %}
     - name: "Create a log monitor {{ matcher.name }} in environment {{ environment.name }}"
       community.general.datadog_monitor:
