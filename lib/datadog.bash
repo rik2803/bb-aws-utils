@@ -9,6 +9,11 @@ datadog_deploy_monitors() {
     return 0
   fi
 
+  if [[ -n "${DATADOG_MONITOR_SKIP_AUTO_RUN}" && "${DATADOG_MONITOR_SKIP_AUTO_RUN}" -eq 1 ]]; then
+    info "datadog: Will not automatically create/update DD monitors because DATADOG_MONITOR_SKIP_AUTO_RUN == 1"
+    return 0
+  fi
+
   info "datadog: ${BITBUCKET_CLONE_DIR}/dd_monitors.yml found, will create/update DD monitors"
   check_envvar DD_API_KEY R
   check_envvar DD_APP_KEY R
