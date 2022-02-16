@@ -3,6 +3,7 @@
 export LIB_DATADOG_LOADED=1
 
 datadog_deploy_monitors() {
+  local docker_image="ixor/ansible-datadog-monitor:latest"
   info "datadog: Check for ${BITBUCKET_CLONE_DIR}/dd_monitors.yml"
   if [[ ! -e "${BITBUCKET_CLONE_DIR}/dd_monitors.yml" ]]; then
     info "datadog: ${BITBUCKET_CLONE_DIR}/dd_monitors.yml not found, will not create/update DD monitors"
@@ -18,12 +19,12 @@ datadog_deploy_monitors() {
   check_envvar DD_API_KEY R
   check_envvar DD_APP_KEY R
 
+  docker pull -q "${docker_image}"
   docker run \
     -e DD_API_KEY="${DD_API_KEY}" \
     -e DD_APP_KEY="${DD_APP_KEY}" \
     -v ${BITBUCKET_CLONE_DIR}/dd_monitors.yml:/ansible/dd_monitors.yml \
     -v ${BITBUCKET_CLONE_DIR}/bb-aws-utils/ansible_datadog/playbook.yml:/ansible/playbook.yml \
     -v ${BITBUCKET_CLONE_DIR}/bb-aws-utils/ansible_datadog/datadog_monitors_template.j2:/ansible/datadog_monitors_template.j2 \
-    ixor/ansible-datadog-monitor:latest
-
+    "${docker_image}"
 }
