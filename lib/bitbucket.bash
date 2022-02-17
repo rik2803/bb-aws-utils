@@ -236,6 +236,9 @@ bb_monitor_running_pipeline() {
   local result
   local curl_result
 
+  check_envvar BB_USER R
+  check_envvar BB_APP_PASSWORD R
+
   continue=1
   sleep=10
   state="NA"
@@ -281,6 +284,9 @@ bb_start_pipeline_for_repo() {
   local curl_result
 
   info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
+
+  check_envvar BB_USER R
+  check_envvar BB_APP_PASSWORD R
 
   remote_repo_slug="${1}"
   pattern="${1:-build_and_deploy}"
