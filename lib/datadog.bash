@@ -5,6 +5,20 @@ export LIB_DATADOG_LOADED=1
 datadog_deploy_monitors() {
   local docker_image="ixor/ansible-datadog-monitor:latest"
 
+  # No deployment when all of these condition are met:
+  #   DATADOG_MONITOR_AUTO_RUN not set or DATADOG_MONITOR_AUTO_RUN == 0
+  #   DATADOG_MONITOR_ENVIRONMENT not set
+  #   BITBUCKET_DEPLOYMENT_ENVIRONMENT not set
+  if [[ -z "${DATADOG_MONITOR_AUTO_RUN}" || "${DATADOG_MONITOR_AUTO_RUN}" -eq 0 ]] && \
+     [[ -z "${DATADOG_MONITOR_ENVIRONMENT}" ]] &&
+     [[ -z "${BITBUCKET_DEPLOYMENT_ENVIRONMENT}" ]]; then
+     info "datadog monitors: Monitors will not be deployed because:"
+     info "                  DATADOG_MONITOR_AUTO_RUN is not set or 0 AND"
+     info "                  DATADOG_MONITOR_ENVIRONMENT is in the pipleine environment 0 AND"
+     info "                  This pipeline is not a BB deployment"
+     return 0
+  fi
+
   info "datadog monitors: Check for ${BITBUCKET_CLONE_DIR}/dd_monitors.yml"
 
   if [[ ! -e "${BITBUCKET_CLONE_DIR}/dd_monitors.yml" ]]; then
@@ -12,25 +26,15 @@ datadog_deploy_monitors() {
     return 0
   fi
 
-  info "datadog monitors: ${BITBUCKET_CLONE_DIR}/dd_monitors.yml found, continuing."
-
-  if [[ -n "${DATADOG_MONITOR_SKIP_AUTO_RUN}" && "${DATADOG_MONITOR_SKIP_AUTO_RUN}" -eq 1 ]]; then
-    info "datadog monitors: Will not automatically create/update DD monitors because DATADOG_MONITOR_SKIP_AUTO_RUN == 1"
-    return 0
-  fi
-
   info "datadog monitors: ${BITBUCKET_CLONE_DIR}/dd_monitors.yml found, will create/update DD monitors"
 
-  if [[ -n "${DATADOG_MONITOR_ENVIRONMENT}" ]]; then
+  if [[ -n "${DATADOG_MONITOR_ENVIRONMENT}" && -z "${BITBUCKET_DEPLOYMENT_ENVIRONMENT}" ]]; then
     info "datadog monitors: Will only deploy datadog monitors for environment ${DATADOG_MONITOR_ENVIRONMENT}."
-  else
-    info "datadog monitors: Will deploy datadog monitors for all environments."
-  fi
-
-  if [[ -n "${BITBUCKET_DEPLOYMENT_ENVIRONMENT}" ]]; then
+  elif [[ -z "${DATADOG_MONITOR_ENVIRONMENT}" && -n "${BITBUCKET_DEPLOYMENT_ENVIRONMENT}" ]]; then
     info "datadog monitors: Will only deploy datadog monitors for BB deployment ${BITBUCKET_DEPLOYMENT_ENVIRONMENT}."
-  else
-    info "datadog monitors: Will deploy datadog monitors for all BB deployments."
+  elif [[ -n "${DATADOG_MONITOR_ENVIRONMENT}" && -n "${BITBUCKET_DEPLOYMENT_ENVIRONMENT}" ]]; then
+    info "datadog monitors: Will only deploy datadog monitors for BB deployment ${BITBUCKET_DEPLOYMENT_ENVIRONMENT}"
+    info "                  and environment ${DATADOG_MONITOR_ENVIRONMENT}."
   fi
 
   check_envvar DD_API_KEY R
