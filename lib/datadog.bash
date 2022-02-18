@@ -29,12 +29,12 @@ datadog_deploy_monitors() {
   info "datadog monitors: ${BITBUCKET_CLONE_DIR}/dd_monitors.yml found, will create/update DD monitors"
 
   if [[ -n "${DATADOG_MONITOR_ENVIRONMENT}" && -z "${BITBUCKET_DEPLOYMENT_ENVIRONMENT}" ]]; then
-    info "datadog monitors: Will only deploy datadog monitors for environment ${DATADOG_MONITOR_ENVIRONMENT}."
+    info "datadog monitors: Will only deploy datadog monitors for environment \"${DATADOG_MONITOR_ENVIRONMENT}\"."
   elif [[ -z "${DATADOG_MONITOR_ENVIRONMENT}" && -n "${BITBUCKET_DEPLOYMENT_ENVIRONMENT}" ]]; then
-    info "datadog monitors: Will only deploy datadog monitors for BB deployment ${BITBUCKET_DEPLOYMENT_ENVIRONMENT}."
+    info "datadog monitors: Will only deploy datadog monitors for BB deployment \"${BITBUCKET_DEPLOYMENT_ENVIRONMENT}\"."
   elif [[ -n "${DATADOG_MONITOR_ENVIRONMENT}" && -n "${BITBUCKET_DEPLOYMENT_ENVIRONMENT}" ]]; then
-    info "datadog monitors: Will only deploy datadog monitors for BB deployment ${BITBUCKET_DEPLOYMENT_ENVIRONMENT}"
-    info "                  and environment ${DATADOG_MONITOR_ENVIRONMENT}."
+    info "datadog monitors: Will only deploy datadog monitors for BB deployment \"${BITBUCKET_DEPLOYMENT_ENVIRONMENT}\""
+    info "                  and environment \"${DATADOG_MONITOR_ENVIRONMENT}\"."
   fi
 
   check_envvar DD_API_KEY R
