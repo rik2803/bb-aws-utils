@@ -72,7 +72,11 @@ maven_minor_bump() {
 
 maven_set_version_vars() {
   if [[ ${MAVEN_VERSION_VARS_SET} -eq 0 ]]; then
+    info "Trying to determine maven versions using build-helper:parse-version"
     maven_create_settings_xml
+    if is_debug_enabled; then
+      mvn -s "${MAVEN_SETTINGS_PATH}/settings.xml" build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${parsedVersion.majorVersion} ${parsedVersion.minorVersion} ${parsedVersion.incrementalVersion} ${parsedVersion.nextMajorVersion} ${parsedVersion.nextMinorVersion} ${parsedVersion.nextIncrementalVersion}' --non-recursive exec:exec
+    fi
     set -- $(mvn -s "${MAVEN_SETTINGS_PATH}/settings.xml" build-helper:parse-version -q -Dexec.executable=echo -Dexec.args='${parsedVersion.majorVersion} ${parsedVersion.minorVersion} ${parsedVersion.incrementalVersion} ${parsedVersion.nextMajorVersion} ${parsedVersion.nextMinorVersion} ${parsedVersion.nextIncrementalVersion}' --non-recursive exec:exec)
     export MAVEN_MAJOR=${1}; shift
     export MAVEN_MINOR=${1}; shift
@@ -89,7 +93,7 @@ maven_set_version_vars() {
 maven_save_current_versions() {
   # Run during release build
   [[ -z ${1} || -z ${2} ]] && \
-    fail "maven_save_current_versions release_version snapshot_version"
+    fail "maven_save_current_versions expects 2 arguments: release_version snapshot_version"
 
   local maven_release_version=${1}; shift
   local maven_snapshot_version=${1}; shift
