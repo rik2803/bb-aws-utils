@@ -339,13 +339,18 @@ aws_s3_deploy() {
 aws_create_or_update_ssm_parameter() {
   local name="${1:-}"
   local value="${2:-}"
+  local secret"${3:-no}"
 
   check_envvar name R
   check_envvar value R
 
   install_awscli
 
-  info "${FUNCNAME[0]} - Set SSM parameter \"${name}\" to \"${value}\"."
+  if [[ "${secret}" = "no" ]]; then
+    info "${FUNCNAME[0]} - Set SSM parameter \"${name}\" to \"${value}\"."
+  else
+    info "${FUNCNAME[0]} - Set SSM parameter \"${name}\" to \"************\"."
+  fi
   aws ssm put-parameter --name "${name}" --value "${value}" --type String --overwrite
 }
 
@@ -704,7 +709,7 @@ aws_apply_secrets() {
     key=${secret%%=*}
     val=${secret#*=}
     if [[ -n "${key}" && -n "${val}" ]]; then
-      aws_create_or_update_ssm_parameter "${key}" "${val}"
+      aws_create_or_update_ssm_parameter "${key}" "${val}" "yes"
     else
       info "Key (${key}) or Val (${val}) are empty, skipping SSM parameter creation."
     fi
