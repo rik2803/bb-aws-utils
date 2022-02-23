@@ -709,6 +709,7 @@ aws_apply_secrets() {
     key=${secret%%=*}
     val=${secret#*=}
     if [[ -n "${key}" && -n "${val}" ]]; then
+      info "Add SSM parameter \"${key}\"."
       aws_create_or_update_ssm_parameter "${key}" "${val}" "yes"
     else
       info "Key (${key}) or Val (${val}) are empty, skipping SSM parameter creation."
