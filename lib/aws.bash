@@ -693,16 +693,22 @@ aws_apply_secrets() {
   while read secret; do
     key=${secret%%=*}
     val=${secret#*=}
-    aws_create_or_update_ssm_parameter "${key}" "${val}"
-  done < secrets
+    if [[ -n "${key}" && -n "${val}" ]]; then
+      aws_create_or_update_ssm_parameter "${key}" "${val}"
+    else
+      info "Key (${key}) or Val (${val}) are empty, skipping SSM parameter creation."
+    fi
+  done < "${BITBUCKET_CLONE_DIR}/secrets"
 
   info "Cleaning up obsolete SSM parameters."
   while read existing_secret; do
-    if grep -q "^${existing_secret}=" secrets; then
-      info "Secret \"${existing_secret}\" in secrets, not deleting."
-    else
-      info "Secret \"${existing_secret}\" not in secrets, deleting ..."
-      aws_delete_ssm_parameter "${existing_secret}"
+    if [[ -n  ${existing_secret} ]]; then
+      if grep -q "^${existing_secret}=" secrets; then
+        info "Secret \"${existing_secret}\" in secrets, not deleting."
+      else
+        info "Secret \"${existing_secret}\" not in secrets, deleting ..."
+        aws_delete_ssm_parameter "${existing_secret}"
+      fi
     fi
   done < existing_keys
 }
