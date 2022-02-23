@@ -307,8 +307,6 @@ bb_start_pipeline_for_repo() {
     fi
   fi
 
-
-
   cat > /curldata.commithash << EOF
 {
   "target": {

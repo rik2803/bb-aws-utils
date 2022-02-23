@@ -356,18 +356,54 @@ aws_get_ssm_parameter_by_name() {
 
   info "Retrieving parameter ${name} from SSM."
   local ssm_parameter_value
-  ssm_parameter_value=$(aws ssm get-parameters --names "${name}"  --query "Parameters[].Value" --output text)
-  success "Parameter ${name} successfully retrieved from SSM, with value:"
-  success "    ${ssm_parameter_value}"
   if [[ -n ${jmesexp} ]]; then
     info "Applying ${jmesexp} to the output"
     # The output is considered JSON and the jmesexp expression is applied
     check_command jq || install_sw jq
-    ssm_parameter_value=$(echo ${ssm_parameter_value} | jq -r "${jmesexp}")
+    ssm_parameter_value=$(aws ssm get-parameters --names "${name}" | jq -r "${jmesexp}")
     success " Successfully applied ${jmesexp} resulting in  ${ssm_parameter_value} "
+  else
+    ssm_parameter_value=$(aws ssm get-parameters --names "${name}" --query "Parameters[].Value" --output text)
+    success "Parameter ${name} successfully retrieved from SSM, with value:"
+    success "    ${ssm_parameter_value}"
   fi
 
   echo "$ssm_parameter_value"
+}
+
+aws_get_ssm_parameter_by_path() {
+  local path="${1:-}"
+  local jmesexp="${2:-}"
+  check_envvar path R
+
+  info "Retrieving parameters with path ${path} from SSM."
+  local ssm_parameter_value
+  if [[ -n ${jmesexp} ]]; then
+    info "Applying ${jmesexp} to the output"
+    # The output is considered JSON and the jmesexp expression is applied
+    check_command jq || install_sw jq
+    ssm_parameter_value=$(aws ssm get-parameters-by-path --path "${path}" | jq -r "${jmesexp}")
+    success "Successfully applied ${jmesexp} resulting in:"
+    success "${ssm_parameter_value}"
+  else
+    ssm_parameter_value=$(aws ssm get-parameters-by-path --path "${path}" --query "Parameters[].Value" --output text)
+    success "Parameter ${path} successfully retrieved from SSM, with value:"
+    success "    ${ssm_parameter_value}"
+  fi
+
+  echo "$ssm_parameter_value"
+}
+
+aws_delete_ssm_parameter() {
+  local name="${1:-}"
+  check_envvar name R
+
+  info "Deleting parameter ${name} from SSM."
+  if aws ssm delete-parameters --names "${name}" >/dev/null 2>&1; then
+    success "Parameter ${name} successfully removed from SSM."
+  else
+    error "Error removing parameter ${name} from SSM."
+  fi
 }
 
 aws_cloudfront_invalidate() {
