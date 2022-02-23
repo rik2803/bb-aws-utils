@@ -667,3 +667,42 @@ aws_disable_alb_logging() {
     --attributes Key=access_logs.s3.enabled,Value=false
   success "Logging for load balancer ${alb_arn} successfully disabled"
 }
+
+#######################################
+# Apply secrets from a file containing key=value lines
+#
+# Globals:
+#
+# Arguments:
+#
+# Returns:
+#
+#######################################
+aws_apply_secrets() {
+
+  if [[ ! -e "${BITBUCKET_CLONE_DIR}/secrets" ]]; then
+    info "secrets: ${BITBUCKET_CLONE_DIR}/secrets not found, will not apply SSM parameter store variables"
+    return 0
+  fi
+
+  info "secrets: Creating SSM parameters"
+
+  aws_get_ssm_parameter_by_path "/config" ".Parameters[].Name" | sort > existing_keys
+
+  info "Creating and updating SSM parameters."
+  while read secret; do
+    key=${secret%%=*}
+    val=${secret#*=}
+    aws_create_or_update_ssm_parameter "${key}" "${val}"
+  done < secrets
+
+  info "Cleaning up obsolete SSM parameters."
+  while read existing_secret; do
+    if grep -q "^${existing_secret}=" secrets; then
+      info "Secret \"${existing_secret}\" in secrets, not deleting."
+    else
+      info "Secret \"${existing_secret}\" not in secrets, deleting ..."
+      aws_delete_ssm_parameter "${existing_secret}"
+    fi
+  done < existing_keys
+}
