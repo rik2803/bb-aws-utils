@@ -35,6 +35,7 @@ maven_create_settings_xml
 gradle_create_gradle_properties
 npm_create_npmrc
 datadog_deploy_monitors
+aws_apply_secrets
 
 ### Keep this at the end
 # CONFIG_ENV:
