@@ -685,12 +685,22 @@ aws_apply_secrets() {
     return 0
   fi
 
+  check_command jq || install_sw jq
+
   info "secrets: Creating SSM parameters"
 
   aws_get_ssm_parameter_by_path "/config" ".Parameters[].Name" | sort > existing_keys
 
   info "Creating and updating SSM parameters."
+
+  is_debug_enabled && run_cmd cat "${BITBUCKET_CLONE_DIR}/secrets"
+  is_debug_enabled && run_cmd ls -l "${BITBUCKET_CLONE_DIR}/secrets"
+  is_debug_enabled && run_cmd ls -l "existing_keys"
+  is_debug_enabled && run_cmd cat "existing_keys"
+
   while read secret; do
+    debug "In loop reading secrets file"
+    debug "   ${secret}"
     key=${secret%%=*}
     val=${secret#*=}
     if [[ -n "${key}" && -n "${val}" ]]; then
