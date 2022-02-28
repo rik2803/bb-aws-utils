@@ -339,13 +339,18 @@ aws_s3_deploy() {
 aws_create_or_update_ssm_parameter() {
   local name="${1:-}"
   local value="${2:-}"
+  local secret"${3:-no}"
 
   check_envvar name R
   check_envvar value R
 
   install_awscli
 
-  info "${FUNCNAME[0]} - Set SSM parameter \"${name}\" to \"${value}\"."
+  if [[ "${secret}" = "no" ]]; then
+    info "${FUNCNAME[0]} - Set SSM parameter \"${name}\" to \"${value}\"."
+  else
+    info "${FUNCNAME[0]} - Set SSM parameter \"${name}\" to \"************\"."
+  fi
   aws ssm put-parameter --name "${name}" --value "${value}" --type String --overwrite
 }
 
@@ -685,24 +690,41 @@ aws_apply_secrets() {
     return 0
   fi
 
+  check_command jq || install_sw jq
+
   info "secrets: Creating SSM parameters"
 
   aws_get_ssm_parameter_by_path "/config" ".Parameters[].Name" | sort > existing_keys
 
   info "Creating and updating SSM parameters."
+
+  is_debug_enabled && run_cmd cat "${BITBUCKET_CLONE_DIR}/secrets"
+  is_debug_enabled && run_cmd ls -l "${BITBUCKET_CLONE_DIR}/secrets"
+  is_debug_enabled && run_cmd ls -l "existing_keys"
+  is_debug_enabled && run_cmd cat "existing_keys"
+
   while read secret; do
+    debug "In loop reading secrets file"
+    debug "   ${secret}"
     key=${secret%%=*}
     val=${secret#*=}
-    aws_create_or_update_ssm_parameter "${key}" "${val}"
-  done < secrets
+    if [[ -n "${key}" && -n "${val}" ]]; then
+      info "Add SSM parameter \"${key}\"."
+      aws_create_or_update_ssm_parameter "${key}" "${val}" "yes"
+    else
+      info "Key (${key}) or Val (${val}) are empty, skipping SSM parameter creation."
+    fi
+  done < "${BITBUCKET_CLONE_DIR}/secrets"
 
   info "Cleaning up obsolete SSM parameters."
   while read existing_secret; do
-    if grep -q "^${existing_secret}=" secrets; then
-      info "Secret \"${existing_secret}\" in secrets, not deleting."
-    else
-      info "Secret \"${existing_secret}\" not in secrets, deleting ..."
-      aws_delete_ssm_parameter "${existing_secret}"
+    if [[ -n  ${existing_secret} ]]; then
+      if grep -q "^${existing_secret}=" secrets; then
+        info "Secret \"${existing_secret}\" in secrets, not deleting."
+      else
+        info "Secret \"${existing_secret}\" not in secrets, deleting ..."
+        aws_delete_ssm_parameter "${existing_secret}"
+      fi
     fi
   done < existing_keys
 }
