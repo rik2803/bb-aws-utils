@@ -135,6 +135,7 @@ run_cmd() {
   set -e
 }
 
+# Returns the value of the environment variable "${1}_${2}"
 _indirection() {
   local basename_var=${1}
   local account=${2}
