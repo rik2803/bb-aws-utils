@@ -27,9 +27,9 @@ gradle_create_gradle_properties() {
         for index in "${!GRADLE_PROPERTY_KEYS_ARRAY[@]}"; do
           echo "${GRADLE_PROPERTY_KEYS_ARRAY[$index]}=${GRADLE_PROPERTY_VALUES_ARRAY[$index]:-NA}"
         done
-  } > "${gradle_properties_path}/gradle.properties"
+    } > "${gradle_properties_path}/gradle.properties"
   else
     info "Skipping creation of ${gradle_properties_path}/gradle.properties because required"
-    info "environment variables are not set."
+    info "    environment variables are not set."
   fi
 }

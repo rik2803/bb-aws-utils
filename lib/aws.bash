@@ -339,13 +339,18 @@ aws_s3_deploy() {
 aws_create_or_update_ssm_parameter() {
   local name="${1:-}"
   local value="${2:-}"
+  local secret"${3:-no}"
 
   check_envvar name R
   check_envvar value R
 
   install_awscli
 
-  info "${FUNCNAME[0]} - Set SSM parameter \"${name}\" to \"${value}\"."
+  if [[ "${secret}" = "no" ]]; then
+    info "${FUNCNAME[0]} - Set SSM parameter \"${name}\" to \"${value}\"."
+  else
+    info "${FUNCNAME[0]} - Set SSM parameter \"${name}\" to \"************\"."
+  fi
   aws ssm put-parameter --name "${name}" --value "${value}" --type String --overwrite
 }
 
@@ -356,18 +361,54 @@ aws_get_ssm_parameter_by_name() {
 
   info "Retrieving parameter ${name} from SSM."
   local ssm_parameter_value
-  ssm_parameter_value=$(aws ssm get-parameters --names "${name}"  --query "Parameters[].Value" --output text)
-  success "Parameter ${name} successfully retrieved from SSM, with value:"
-  success "    ${ssm_parameter_value}"
   if [[ -n ${jmesexp} ]]; then
     info "Applying ${jmesexp} to the output"
     # The output is considered JSON and the jmesexp expression is applied
     check_command jq || install_sw jq
-    ssm_parameter_value=$(echo ${ssm_parameter_value} | jq -r "${jmesexp}")
+    ssm_parameter_value=$(aws ssm get-parameters --names "${name}" | jq -r "${jmesexp}")
     success " Successfully applied ${jmesexp} resulting in  ${ssm_parameter_value} "
+  else
+    ssm_parameter_value=$(aws ssm get-parameters --names "${name}" --query "Parameters[].Value" --output text)
+    success "Parameter ${name} successfully retrieved from SSM, with value:"
+    success "    ${ssm_parameter_value}"
   fi
 
   echo "$ssm_parameter_value"
+}
+
+aws_get_ssm_parameter_by_path() {
+  local path="${1:-}"
+  local jmesexp="${2:-}"
+  check_envvar path R
+
+  info "Retrieving parameters with path ${path} from SSM."
+  local ssm_parameter_value
+  if [[ -n ${jmesexp} ]]; then
+    info "Applying ${jmesexp} to the output"
+    # The output is considered JSON and the jmesexp expression is applied
+    check_command jq || install_sw jq
+    ssm_parameter_value=$(aws ssm get-parameters-by-path --path "${path}" | jq -r "${jmesexp}")
+    success "Successfully applied ${jmesexp} resulting in:"
+    success "${ssm_parameter_value}"
+  else
+    ssm_parameter_value=$(aws ssm get-parameters-by-path --path "${path}" --query "Parameters[].Value" --output text)
+    success "Parameter ${path} successfully retrieved from SSM, with value:"
+    success "    ${ssm_parameter_value}"
+  fi
+
+  echo "$ssm_parameter_value"
+}
+
+aws_delete_ssm_parameter() {
+  local name="${1:-}"
+  check_envvar name R
+
+  info "Deleting parameter ${name} from SSM."
+  if aws ssm delete-parameters --names "${name}" >/dev/null 2>&1; then
+    success "Parameter ${name} successfully removed from SSM."
+  else
+    error "Error removing parameter ${name} from SSM."
+  fi
 }
 
 aws_cloudfront_invalidate() {
@@ -602,15 +643,18 @@ aws_cdk_destroy() {
   aws_prev_profile="${AWS_PROFILE:-}"
   export AWS_PROFILE="${aws_profile}"
 
-  npm install --quiet --no-progress -g "aws-cdk@${AWS_CDK_VERSION:-1.91.0}"
   npm install --quiet --no-progress
+
+  aws_cdk_determine_version
+
   if [[ -n ${aws_cdk_stacks} ]]; then
     info "Starting command \"cdk destroy --force -c ENV=\"${aws_cdk_env}\" --require-approval=never\" ${aws_cdk_stacks}"
-    cdk destroy --force -c ENV="${aws_cdk_env}" --require-approval=never ${aws_cdk_stacks}
+    npx aws-cdk@${AWS_CDK_VERSION:-1.91.0} destroy --force -c ENV="${aws_cdk_env}" --require-approval=never ${aws_cdk_stacks}
   else
-    info "Starting command \"cdk destroy --force --all -c ENV=\"${aws_cdk_env}\" --require-approval=never\""
-    cdk destroy --force --all -c ENV="${aws_cdk_env}" --require-approval=never
+    info "Starting command \"npx aws-cdk@${AWS_CDK_VERSION:-1.91.0} destroy --force --all -c ENV=\"${aws_cdk_env}\" --require-approval=never\""
+    npx aws-cdk@${AWS_CDK_VERSION:-1.91.0} destroy --force --all -c ENV="${aws_cdk_env}" --require-approval=never
   fi
+
   info "${FUNCNAME[0]} - IaC destroy successfully executed."
 
   export AWS_PROFILE="${aws_prev_profile}"
@@ -636,4 +680,60 @@ aws_disable_alb_logging() {
     --load-balancer-arn "${alb_arn}" \
     --attributes Key=access_logs.s3.enabled,Value=false
   success "Logging for load balancer ${alb_arn} successfully disabled"
+}
+
+#######################################
+# Apply secrets from a file containing key=value lines
+#
+# Globals:
+#
+# Arguments:
+#
+# Returns:
+#
+#######################################
+aws_apply_secrets() {
+
+  if [[ ! -e "${BITBUCKET_CLONE_DIR}/secrets" ]]; then
+    info "secrets: ${BITBUCKET_CLONE_DIR}/secrets not found, will not apply SSM parameter store variables"
+    return 0
+  fi
+
+  check_command jq || install_sw jq
+
+  info "secrets: Creating SSM parameters"
+
+  aws_get_ssm_parameter_by_path "/config" ".Parameters[].Name" | sort > existing_keys
+
+  info "Creating and updating SSM parameters."
+
+  is_debug_enabled && run_cmd cat "${BITBUCKET_CLONE_DIR}/secrets"
+  is_debug_enabled && run_cmd ls -l "${BITBUCKET_CLONE_DIR}/secrets"
+  is_debug_enabled && run_cmd ls -l "existing_keys"
+  is_debug_enabled && run_cmd cat "existing_keys"
+
+  while read secret; do
+    debug "In loop reading secrets file"
+    debug "   ${secret}"
+    key=${secret%%=*}
+    val=${secret#*=}
+    if [[ -n "${key}" && -n "${val}" ]]; then
+      info "Add SSM parameter \"${key}\"."
+      aws_create_or_update_ssm_parameter "${key}" "${val}" "yes"
+    else
+      info "Key (${key}) or Val (${val}) are empty, skipping SSM parameter creation."
+    fi
+  done < "${BITBUCKET_CLONE_DIR}/secrets"
+
+  info "Cleaning up obsolete SSM parameters."
+  while read existing_secret; do
+    if [[ -n  ${existing_secret} ]]; then
+      if grep -q "^${existing_secret}=" secrets; then
+        info "Secret \"${existing_secret}\" in secrets, not deleting."
+      else
+        info "Secret \"${existing_secret}\" not in secrets, deleting ..."
+        aws_delete_ssm_parameter "${existing_secret}"
+      fi
+    fi
+  done < existing_keys
 }

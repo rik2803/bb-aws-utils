@@ -236,6 +236,9 @@ bb_monitor_running_pipeline() {
   local result
   local curl_result
 
+  check_envvar BB_USER R
+  check_envvar BB_APP_PASSWORD R
+
   continue=1
   sleep=10
   state="NA"
@@ -279,11 +282,16 @@ bb_start_pipeline_for_repo() {
   local pattern
   local remote_repo_slug
   local curl_result
+  local remote_repo_branch
 
   info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
 
+  check_envvar BB_USER R
+  check_envvar BB_APP_PASSWORD R
+
   remote_repo_slug="${1}"
-  pattern="${1:-build_and_deploy}"
+  pattern="${2:-build_and_deploy}"
+  remote_repo_branch=${3:-}
 
   rest_url="https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${remote_repo_slug}/pipelines/"
 
@@ -291,26 +299,51 @@ bb_start_pipeline_for_repo() {
   info "${FUNCNAME[0]} - BITBUCKET_REPO_OWNER:    ${BITBUCKET_REPO_OWNER}"
   info "${FUNCNAME[0]} - REMOTE_REPO_SLUG:        ${remote_repo_slug}"
   info "${FUNCNAME[0]} - URL:                     ${rest_url}"
-  info "${FUNCNAME[0]} - REMOTE_REPO_COMMIT_HASH: ${REMOTE_REPO_COMMIT_HASH}"
+  if [[ -n "${REMOTE_REPO_COMMIT_HASH}" ]]; then
+    info "${FUNCNAME[0]} - REMOTE_REPO_COMMIT_HASH: ${REMOTE_REPO_COMMIT_HASH}"
+  else
+    if [[ -n "${remote_repo_branch}" ]]; then
+      info "${FUNCNAME[0]} - remote_repo_branch:      ${remote_repo_branch}"
+    fi
+  fi
 
-  cat > /curldata << EOF
+  cat > /curldata.commithash << EOF
 {
   "target": {
     "commit": {
-      "hash":"${REMOTE_REPO_COMMIT_HASH}",
-      "type":"commit"
+      "hash": "${REMOTE_REPO_COMMIT_HASH}",
+      "type": "commit"
     },
     "selector": {
-      "type":"custom",
-      "pattern":"${pattern}"
+      "type": "custom",
+      "pattern": "${pattern}"
     },
     "type":"pipeline_commit_target"
   }
 }
 EOF
 
-  curl_result=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
-                    "${rest_url}" -d '@/curldata')
+  cat > /curldata.branch << EOF
+{
+  "target": {
+    "ref_type": "branch",
+    "type": "pipeline_ref_target",
+    "ref_name": "${remote_repo_branch}",
+    "selector": {
+      "type": "custom",
+      "pattern": "${pattern}"
+    }
+  }
+}
+EOF
+
+  if [[ -n "${remote_repo_branch}" ]]; then
+    curl_result=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
+                      "${rest_url}" -d '@/curldata.branch')
+  else
+    curl_result=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
+                      "${rest_url}" -d '@/curldata.commithash')
+  fi
 
   UUID=$(echo "${curl_result}" | jq --raw-output '.uuid' | tr -d '\{\}')
   BUILD_NUMBER=$(echo "${curl_result}" | jq --raw-output '.build_number')

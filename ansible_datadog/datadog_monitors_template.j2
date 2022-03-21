@@ -1,0 +1,30 @@
+---
+- name: "Ansible playbook to create the DD Monitors"
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+{% for dd_monitor in dd_monitors %}
+{%   for environment in dd_monitor.environments %}
+{%     for matcher in dd_monitor.matchers %}
+{%       if lookup('env', 'DATADOG_MONITOR_ENVIRONMENT') == 'all' or lookup('env', 'DATADOG_MONITOR_ENVIRONMENT') == environment.name %}
+{%         if lookup('env', 'BITBUCKET_DEPLOYMENT_ENVIRONMENT') == 'all' or lookup('env', 'BITBUCKET_DEPLOYMENT_ENVIRONMENT') == environment.deployment | default('default') %}
+    - name: "Create a log monitor \"{{ matcher.name }}\" in environment \"{{ environment.name }}\"."
+      community.general.datadog_monitor:
+        type: "log alert"
+        name: "{{ dd_monitor.application }}-{{environment.name }}: {{ matcher.name }}"
+        state: "{{ dd_monitor.state | default('present') }}"
+        query: 'logs("@environment:{{ environment.name }} @application:{{ dd_monitor.application }} {{ matcher.string_to_match }}").index("main").rollup("count").last("{{ environment.period | default("15m") }}") > {{ environment.count | default("0") }}'
+        notification_message: |
+          {{ '{{ \'{{\' }}' }}#is_alert{{ '{{ \'}}\' }}' }}
+          {{ dd_monitor.application }}-{{ environment.name }}: {{ matcher.notification_message }}
+          {{ '{{ \'{{\' }}' }}/is_alert{{ '{{ \'}}\' }}' }}
+          {{ environment.notification_target }}
+        api_key: "{{ lookup('env', 'DD_API_KEY') }}"
+        app_key: "{{ lookup('env', 'DD_APP_KEY') }}"
+        api_host: "{{ lookup('env', 'DD_API_HOST') | default('https://api.datadoghq.com') }}"
+{%         endif %}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
