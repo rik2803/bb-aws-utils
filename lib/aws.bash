@@ -351,7 +351,12 @@ aws_create_or_update_ssm_parameter() {
   else
     info "${FUNCNAME[0]} - Set SSM parameter \"${name}\" to \"************\"."
   fi
-  aws ssm put-parameter --name "${name}" --value "${value}" --type String --overwrite
+
+  cat > mmparameter.json << EOF
+{ "Value": "${value}" }
+EOF
+  aws ssm put-parameter --name "${name}" --cli-input-json file://mmparameter.json --type String --overwrite
+  rm -f mmparameter.json
 }
 
 aws_get_ssm_parameter_by_name() {

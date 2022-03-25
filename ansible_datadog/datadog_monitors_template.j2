@@ -9,7 +9,11 @@
 {%     for matcher in dd_monitor.matchers %}
 {%       if lookup('env', 'DATADOG_MONITOR_ENVIRONMENT') == 'all' or lookup('env', 'DATADOG_MONITOR_ENVIRONMENT') == environment.name %}
 {%         if lookup('env', 'BITBUCKET_DEPLOYMENT_ENVIRONMENT') == 'all' or lookup('env', 'BITBUCKET_DEPLOYMENT_ENVIRONMENT') == environment.deployment | default('default') %}
-    - name: "Create a log monitor \"{{ matcher.name }}\" in environment \"{{ environment.name }}\"."
+{%           if dd_monitor.state is defined and dd_monitor.state == 'absent' %}
+    - name: "Delete the log monitor \"{{ matcher.name }}\" in environment \"{{ environment.name }}\"."
+{%           elif %}
+    - name: "Create the log monitor \"{{ matcher.name }}\" in environment \"{{ environment.name }}\"."
+{%           fi %}
       community.general.datadog_monitor:
         type: "log alert"
         name: "{{ dd_monitor.application }}-{{environment.name }}: {{ matcher.name }}"

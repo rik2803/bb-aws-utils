@@ -1,0 +1,75 @@
+#!/bin/bash
+
+aws_create_or_update_ssm_parameter() {
+  local name="${1:-}"
+  local value="${2:-}"
+  local secret"${3:-no}"
+
+  install_awscli
+
+  if [[ "${secret}" = "no" ]]; then
+    info "${FUNCNAME[0]} - Set SSM parameter \"${name}\" to \"${value}\"."
+  else
+    info "${FUNCNAME[0]} - Set SSM parameter \"${name}\" to \"************\"."
+  fi
+  cat > mmparameter.json << EOF
+{ "Value": "${value}" }
+EOF
+  aws ssm put-parameter --name "${name}" --cli-input-json file://mmparameter.json --type String --overwrite
+#  aws ssm put-parameter --name "${name}" --value "$(cat <(echo "${value}"))" --type String --overwrite
+}
+
+aws_apply_secrets() {
+
+  if [[ ! -e "${BITBUCKET_CLONE_DIR}/secrets" ]]; then
+    info "secrets: ${BITBUCKET_CLONE_DIR}/secrets not found, will not apply SSM parameter store variables"
+    return 0
+  fi
+
+  info "secrets: Creating SSM parameters"
+  info "Creating and updating SSM parameters."
+
+  while read secret; do
+    debug "In loop reading secrets file"
+    debug "   ${secret}"
+    key=${secret%%=*}
+    val=${secret#*=}
+    if [[ -n "${key}" && -n "${val}" ]]; then
+      info "Add SSM parameter \"${key}\"."
+      aws_create_or_update_ssm_parameter "${key}" "${val}" "yes"
+    else
+      info "Key (${key}) or Val (${val}) are empty, skipping SSM parameter creation."
+    fi
+  done < "${BITBUCKET_CLONE_DIR}/secrets"
+
+  info "Cleaning up obsolete SSM parameters."
+  while read existing_secret; do
+    if [[ -n  ${existing_secret} ]]; then
+      if grep -q "^${existing_secret}=" secrets; then
+        info "Secret \"${existing_secret}\" in secrets, not deleting."
+      else
+        info "Secret \"${existing_secret}\" not in secrets, deleting ..."
+        aws_delete_ssm_parameter "${existing_secret}"
+      fi
+    fi
+  done < existing_keys
+}
+
+gray="\\e[37m"
+blue="\\e[36m"
+red="\\e[31m"
+green="\\e[32m"
+orange="\\e[33m"
+reset="\\e[0m"
+
+info()    { echo -e "${blue}INFO: $*${reset}" 1>&2; }
+warning() { echo -e "${orange}WARN: $*${reset}" 1>&2; }
+error()   { echo -e "${red}ERROR: $*${reset}" 1>&2; }
+success() { echo -e "${green}✔ $*${reset}" 1>&2; }
+fail()    { echo -e "${red}✖ $*${reset}" 1>&2; exit 1; }
+debug()   { [[ "${DEBUG}" == "true" ]] && echo -e "${gray}DEBUG: $*${reset}"  1>&2 || true; }
+
+
+BITBUCKET_CLONE_DIR="."
+
+aws_apply_secrets
