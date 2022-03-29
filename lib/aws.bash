@@ -509,8 +509,7 @@ aws_cdk_determine_version() {
 #
 #######################################
 aws_cdk_deploy() {
-  [[ -z ${1} || -z ${2} || -z ${3}  ]] && \
-    fail "${FUNCNAME[0]} - aws_cdk_deploy aws_profile deploy_repo deploy_repo_branch [docker_image]"
+  [[ -z ${1} ]] && fail "${FUNCNAME[0]} - aws_cdk_deploy aws_profile [iac_repo] [iac_repo_branch] [docker_image]"
 
   local aws_profile="${1}"
   local aws_prev_profile
