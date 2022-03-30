@@ -514,7 +514,7 @@ aws_cdk_deploy() {
   local aws_profile="${1}"
   local aws_prev_profile
   local aws_cdk_infra_repo="${2:-}"
-  local aws_cdk_infra_repo_branch="${3:-}"
+  local aws_cdk_infra_repo_branch="${3:-master}"
   local docker_image="${4:-}"
   local aws_cdk_env="${aws_cdk_infra_repo_branch}"
 
