@@ -678,7 +678,18 @@ aws_disable_alb_logging() {
 }
 
 #######################################
-# Apply secrets from a file containing key=value lines
+# Apply secrets from a file containing to AWS SSM Parameter store. Each line in the file has to look
+# like this:
+#  key=value
+#  key=ssm::ssmParametername
+#
+# In the second form:
+#   * ssmParametername is a SSM parameter in the parameter store in the same account
+#     and region as the target SSM parameter.
+#   * the source value cannot be a multiline string
+#
+# SSM parameters with a name starting with "/config" will be removed unless present in the secrets file.
+# Other SSM parameters that are removed from the secrets file will not be automatically cleaned up.
 #
 # Globals:
 #
@@ -712,6 +723,11 @@ aws_apply_secrets() {
     debug "   ${secret}"
     key=${secret%%=*}
     val=${secret#*=}
+    if [[ $val = ssm::* ]]; then
+      info "Get ${val} from AWS SSM paramater store ..."
+      ssm_parameter_name="${val##ssm::}"
+      val=$(aws_get_ssm_parameter_by_name "${ssm_parameter_name}")
+    fi
     if [[ -n "${key}" && -n "${val}" ]]; then
       info "Add SSM parameter \"${key}\"."
       aws_create_or_update_ssm_parameter "${key}" "${val}" "yes"
