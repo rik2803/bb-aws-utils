@@ -26,8 +26,10 @@ echo '{ "credsStore": "ecr-login" }' > ~/.docker/config.json
 # Globals:
 #
 # Arguments:
-#   Cluster Name: The name of the ECS cluster where the service runs
+#   Cluster Name: (part of) he name of the ECS cluster where the service runs.
+#                 The first match will be used.
 #   ServiceName: (part of) the name that uniquely identifies the service
+#                 The first match will be used.
 #
 # Returns:
 #
@@ -35,22 +37,35 @@ echo '{ "credsStore": "ecr-login" }' > ~/.docker/config.json
 aws_force_restart_service() {
   check_envvar AWS_DEFAULT_REGION R
   [[ -z ${1} || -z ${2} ]] && \
-    fail "Usage: aws_force_restart_service aws_ecs_cluster_name aws_ecs_service_name"
+    fail "Usage: aws_force_restart_service aws_ecs_cluster_name aws_ecs_service_name."
   local cluster=${1}; shift
   local service=${1}; shift
   local full_service_name
+  local full_cluster_name
 
-  info "Using ${service} to determine the full name of the service in cluster ${cluster}"
-  full_service_name=$(aws ecs list-services --cluster "${cluster}" --output text | grep -i "${service}" | awk -F'/' '{print $3}' || true)
+  info "Using the string ${cluster} to determine the full name of the cluster."
+  full_cluster_name=$(aws ecs describe-clusters \
+                           --cluster $(aws ecs list-clusters --output text) \
+                           --query "clusters[?contains(clusterName, '${cluster}')].clusterName" | \
+                      jq -r '.[0]' || true)
+  info "Using the cluster ${full_cluster_name} to restart the service specified with ${service}."
+  info "Using ${service} to determine the full name of the service in cluster ${full_cluster_name}."
+  full_service_name=$(aws ecs describe-services \
+                           --cluster "${full_cluster_name}" \
+                           --services $(aws ecs list-services --cluster "${full_cluster_name}" --output text) \
+                           --query "services[?contains(serviceName, '${service}')].serviceName" | \
+                      jq -r '.[0]'|| true)
+
   if [[ -z ${full_service_name} ]]; then
-    fail "No service name found that contains the string ${service} in cluster ${cluster}"
+    fail "No service name found that contains the string ${service} in cluster ${cluster}."
   fi
+
   info "Full service name is ${full_service_name}"
-  info "Updating service ${full_service_name} in ECS cluster ${cluster}"
-  if aws ecs update-service --cluster "${cluster}" --force-new-deployment --service "${full_service_name}"; then
-    success "Service ${full_service_name} in cluster ${cluster} successfully updated"
+  info "Updating service ${full_service_name} in ECS cluster ${full_cluster_name}."
+  if aws ecs update-service --cluster "${full_cluster_name}" --force-new-deployment --service "${full_service_name}"; then
+    success "Service ${full_service_name} in cluster ${full_cluster_name} successfully updated."
   else
-    fail "An error occurred updating ${full_service_name} in cluster ${cluster}"
+    fail "An error occurred updating ${full_service_name} in cluster ${full_cluster_name}."
   fi
 }
 
