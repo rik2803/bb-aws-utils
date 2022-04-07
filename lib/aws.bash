@@ -43,6 +43,8 @@ aws_force_restart_service() {
   local full_service_name
   local full_cluster_name
 
+  check_command jq || install_sw jq
+
   info "Using the string ${cluster} to determine the full name of the cluster."
   full_cluster_name=$(aws ecs describe-clusters \
                            --cluster $(aws ecs list-clusters --output text) \
