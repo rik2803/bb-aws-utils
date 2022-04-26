@@ -356,7 +356,7 @@ aws_s3_deploy() {
 aws_create_or_update_ssm_parameter() {
   local name="${1:-}"
   local value="${2:-}"
-  local secret"${3:-no}"
+  local secret="${3:-no}"
 
   check_envvar name R
   check_envvar value R
@@ -379,6 +379,7 @@ EOF
 aws_get_ssm_parameter_by_name() {
   local name="${1:-}"
   local jmesexp="${2:-}"
+
   check_envvar name R
 
   info "Retrieving parameter ${name} from SSM."
@@ -388,11 +389,20 @@ aws_get_ssm_parameter_by_name() {
     # The output is considered JSON and the jmesexp expression is applied
     check_command jq || install_sw jq
     ssm_parameter_value=$(aws ssm get-parameters --names "${name}" | jq -r "${jmesexp}")
-    success " Successfully applied ${jmesexp} resulting in  ${ssm_parameter_value} "
+    if [[ $? -eq 0 ]]; then
+      success "Successfully retrieved ${name} and applied ${jmesexp}."
+      success "${ssm_parameter_value}"
+    else
+      fail "Error retrieving ${name} from SSM, exiting ..."
+    fi
   else
     ssm_parameter_value=$(aws ssm get-parameters --names "${name}" --query "Parameters[].Value" --output text)
-    success "Parameter ${name} successfully retrieved from SSM, with value:"
-    success "    ${ssm_parameter_value}"
+    if [[ $? -eq 0 ]]; then
+      success "Parameter ${name} successfully retrieved from SSM."
+      debug   "${ssm_parameter_value}"
+    else
+      fail "Error retrieving ${name} from SSM, exiting ..."
+    fi
   fi
 
   echo "$ssm_parameter_value"
@@ -401,6 +411,7 @@ aws_get_ssm_parameter_by_name() {
 aws_get_ssm_parameter_by_path() {
   local path="${1:-}"
   local jmesexp="${2:-}"
+
   check_envvar path R
 
   info "Retrieving parameters with path ${path} from SSM."
@@ -410,12 +421,20 @@ aws_get_ssm_parameter_by_path() {
     # The output is considered JSON and the jmesexp expression is applied
     check_command jq || install_sw jq
     ssm_parameter_value=$(aws ssm get-parameters-by-path --path "${path}" | jq -r "${jmesexp}")
-    success "Successfully applied ${jmesexp} resulting in:"
-    success "${ssm_parameter_value}"
+    if [[ $? -eq 0 ]]; then
+      success "Successfully retrieved ${path} and applied ${jmesexp}."
+      debug   "${ssm_parameter_value}"
+    else
+      fail "Error retrieving ${path} from SSM, exiting ..."
+    fi
   else
     ssm_parameter_value=$(aws ssm get-parameters-by-path --path "${path}" --query "Parameters[].Value" --output text)
-    success "Parameter ${path} successfully retrieved from SSM, with value:"
-    success "    ${ssm_parameter_value}"
+    if [[ $? -eq 0 ]]; then
+      success "Successfully retrieved ${path} from SSM."
+      debug   "${ssm_parameter_value}"
+    else
+      fail "Error retrieving ${path} from SSM, exiting ..."
+    fi
   fi
 
   echo "$ssm_parameter_value"
