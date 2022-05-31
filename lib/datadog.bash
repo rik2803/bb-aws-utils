@@ -46,6 +46,8 @@ datadog_deploy_monitors() {
     -e DD_APP_KEY="${DD_APP_KEY}" \
     -e DATADOG_MONITOR_ENVIRONMENT="${DATADOG_MONITOR_ENVIRONMENT:-all}" \
     -e BITBUCKET_DEPLOYMENT_ENVIRONMENT="${BITBUCKET_DEPLOYMENT_ENVIRONMENT:-all}" \
+    -e BITBUCKET_REPO_SLUG="${BITBUCKET_REPO_SLUG:-NA}" \
+    -e BITBUCKET_COMMIT="${BITBUCKET_COMMIT:-NA}" \
     -v ${BITBUCKET_CLONE_DIR}/dd_monitors.yml:/ansible/dd_monitors.yml \
     -v ${BITBUCKET_CLONE_DIR}/bb-aws-utils/ansible_datadog/playbook.yml:/ansible/playbook.yml \
     -v ${BITBUCKET_CLONE_DIR}/bb-aws-utils/ansible_datadog/datadog_monitors_template.j2:/ansible/datadog_monitors_template.j2 \
