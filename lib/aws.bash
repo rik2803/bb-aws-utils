@@ -52,11 +52,16 @@ aws_force_restart_service() {
                       jq -r '.[0]' || true)
   info "Using the cluster ${full_cluster_name} to restart the service specified with ${service}."
   info "Using ${service} to determine the full name of the service in cluster ${full_cluster_name}."
-  full_service_name=$(aws ecs describe-services \
-                           --cluster "${full_cluster_name}" \
-                           --services $(aws ecs list-services --cluster "${full_cluster_name}" --query "serviceArns" --output text) \
-                           --query "services[?contains(serviceName, '${service}')].serviceName" | \
-                      jq -r '.[0]'|| true)
+
+  full_service_arn=$(aws ecs list-services
+                          --cluster "${full_cluster_name}" \
+                          --query "serviceArns[?contains(@,'${service}')]" \
+                          --output text)
+  if [[ -z "${full_service_arn}" ]]; then
+    full_service_name=""
+  else
+    full_service_name=$(basename "${full_service_arn}")
+  fi
 
   if [[ -z ${full_service_name} ]]; then
     fail "No service name found that contains the string ${service} in cluster ${cluster}."
