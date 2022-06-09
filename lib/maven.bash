@@ -53,6 +53,11 @@ maven_create_settings_xml() {
       echo "</settings>"
     } > "${MAVEN_SETTINGS_PATH}/settings.xml"
   fi
+
+  info "Create ~/.m2 and copy settings.xml there"
+  run_cmd mkdir ~/.m2
+  run_cmd cp ${MAVEN_SETTINGS_PATH}/settings.xml ~/.m2
+
   if is_debug_enabled; then
     debug "Dump of content of ${MAVEN_SETTINGS_PATH}/settings.xml -- start"
     cat "${MAVEN_SETTINGS_PATH}/settings.xml"

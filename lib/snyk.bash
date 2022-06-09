@@ -5,13 +5,13 @@ export LIB_SNYK_LOADED=1
 snyk_run_test() {
   local snyk_cli_url="https://static.snyk.io/cli/latest/snyk-linux"
 
-  if [[ -n "${SNYK_TOKEN}" ]]; then
-    info "snyk: SNYK_TOKEN is set, starting Snyk analysis."
-    info "snyk: Download Snyk CLI ..."
-    curl -s "${snyk_cli_url}" /snyk && chmod 0755 /snyk
-    info "snyk: Run snyk test"
-    [[ -e "${BITBUCKET_CLONE_DIR}/pom.xml" ]] && /snyk test -- "-s /settings.xml"
-  else
-    info "SNYK_TOKEN envvar not set, skip Snyk analysis."
-  fi
+  [[ -z "${SNYK_TOKEN}" ]] && { info "SNYK_TOKEN not set."; return; }
+  [[ -n "${SNYK_SKIP_TEST}" && ${SNYK_SKIP_TEST} -eq 1  ]] && { warning "SNYK_SKIP_TEST is set and 1, skipping sny test (NOT GOOD!!)."; return; }
+
+  check_command curl || install_sw curl
+  info "snyk: SNYK_TOKEN is set, starting Snyk analysis."
+  info "snyk: Download Snyk CLI ..."
+  curl -s "${snyk_cli_url}" /snyk && chmod 0755 /snyk
+  info "snyk: Run snyk test"
+  /snyk test -- "-s /settings.xml"
 }
