@@ -33,10 +33,11 @@ snyk_run_docker_test() {
   _snyk_prerun_checks || return
 
   check_envvar DOCKER_IMAGE R
+  check_envvar DOCKERFILE R
 
   info "snyk: SNYK_TOKEN is set, starting Snyk container analysis."
   _snyk_install_snyk
   /snyk container test "${DOCKER_IMAGE}" \
-    --file=src/main/docker/Dockerfile \
+    --file="${DOCKERFILE}" \
     --severity-threshold="${SNYK_SEVERITY_THRESHOLD:-high}"
 }
