@@ -53,7 +53,7 @@ aws_force_restart_service() {
   info "Using the cluster ${full_cluster_name} to restart the service specified with ${service}."
   info "Using ${service} to determine the full name of the service in cluster ${full_cluster_name}."
 
-  full_service_arn=$(aws ecs list-services
+  full_service_arn=$(aws ecs list-services \
                           --cluster "${full_cluster_name}" \
                           --query "serviceArns[?contains(@,'${service}')]" \
                           --output text)
