@@ -5,6 +5,7 @@ export LIB_SNYK_LOADED=1
 _snyk_prerun_checks() {
   [[ -z "${SNYK_TOKEN}" ]] && { info "SNYK_TOKEN not set."; return 1; }
   [[ -n "${SNYK_SKIP_TEST}" && ${SNYK_SKIP_TEST} -eq 1  ]] && { warning "SNYK_SKIP_TEST is set and 1, skipping sny test (NOT GOOD!!)."; return 1; }
+  return 0
 }
 
 _snyk_install_snyk() {
