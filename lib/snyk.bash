@@ -14,5 +14,5 @@ snyk_run_test() {
   run_cmd curl -s "${snyk_cli_url}" -o /snyk
   run_cmd chmod 0755 /snyk
   info "snyk: Run snyk test"
-  /snyk test --severity-threshold="${SNYK_SEVERITY_THRESHOLD:-high}"
+  /snyk test --severity-threshold="${SNYK_SEVERITY_THRESHOLD:-high}" --all-projects
 }
