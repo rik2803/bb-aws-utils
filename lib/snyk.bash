@@ -11,7 +11,7 @@ snyk_run_test() {
   check_command curl || install_sw curl
   info "snyk: SNYK_TOKEN is set, starting Snyk analysis."
   info "snyk: Download Snyk CLI ..."
-  curl -s "${snyk_cli_url}" /snyk && chmod 0755 /snyk
+  curl -s "${snyk_cli_url}" -o /snyk && chmod 0755 /snyk
   info "snyk: Run snyk test"
   /snyk test -- "-s /settings.xml"
 }
