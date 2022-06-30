@@ -42,7 +42,10 @@ datadog_deploy_monitors() {
 
   ANSIBLE_PLAYBOOK_SOURCE_DIR="${BITBUCKET_CLONE_DIR}/bb-aws-utils"
   if [[ -n ${LIB_DIR} ]]; then
+    info "Look for Ansible files in ${LIB_DIR}/../ansible_datadog"
     ANSIBLE_PLAYBOOK_SOURCE_DIR="${LIB_DIR}/../ansible_datadog"
+  else
+    info "Look for Ansible files in ${BITBUCKET_CLONE_DIR}/bb-aws-utils"
   fi
 
   docker pull -q "${docker_image}"
