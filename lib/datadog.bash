@@ -40,6 +40,11 @@ datadog_deploy_monitors() {
   check_envvar DD_API_KEY R
   check_envvar DD_APP_KEY R
 
+  ANSIBLE_PLAYBOOK_SOURCE_DIR="${BITBUCKET_CLONE_DIR}/bb-aws-utils"
+  if [[ -n ${LIB_DIR} ]]; then
+    ANSIBLE_PLAYBOOK_SOURCE_DIR="${LIB_DIR}/../ansible_datadog"
+  fi
+
   docker pull -q "${docker_image}"
   docker run \
     -e DD_API_KEY="${DD_API_KEY}" \
@@ -49,7 +54,7 @@ datadog_deploy_monitors() {
     -e BITBUCKET_REPO_SLUG="${BITBUCKET_REPO_SLUG:-NA}" \
     -e BITBUCKET_COMMIT="${BITBUCKET_COMMIT:-NA}" \
     -v ${BITBUCKET_CLONE_DIR}/dd_monitors.yml:/ansible/dd_monitors.yml \
-    -v ${BITBUCKET_CLONE_DIR}/bb-aws-utils/ansible_datadog/playbook.yml:/ansible/playbook.yml \
-    -v ${BITBUCKET_CLONE_DIR}/bb-aws-utils/ansible_datadog/datadog_monitors_template.j2:/ansible/datadog_monitors_template.j2 \
+    -v ${ANSIBLE_PLAYBOOK_SOURCE_DIR}/playbook.yml:/ansible/playbook.yml \
+    -v ${ANSIBLE_PLAYBOOK_SOURCE_DIR}/datadog_monitors_template.j2:/ansible/datadog_monitors_template.j2 \
     "${docker_image}"
 }
