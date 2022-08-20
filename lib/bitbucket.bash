@@ -276,6 +276,27 @@ bb_monitor_running_pipeline() {
   fail "${FUNCNAME[0]} - Remote pipeline finished with status ${result}."
 }
 
+#######################################
+# This function is used to start a pipeline for another repository.
+#
+# Expects:
+#   BB_USER: a Bitbucket user with pipeline start permissions on the remote repo
+#   BB_APP_PASSWORD: the app password for BB_USER
+#
+# Globals:
+#
+# Arguments:
+#   remote_repo_slug (required): The slug of the repo to start apipeline for
+#   pattern (default: build_and_deploy): The "pattern" of the pipeline to start on the remote repo. Can be the name
+#       of a branch when the fourth argument (remote_repo_selector_type) is "branch", or the name of a custom
+#       pipeline if remote_repo_selector_type is absent.
+#   remote_repo_branch: If present, start the pipeline on a branch. If absent, start the pipeline o the commit hash
+#       of the remote branch determined by the envvar REMOTE_REPO_COMMIT_HASH
+#   remote_repo_selector_type: Should be "branch" is the remote pipeline is to start on the branch determined by
+#       remote_repo_branch
+# Returns:
+#
+#######################################
 bb_start_pipeline_for_repo() {
   ### See comments in monitor_automatic_remote_pipeline_start
   local rest_url
