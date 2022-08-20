@@ -289,6 +289,8 @@ bb_start_pipeline_for_repo() {
   check_envvar BB_USER R
   check_envvar BB_APP_PASSWORD R
 
+  install_jq
+
   remote_repo_slug="${1}"
   pattern="${2:-build_and_deploy}"
   remote_repo_branch=${3:-}
