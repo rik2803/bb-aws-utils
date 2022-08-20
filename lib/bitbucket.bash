@@ -340,9 +340,9 @@ EOF
 EOF
 
   if [[ -n "${remote_repo_branch}" ]]; then
-    cp /curldata.commithash /curldata
-  else
     cp /curldata.branch /curldata
+  else
+    cp /curldata.commithash /curldata
   fi
 
   curl_result=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
