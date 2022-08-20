@@ -293,7 +293,8 @@ bb_start_pipeline_for_repo() {
 
   remote_repo_slug="${1}"
   pattern="${2:-build_and_deploy}"
-  remote_repo_branch=${3:-}
+  remote_repo_branch="${3:-}"
+  remote_repo_selector_type="${4:-custom}"
 
   rest_url="https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${remote_repo_slug}/pipelines/"
 
@@ -332,7 +333,7 @@ EOF
     "type": "pipeline_ref_target",
     "ref_name": "${remote_repo_branch}",
     "selector": {
-      "type": "custom",
+      "type": "${remote_repo_selector_type}",
       "pattern": "${pattern}"
     }
   }
