@@ -340,12 +340,13 @@ EOF
 EOF
 
   if [[ -n "${remote_repo_branch}" ]]; then
-    curl_result=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
-                      "${rest_url}" -d '@/curldata.branch')
+    cp /curldata.commithash /curldata
   else
-    curl_result=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
-                      "${rest_url}" -d '@/curldata.commithash')
+    cp /curldata.branch /curldata
   fi
+
+  curl_result=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
+                    "${rest_url}" -d '@/curldata')
 
   UUID=$(echo "${curl_result}" | jq --raw-output '.uuid' | tr -d '\{\}')
   BUILD_NUMBER=$(echo "${curl_result}" | jq --raw-output '.build_number')
