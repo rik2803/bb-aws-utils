@@ -7,6 +7,21 @@
 
 export LIB_BITBUCKET_LOADED=1
 
+bb_set_repo_origin() {
+  ### To make sure everything keeps working after February 1 (see
+  ### https://community.atlassian.com/t5/Bitbucket-Pipelines-articles/Pushing-back-to-your-repository/ba-p/958407)
+  ### we explicitly set the repo origin to ${BITBUCKET_GIT_SSH_ORIGIN} unless the envvar ${BB_USE_HTTP_ORIGIN}
+  ### is set
+  if [[ -n ${BB_USE_HTTP_ORIGIN} ]]
+  then
+    info "Set origin to BITBUCKET_GIT_HTTP_ORIGIN"
+    cd "${BITBUCKET_CLONE_DIR}" && git remote set-url origin "${BITBUCKET_GIT_HTTP_ORIGIN}" && cd -
+  else
+    info "Set origin to BITBUCKET_GIT_SSH_ORIGIN"
+    cd "${BITBUCKET_CLONE_DIR}" && git remote set-url origin "${BITBUCKET_GIT_SSH_ORIGIN}" && cd -
+  fi
+}
+
 # Copy the pipeline private key to a given destination (or current directory by default)
 bb_cp_ssh_privkey() {
   local priv_key_location="/opt/atlassian/pipelines/agent/ssh/id_rsa"

@@ -30,6 +30,7 @@
 export AWS_PAGER=""
 [[ -e /tmp ]] || mkdir -p /tmp
 
+bb_set_repo_origin
 install_set_linux_distribution_type
 aws_set_service_account_config
 aws_set_codeartifact_token
