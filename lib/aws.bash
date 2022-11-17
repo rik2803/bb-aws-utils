@@ -734,7 +734,6 @@ aws_cdk_deploy_all_with_exclusions() {
 
   local aws_profile="${1}"
   local aws_prev_profile
-  local aws_cdk_all_stacks
   local aws_cdk_stacks_to_deploy
 
   export NODE_ENV="${2}"
@@ -748,7 +747,7 @@ aws_cdk_deploy_all_with_exclusions() {
   aws_prev_profile="${AWS_PROFILE:-}"
   export AWS_PROFILE="${aws_profile}"
 
-  aws_cdk_all_stacks=$(aws_cdk_get_all_stacks)
+  aws_cdk_get_all_stacks
 
   info "Removing stacks to exclude from ${AWS_CDK_ALL_STACKS}"
   for stack in ${AWS_CDK_ALL_STACKS}; do
@@ -788,11 +787,12 @@ aws_cdk_get_all_stacks() {
   aws_cdk_determine_version
 
   info "Running aws-cdk synth to generate the Cloudformation templates in cdk.out"
-  npx aws-cdk@${AWS_CDK_VERSION:-2.50.0} synth >/dev/null 2>&1
+  npx aws-cdk@${AWS_CDK_VERSION:-2.50.0} synth
 
   (
     cd cdk.out
     for file in *.template.json; do
+      info "Adding ${file%%.template.json} to AWS_CDK_ALL_STACKS"
       AWS_CDK_ALL_STACKS="${AWS_CDK_ALL_STACKS} ${file%%.template.json}"
     done
   )
