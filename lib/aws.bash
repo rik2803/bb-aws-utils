@@ -789,13 +789,13 @@ aws_cdk_get_all_stacks() {
   info "Running aws-cdk synth to generate the Cloudformation templates in cdk.out"
   npx aws-cdk@${AWS_CDK_VERSION:-2.50.0} synth
 
-  (
-    cd cdk.out
-    for file in *.template.json; do
-      info "Adding ${file%%.template.json} to AWS_CDK_ALL_STACKS"
-      AWS_CDK_ALL_STACKS="${AWS_CDK_ALL_STACKS} ${file%%.template.json}"
-    done
-  )
+  cd cdk.out
+  for file in *.template.json; do
+    info "Adding ${file%%.template.json} to AWS_CDK_ALL_STACKS"
+    AWS_CDK_ALL_STACKS="${AWS_CDK_ALL_STACKS} ${file%%.template.json}"
+  done
+
+  cd -
 
   export AWS_CDK_ALL_STACKS
   info "All stacks: ${AWS_CDK_ALL_STACKS}"
