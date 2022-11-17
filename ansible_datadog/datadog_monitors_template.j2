@@ -18,7 +18,11 @@
         type: "log alert"
         name: "{{ dd_monitor.application }}-{{environment.name }}: {{ matcher.name }}"
         state: "{{ dd_monitor.state | default('present') }}"
+{%     if dd_monitor.use_tags_in_query is defined and dd_monitor.use_tags_in_query %}
+        query: 'logs("environment:{{ environment.name }} application:{{ dd_monitor.application }} {{ matcher.string_to_match }}").index("main").rollup("count").last("{{ environment.period | default("15m") }}") > {{ environment.count | default("0") }}'
+{%     else %}
         query: 'logs("@environment:{{ environment.name }} @application:{{ dd_monitor.application }} {{ matcher.string_to_match }}").index("main").rollup("count").last("{{ environment.period | default("15m") }}") > {{ environment.count | default("0") }}'
+{%     endif %}
         notification_message: |
           {{ '{{ \'{{\' }}' }}#is_alert{{ '{{ \'}}\' }}' }}
           {{ dd_monitor.application }}-{{ environment.name }}: {{ matcher.notification_message }}

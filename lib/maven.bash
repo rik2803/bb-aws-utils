@@ -213,7 +213,7 @@ maven_release_build() {
   maven_get_next_release_version
   maven_get_next_develop_version
 
-  git remote set-url origin "${BITBUCKET_GIT_SSH_ORIGIN}"
+  bb_set_repo_origin
   git config --global --add status.displayCommentPrefix true
 
   info "Checking out branch ${MAVEN_BRANCH} for manually triggered pipeline, because"
@@ -263,7 +263,7 @@ maven_release_deploy() {
   check_envvar MAVEN_BRANCH O master
   check_command mvn || install_sw maven
 
-  git remote set-url origin "${BITBUCKET_GIT_SSH_ORIGIN}"
+  bb_set_repo_origin
   git config --global --add status.displayCommentPrefix true
 
   info "Checking out branch ${MAVEN_BRANCH}"

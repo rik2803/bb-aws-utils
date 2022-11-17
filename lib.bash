@@ -14,9 +14,11 @@ CW_ALARMS=NA
 ### is set
 if [[ -n ${BB_USE_HTTP_ORIGIN} ]]
 then
-  git remote set-url origin "${BITBUCKET_GIT_HTTP_ORIGIN}"
+  info "Set origin to BITBUCKET_GIT_HTTP_ORIGIN"
+  cd "${BITBUCKET_CLONE_DIR}" && git remote set-url origin "${BITBUCKET_GIT_HTTP_ORIGIN}" && cd -
 else
-  git remote set-url origin "${BITBUCKET_GIT_SSH_ORIGIN}"
+  info "Set origin to BITBUCKET_GIT_SSH_ORIGIN"
+  cd "${BITBUCKET_CLONE_DIR}" && git remote set-url origin "${BITBUCKET_GIT_SSH_ORIGIN}" && cd -
 fi
 
 repo_git_url() {

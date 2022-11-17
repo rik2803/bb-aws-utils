@@ -4,7 +4,7 @@
   gather_facts: false
 
   vars_files:
-    - "./dd_monitors.yml"
+    - "{{ lookup('env', 'DD_MONITOR_YML') | default('./dd_monitors.yml') }}"
 
   tasks:
     - name: "Create the playbook"

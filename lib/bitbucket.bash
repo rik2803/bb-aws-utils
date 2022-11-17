@@ -7,6 +7,21 @@
 
 export LIB_BITBUCKET_LOADED=1
 
+bb_set_repo_origin() {
+  ### To make sure everything keeps working after February 1 (see
+  ### https://community.atlassian.com/t5/Bitbucket-Pipelines-articles/Pushing-back-to-your-repository/ba-p/958407)
+  ### we explicitly set the repo origin to ${BITBUCKET_GIT_SSH_ORIGIN} unless the envvar ${BB_USE_HTTP_ORIGIN}
+  ### is set
+  if [[ -n ${BB_USE_HTTP_ORIGIN} ]]
+  then
+    info "Set origin to BITBUCKET_GIT_HTTP_ORIGIN"
+    cd "${BITBUCKET_CLONE_DIR}" && git remote set-url origin "${BITBUCKET_GIT_HTTP_ORIGIN}" && cd -
+  else
+    info "Set origin to BITBUCKET_GIT_SSH_ORIGIN"
+    cd "${BITBUCKET_CLONE_DIR}" && git remote set-url origin "${BITBUCKET_GIT_SSH_ORIGIN}" && cd -
+  fi
+}
+
 # Copy the pipeline private key to a given destination (or current directory by default)
 bb_cp_ssh_privkey() {
   local priv_key_location="/opt/atlassian/pipelines/agent/ssh/id_rsa"
@@ -276,6 +291,27 @@ bb_monitor_running_pipeline() {
   fail "${FUNCNAME[0]} - Remote pipeline finished with status ${result}."
 }
 
+#######################################
+# This function is used to start a pipeline for another repository.
+#
+# Expects:
+#   BB_USER: a Bitbucket user with pipeline start permissions on the remote repo
+#   BB_APP_PASSWORD: the app password for BB_USER
+#
+# Globals:
+#
+# Arguments:
+#   remote_repo_slug (required): The slug of the repo to start apipeline for
+#   pattern (default: build_and_deploy): The "pattern" of the pipeline to start on the remote repo. Can be the name
+#       of a branch when the fourth argument (remote_repo_selector_type) is "branch", or the name of a custom
+#       pipeline if remote_repo_selector_type is absent.
+#   remote_repo_branch: If present, start the pipeline on a branch. If absent, start the pipeline o the commit hash
+#       of the remote branch determined by the envvar REMOTE_REPO_COMMIT_HASH
+#   remote_repo_selector_type: Should be "branch" is the remote pipeline is to start on the branch determined by
+#       remote_repo_branch
+# Returns:
+#
+#######################################
 bb_start_pipeline_for_repo() {
   ### See comments in monitor_automatic_remote_pipeline_start
   local rest_url
@@ -289,9 +325,12 @@ bb_start_pipeline_for_repo() {
   check_envvar BB_USER R
   check_envvar BB_APP_PASSWORD R
 
+  install_jq
+
   remote_repo_slug="${1}"
   pattern="${2:-build_and_deploy}"
-  remote_repo_branch=${3:-}
+  remote_repo_branch="${3:-}"
+  remote_repo_selector_type="${4:-custom}"
 
   rest_url="https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${remote_repo_slug}/pipelines/"
 
@@ -330,7 +369,7 @@ EOF
     "type": "pipeline_ref_target",
     "ref_name": "${remote_repo_branch}",
     "selector": {
-      "type": "custom",
+      "type": "${remote_repo_selector_type}",
       "pattern": "${pattern}"
     }
   }
@@ -338,12 +377,13 @@ EOF
 EOF
 
   if [[ -n "${remote_repo_branch}" ]]; then
-    curl_result=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
-                      "${rest_url}" -d '@/curldata.branch')
+    cp /curldata.branch /curldata
   else
-    curl_result=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
-                      "${rest_url}" -d '@/curldata.commithash')
+    cp /curldata.commithash /curldata
   fi
+
+  curl_result=$(curl -X POST -s -u "${BB_USER}:${BB_APP_PASSWORD}" -H 'Content-Type: application/json' \
+                    "${rest_url}" -d '@/curldata')
 
   UUID=$(echo "${curl_result}" | jq --raw-output '.uuid' | tr -d '\{\}')
   BUILD_NUMBER=$(echo "${curl_result}" | jq --raw-output '.build_number')
