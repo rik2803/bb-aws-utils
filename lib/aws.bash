@@ -481,13 +481,15 @@ aws_cloudfront_invalidate() {
 aws_cdk_determine_version() {
   # Determine the aws-cdk version to use
   if npx npm list aws-cdk >/dev/null 2>&1; then
-    local aws_cdk_pkg=$(npx npm list aws-cdk)
+    local aws_cdk_pkg
+    aws_cdk_pkg=$(npx npm list aws-cdk)
     AWS_CDK_VERSION="${aws_cdk_pkg##*@}"
     info "Found aws-cdk version in package.json: ${AWS_CDK_VERSION}"
     info "Will use this version to deploy the infrastructure"
   else
     if npx npm list aws-cdk-lib >/dev/null 2>&1; then
-      local aws_cdk_pkg=$(npx npm list aws-cdk-lib)
+      local aws_cdk_pkg
+      aws_cdk_pkg=$(npx npm list aws-cdk-lib)
       AWS_CDK_VERSION="${aws_cdk_pkg##*@}"
       info "Found aws-cdk version in package.json: ${AWS_CDK_VERSION}"
       info "Will use this version to deploy the infrastructure"
@@ -656,6 +658,7 @@ aws_cdk_deploy() {
 #           * stg: for the staging environment
 #           * master: for production
 #       This is also the value used in "-c ENV=xxxx"
+#   Stacks (optional): The list of stacks to destroy
 #
 # Returns:
 #
@@ -703,6 +706,99 @@ aws_cdk_destroy() {
   info "${FUNCNAME[0]} - IaC destroy successfully executed."
 
   export AWS_PROFILE="${aws_prev_profile}"
+}
+
+#######################################
+# Deploy all stacks from the aws-cdk repo where the pipeline runs,
+# except the stacks passed as an argument to this function.
+#
+# Globals:
+#
+# Arguments:
+#   Aws profile: The name of the AWS profile to set for the aws cdk permissions.
+#       This only works if Service Accounts are used and the appropriate pipeline
+#       environment variables are set in the BB project
+#   Node Env: The environment to deploy to. This is used to set the NODE_ENV environment
+#       variable that is used by the JS config library
+#   Stack names to exclude: A space separated list of 0 or more stacks to exclude. If no
+#       stack is passed for exclusion, all stacks wll be deployed.
+#
+#
+# Returns:
+#
+#######################################
+aws_cdk_deploy_all_with_exclusions() {
+  if [[ -z ${1} || -z ${2} ]]; then
+    fail "${FUNCNAME[0]} - aws_cdk_destroy aws_profile deploy_repo deploy_repo_branch"
+  fi
+
+  local aws_profile="${1}"
+  local aws_prev_profile
+  local aws_cdk_all_stacks
+  local aws_cdk_stacks_to_deploy
+
+  export NODE_ENV="${2}"
+
+  # Get rid of the first 2 arguments, what remains are the stacks to exclude
+  shift
+  shift
+
+  # Set correct profile for role on destination account to be assumed
+  info "${FUNCNAME[0]} - Use ${aws_profile} as AWS_PROFILE"
+  aws_prev_profile="${AWS_PROFILE:-}"
+  export AWS_PROFILE="${aws_profile}"
+
+  aws_cdk_all_stacks=$(aws_cdk_get_all_stacks)
+
+  info "Removing stacks to exclude from ${AWS_CDK_ALL_STACKS}"
+  for stack in ${AWS_CDK_ALL_STACKS}; do
+    local exclude_stack=0
+    for stack_to_exclude in "${@}"; do
+      if [[ ${stack} == ${stack_to_exclude} ]]; then
+        exclude_stack=1
+      fi
+    done
+    if [[ ${exclude_stack} -eq 0 ]]; then
+      info "Adding ${stack} to the list of stacks to deploy"
+      aws_cdk_stacks_to_deploy="${aws_cdk_stacks_to_deploy} ${stack}"
+    fi
+  done
+
+  info "Remaining stacks to deploy: ${aws_cdk_stacks_to_deploy}"
+  info "Starting deploy of ${aws_cdk_stacks_to_deploy}"
+
+  npx aws-cdk@${AWS_CDK_VERSION:-2.50.0} deploy ${aws_cdk_stacks_to_deploy} --require-approval=never
+
+  export AWS_PROFILE="${aws_prev_profile}"
+}
+
+#######################################
+# Disable LB logs for the ALB ARN passed to the function
+#
+# Globals:
+#
+# Arguments:
+#
+# Returns:
+#   Sets the environment variable AWS_CDK_ALL_STACKS
+#
+#######################################
+aws_cdk_get_all_stacks() {
+
+  aws_cdk_determine_version
+
+  info "Running aws-cdk synth to generate the Cloudformation templates in cdk.out"
+  npx aws-cdk@${AWS_CDK_VERSION:-2.50.0} synth >/dev/null 2>&1
+
+  (
+    cd cdk.out
+    for file in *.template.json; do
+      AWS_CDK_ALL_STACKS="${AWS_CDK_ALL_STACKS} ${file%%.template.json}"
+    done
+  )
+
+  export AWS_CDK_ALL_STACKS
+  info "All stacks: ${AWS_CDK_ALL_STACKS}"
 }
 
 #######################################
