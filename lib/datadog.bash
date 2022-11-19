@@ -48,15 +48,18 @@ datadog_deploy_monitors() {
   # docker: Error response from daemon: authorization denied by plugin pipelines: -v only supports $BITBUCKET_CLONE_DIR and its subdirectories.
   #    See 'docker run --help'.
 
-  mkdir -p ${BITBUCKET_CLONE_DIR}/bb-aws-utils-datadog-tmp
-  cp ${LIB_DIR}/../ansible_datadog/* ${BITBUCKET_CLONE_DIR}/bb-aws-utils-datadog-tmp
   ANSIBLE_PLAYBOOK_SOURCE_DIR="${BITBUCKET_CLONE_DIR}/bb-aws-utils-datadog-tmp"
+  mkdir -p "${ANSIBLE_PLAYBOOK_SOURCE_DIR}"
+  cp ${LIB_DIR}/../ansible_datadog/* "${ANSIBLE_PLAYBOOK_SOURCE_DIR}"
+
+  info "Content of ${ANSIBLE_PLAYBOOK_SOURCE_DIR}:"
+  ls -l "${ANSIBLE_PLAYBOOK_SOURCE_DIR}"
 
   docker pull -q "${docker_image}"
   docker run \
     -e DD_API_KEY="${DD_API_KEY}" \
     -e DD_APP_KEY="${DD_APP_KEY}" \
-    -e DD_API_HOST="${DD_API_HOST:-api.datadoghq.com}" \
+    -e DD_API_HOST="${DD_API_HOST:-https://api.datadoghq.com}" \
     -e DATADOG_MONITOR_ENVIRONMENT="${DATADOG_MONITOR_ENVIRONMENT:-all}" \
     -e BITBUCKET_DEPLOYMENT_ENVIRONMENT="${BITBUCKET_DEPLOYMENT_ENVIRONMENT:-all}" \
     -e BITBUCKET_REPO_SLUG="${BITBUCKET_REPO_SLUG:-NA}" \
