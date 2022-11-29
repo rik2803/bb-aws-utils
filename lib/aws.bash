@@ -250,12 +250,18 @@ aws_is_service_account_available() {
 
 aws_set_service_account_config() {
   local account
+  local sa_duration_seconds
 
   info "Start creation of AWS CLI config and credentials file, if applicable"
   [[ -z ${AWS_CONFIG_BASEDIR} ]] && AWS_CONFIG_BASEDIR=~/.aws
   if [[ -n ${SA_ACCOUNT_LIST} ]]; then
     check_command aws || install_awscli
 
+    if [[ -n "${SA_DURATION_SECONDS}" ]]; then
+      sa_duration_seconds="${SA_DURATION_SECONDS}"
+    else
+      sa_duration_seconds="3600"
+    fi
 
     mkdir -p "${AWS_CONFIG_BASEDIR}"
     info "Start creation of ${AWS_CONFIG_BASEDIR}/credentials"
@@ -286,11 +292,13 @@ aws_set_service_account_config() {
           echo "[profile default]"
           echo "source_profile=${account}_SOURCE"
           echo "role_arn=${role_arn}"
+          echo "duration_seconds=${sa_duration_seconds}"
           echo ""
         fi
         echo "[profile ${account}]"
         echo "source_profile=${account}_SOURCE"
         echo "role_arn=${role_arn}"
+        echo "duration_seconds=${sa_duration_seconds}"
         echo ""
         (( counter++ )) || true
       done
