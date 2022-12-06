@@ -175,6 +175,10 @@ maven_get_current_version_from_pom() {
   export MAVEN_CURRENT_VERSION_FROM_POM
 }
 
+maven_get_property_from_pom() {
+  mvn -q -s "${MAVEN_SETTINGS_PATH}/settings.xml" -DforceStdout help:evaluate -Dexpression="${1}"
+}
+
 maven_get_saved_current_version() {
   if [[ -e ${BITBUCKET_CLONE_DIR}/artifacts/curversion ]]; then
     cat "${BITBUCKET_CLONE_DIR}/artifacts/curversion"

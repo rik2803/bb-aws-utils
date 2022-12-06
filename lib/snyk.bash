@@ -32,8 +32,9 @@ snyk_run_docker_test() {
   # This requires that the image be already available
   _snyk_prerun_checks || return
 
-  check_envvar DOCKER_IMAGE R
   check_envvar DOCKERFILE R
+
+  DOCKER_IMAGE="$(maven_get_property_from_pom docker.image.registry)/$(maven_get_property_from_pom docker-image-registry.group)/$(maven_get_property_from_pom project.name):latest"
 
   info "snyk: SNYK_TOKEN is set, starting Snyk container analysis."
   _snyk_install_snyk

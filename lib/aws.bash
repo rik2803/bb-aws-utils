@@ -295,6 +295,10 @@ aws_set_service_account_config() {
       done
     } > ${AWS_CONFIG_BASEDIR}/config
 
+    debug "Show AWS config and credentials file"
+    cat ${AWS_CONFIG_BASEDIR}/config
+    cat ${AWS_CONFIG_BASEDIR}/credentials
+
     info "Unsetting existing AWS envvars to enforce usage of ~/.aws/* files"
     unset AWS_ACCESS_KEY_ID
     unset AWS_SECRET_ACCESS_KEY
