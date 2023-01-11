@@ -32,7 +32,7 @@ snyk_run_test() {
    _snyk_install_snyk
   info "snyk: Run snyk monitor to register project with Snyk back-end"
   /snyk monitor --all-projects
-  info "snyk: Run snyk test to check dependencies"
+  info "snyk: Run /snyk test --severity-threshold=\"${SNYK_SEVERITY_THRESHOLD:-high}\" --all-projects to check dependencies"
   /snyk test --severity-threshold="${SNYK_SEVERITY_THRESHOLD:-high}" --all-projects
   LIB_SNYK_TEST_ALREADY_PERFORMED=1
 }
@@ -47,6 +47,7 @@ snyk_run_docker_test() {
 
   info "snyk: SNYK_TOKEN is set, starting Snyk container analysis."
   _snyk_install_snyk
+  info "snyk: Run /snyk container test \"${DOCKER_IMAGE}\" --file=\"${DOCKERFILE}\" --severity-threshold=\"${SNYK_SEVERITY_THRESHOLD:-high}\" to check dependencies"
   /snyk container test "${DOCKER_IMAGE}" \
     --file="${DOCKERFILE}" \
     --severity-threshold="${SNYK_SEVERITY_THRESHOLD:-high}"
