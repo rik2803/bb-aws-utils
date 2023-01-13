@@ -897,3 +897,30 @@ aws_apply_secrets() {
     fi
   done < existing_keys
 }
+
+#######################################
+#
+#
+# Globals:
+#
+# Arguments:
+#
+# Returns:
+#
+#######################################
+aws_set_service_instance_count() {
+  local cluster_name="${1:-}"
+  local service_name="${2:-}"
+  local instance_count="${3:-}"
+
+  [[ -z "${cluster_name}" ]] && fail "aws_set_service_instance_count requires cluster name as first argument"
+  [[ -z "${service_name}" ]] && fail "aws_set_service_instance_count requires service name as second argument"
+  [[ -z "${instance_count}" ]] && instance_count=1
+
+  aws ecs update-service \
+    --cluster "${cluster_name}" \
+    --service "${service_name}" \
+    --force-new-deployment \
+    --desired-count ${instance_count} || \
+    warning "Failed to restart service \"${service_name}\" in cluster \"${cluster_name}\" with instance count \"${instance_count}\"."
+}
