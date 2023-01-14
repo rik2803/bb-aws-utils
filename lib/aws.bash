@@ -917,10 +917,14 @@ aws_set_service_instance_count() {
   [[ -z "${service_name}" ]] && fail "aws_set_service_instance_count requires service name as second argument"
   [[ -z "${instance_count}" ]] && instance_count=1
 
-  aws ecs update-service \
+  info "aws - Set service instance count for service ${service_name} in cluster ${cluster_name} to ${instance_count}"
+  if aws ecs update-service \
     --cluster "${cluster_name}" \
     --service "${service_name}" \
     --force-new-deployment \
-    --desired-count ${instance_count} || \
-    warning "Failed to restart service \"${service_name}\" in cluster \"${cluster_name}\" with instance count \"${instance_count}\"."
+    --desired-count ${instance_count}; then
+      warning "Failed to restart service \"${service_name}\" in cluster \"${cluster_name}\" with instance count \"${instance_count}\"."
+  else
+    success "aws - Successfully set service instance count for service ${service_name} in cluster ${cluster_name} to ${instance_count}"
+  fi
 }
