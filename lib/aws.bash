@@ -923,8 +923,8 @@ aws_set_service_instance_count() {
     --service "${service_name}" \
     --force-new-deployment \
     --desired-count ${instance_count}; then
-      warning "Failed to restart service \"${service_name}\" in cluster \"${cluster_name}\" with instance count \"${instance_count}\"."
-  else
     success "aws - Successfully set service instance count for service ${service_name} in cluster ${cluster_name} to ${instance_count}"
+  else
+    warning "Failed to restart service \"${service_name}\" in cluster \"${cluster_name}\" with instance count \"${instance_count}\"."
   fi
 }
