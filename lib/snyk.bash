@@ -62,6 +62,7 @@ snyk_run_docker_test() {
 
   warning "snyk: Running docker image ls."
   docker image ls
+  cat ~/.docker/config.json
 
   info "snyk: Run snyk container monitor to register project with Snyk back-end"
   /snyk container monitor --file="${DOCKERFILE}" \
