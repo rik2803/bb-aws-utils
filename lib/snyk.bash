@@ -23,32 +23,55 @@ _snyk_install_snyk() {
 }
 
 snyk_run_test() {
+  local snyk_target_reference
+
   _snyk_prerun_checks || return
   info "snyk: SNYK_TOKEN is set, starting Snyk analysis."
   if [[ ${LIB_SNYK_TEST_ALREADY_PERFORMED} -ne 0 ]]; then
     info "snyk: snyk test was already run in this pipeline, skipping this run."
   fi
 
+  snyk_target_reference=$(git_get_current_branch)
+  if [[ "${snyk_target_reference}" == "main" || "${snyk_target_reference}" == "master" ]]; then
+    snyk_target_reference="rc"
+  fi
+
    _snyk_install_snyk
-  info "snyk: Run snyk monitor to register project with Snyk back-end"
-  /snyk monitor --all-projects
+
+  info "snyk: Run snyk monitor with target-reference \"${snyk_target_reference}\" to register project with Snyk back-end"
+  /snyk monitor --target-reference="${snyk_target_reference}"  --all-projects
+
   info "snyk: Run /snyk test --severity-threshold=\"${SNYK_SEVERITY_THRESHOLD:-high}\" --all-projects to check dependencies"
-  /snyk test --severity-threshold="${SNYK_SEVERITY_THRESHOLD:-high}" --all-projects
+  if /snyk test --severity-threshold="${SNYK_SEVERITY_THRESHOLD:-high}" --all-projects; then
+    info "Snyk test passed, continuing pipeline ..."
+  else
+    fail "Snyk test failed, aborting pipeline."
+  fi
+
   LIB_SNYK_TEST_ALREADY_PERFORMED=1
 }
 
 snyk_run_docker_test() {
   # This requires that the image be already available
   _snyk_prerun_checks || return
-
-  check_envvar DOCKERFILE O ./src/main/docker/Dockerfile
-
-  DOCKER_IMAGE="$(maven_get_property_from_pom docker.image.registry)/$(maven_get_property_from_pom docker-image-registry.group)/$(maven_get_property_from_pom project.name):latest"
-
   info "snyk: SNYK_TOKEN is set, starting Snyk container analysis."
   _snyk_install_snyk
+
+  check_envvar DOCKERFILE O ./src/main/docker/Dockerfile
+  check_envvar DOCKER_IMAGE O "$(maven_get_property_from_pom docker.image.registry)/$(maven_get_property_from_pom docker-image-registry.group)/$(maven_get_property_from_pom project.name):latest)"
+
+  info "snyk: Run snyk container monitor to register project with Snyk back-end"
+  /snyk container monitor --file="${DOCKER_IMAGE}" \
+                          --severity-threshold="${SNYK_SEVERITY_THRESHOLD:-high}" \
+                          "${DOCKER_IMAGE}"
+
   info "snyk: Run /snyk container test \"${DOCKER_IMAGE}\" --file=\"${DOCKERFILE}\" --severity-threshold=\"${SNYK_SEVERITY_THRESHOLD:-high}\" to check dependencies"
-  /snyk container test "${DOCKER_IMAGE}" \
+  if /snyk container test \
     --file="${DOCKERFILE}" \
-    --severity-threshold="${SNYK_SEVERITY_THRESHOLD:-high}"
+    --severity-threshold="${SNYK_SEVERITY_THRESHOLD:-high}" \
+    "${DOCKER_IMAGE}"; then
+    info "Snyk container test passed, continuing pipeline ..."
+  else
+    fail "Snyk container test failed, aborting pipeline."
+  fi
 }
