@@ -61,11 +61,11 @@ snyk_run_docker_test() {
   check_envvar DOCKER_IMAGE O "$(maven_get_property_from_pom docker.image.registry)/$(maven_get_property_from_pom docker-image-registry.group)/$(maven_get_property_from_pom project.name):latest)"
 
   info "snyk: Run snyk container monitor to register project with Snyk back-end"
-  /snyk container monitor --file="${DOCKER_IMAGE}" \
+  /snyk container monitor --file="${DOCKERFILE}" \
                           --severity-threshold="${SNYK_SEVERITY_THRESHOLD:-high}" \
                           "${DOCKER_IMAGE}"
 
-  info "snyk: Run /snyk container test \"${DOCKER_IMAGE}\" --file=\"${DOCKERFILE}\" --severity-threshold=\"${SNYK_SEVERITY_THRESHOLD:-high}\" to check dependencies"
+  info "snyk: Run /snyk container test --file=\"${DOCKERFILE}\" --severity-threshold=\"${SNYK_SEVERITY_THRESHOLD:-high}\" \"${DOCKER_IMAGE}\" to check dependencies"
   if /snyk container test \
     --file="${DOCKERFILE}" \
     --severity-threshold="${SNYK_SEVERITY_THRESHOLD:-high}" \
