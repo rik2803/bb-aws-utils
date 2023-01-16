@@ -58,11 +58,7 @@ snyk_run_docker_test() {
   _snyk_install_snyk
 
   check_envvar DOCKERFILE O ./src/main/docker/Dockerfile
-  check_envvar DOCKER_IMAGE O "$(maven_get_property_from_pom docker.image.registry)/$(maven_get_property_from_pom docker-image-registry.group)/$(maven_get_property_from_pom project.name):latest)"
-
-  warning "snyk: Running docker image ls."
-  docker image ls
-  cat ~/.docker/config.json
+  check_envvar DOCKER_IMAGE O "$(maven_get_property_from_pom docker.image.registry)/$(maven_get_property_from_pom docker-image-registry.group)/$(maven_get_property_from_pom project.name):latest"
 
   info "snyk: Run snyk container monitor to register project with Snyk back-end"
   /snyk container monitor --file="${DOCKERFILE}" \
