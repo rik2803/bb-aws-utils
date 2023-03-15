@@ -305,3 +305,33 @@ maven_is_maven_project() {
    [[ -e "pom.xml" ]] && return 0
    return 1
 }
+
+maven_update_property_version() {
+   export ORIGINAL_VERSION=$(mvn help:evaluate -Dexpression=${VERSION_PROPERTY} -q -DforceStdout)
+   if [[ "${NEW_VERSION}" == "latest" ]]; then
+     COMMAND="mvn -B -s "${MAVEN_SETTINGS_PATH}/settings.xml" versions:update-property -Dproperty=${VERSION_PROPERTY}"
+     info "${COMMAND}"
+     eval ${COMMAND}
+     success "mvn versions:update-property successfully executed"
+   else
+     COMMAND="mvn -B -s "${MAVEN_SETTINGS_PATH}/settings.xml" versions:update-property -Dproperty=${VERSION_PROPERTY} -DnewVersion=${NEW_VERSION}"
+     info "${COMMAND}"
+     eval ${COMMAND}
+   fi
+   export NEW_VERSION=$(mvn help:evaluate -Dexpression=${VERSION_PROPERTY} -q -DforceStdout)
+}
+
+maven_update_parent_version() {
+   export ORIGINAL_VERSION=$(mvn help:evaluate -Dexpression=project.parent.version -q -DforceStdout)
+   if [[ "${NEW_VERSION}" == "latest" ]]; then
+     COMMAND="mvn -B -s "${MAVEN_SETTINGS_PATH}/settings.xml" versions:update-parent -Dproperty=${VERSION_PROPERTY}"
+     info "${COMMAND}"
+     eval ${COMMAND}
+     success "mvn versions:update-parent successfully executed"
+   else
+     COMMAND="mvn -B -s "${MAVEN_SETTINGS_PATH}/settings.xml" versions:update-parent -Dproperty=${VERSION_PROPERTY} -DnewVersion=${NEW_VERSION}"
+     info "${COMMAND}"
+     eval ${COMMAND}
+   fi
+   export NEW_VERSION=$(mvn help:evaluate -Dexpression=project.parent.version -q -DforceStdout)
+}
