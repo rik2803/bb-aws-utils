@@ -334,4 +334,5 @@ maven_update_parent_version() {
      eval ${COMMAND}
    fi
    export NEW_VERSION=$(mvn help:evaluate -Dexpression=project.parent.version -q -DforceStdout)
+   export PARENT_ARTIFACT_ID=${mvn help:evaluate -Dexpression=project.parent.artifactId -q -DforceStdout}
 }
