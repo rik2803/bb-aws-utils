@@ -216,7 +216,7 @@ When deploying, the record is retrieved using commit hash and project name.
 
 ### Update property version
 
-The function `maven_update_property_version` will update the artifact which version is defined by a given property. This uses behind the scenes the `update-property` goal of the `versions` maven plugin.
+The function `maven_update_property_version` will update the artifact which version is defined by a given property. This uses behind the scenes the [update-property](https://www.mojohaus.org/versions/versions-maven-plugin/update-property-mojo.html) goal of the [versions](https://www.mojohaus.org/versions/versions-maven-plugin/index.html) maven plugin.
 
 * `NEW_VERSION`: The desired version of the artifact. The version should always be higher than the current version. Value `latest` will update the artifact to the latest available version. 
 * `VERSION_PROPERTY`: The property that denotes the version of the desired artifact.
@@ -228,7 +228,7 @@ The function will export the environment variables:
 
 ### Update parent version
 
-The function `maven_update_parent_version` performs an of update the parent of the maven project. This uses behind the scenes the `update-parent` goal of the `versions` maven plugin.
+The function `maven_update_parent_version` performs an of update the parent of the maven project. This uses behind the scenes the [update-parent](https://www.mojohaus.org/versions/versions-maven-plugin/update-parent-mojo.html) goal of the [versions](https://www.mojohaus.org/versions/versions-maven-plugin/index.html) maven plugin.
 
 * `NEW_VERSION`: The desired version of the parent. Value `latest` will update the artifact to the latest available version.
 
