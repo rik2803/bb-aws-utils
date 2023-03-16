@@ -324,12 +324,12 @@ maven_update_property_version() {
 maven_update_parent_version() {
    export ORIGINAL_VERSION=$(mvn help:evaluate -Dexpression=project.parent.version -q -DforceStdout)
    if [[ "${NEW_VERSION}" == "latest" ]]; then
-     COMMAND="mvn -B -s "${MAVEN_SETTINGS_PATH}/settings.xml" versions:update-parent -Dproperty=${VERSION_PROPERTY}"
+     COMMAND="mvn -B -s "${MAVEN_SETTINGS_PATH}/settings.xml" versions:update-parent"
      info "${COMMAND}"
      eval ${COMMAND}
      success "mvn versions:update-parent successfully executed"
    else
-     COMMAND="mvn -B -s "${MAVEN_SETTINGS_PATH}/settings.xml" versions:update-parent -Dproperty=${VERSION_PROPERTY} -DnewVersion=${NEW_VERSION}"
+     COMMAND="mvn -B -s "${MAVEN_SETTINGS_PATH}/settings.xml" versions:update-parent -DnewVersion=${NEW_VERSION}"
      info "${COMMAND}"
      eval ${COMMAND}
    fi
