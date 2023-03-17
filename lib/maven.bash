@@ -313,7 +313,7 @@ maven_update_property_version() {
      info "${COMMAND}"
      eval ${COMMAND}
    else
-     COMMAND="mvn -B -s "${MAVEN_SETTINGS_PATH}/settings.xml" versions:update-property -Dproperty=${VERSION_PROPERTY} -DnewVersion=${NEW_VERSION}"
+     COMMAND="mvn -B -s \"${MAVEN_SETTINGS_PATH}/settings.xml\" versions:update-property -Dproperty=${VERSION_PROPERTY} -DnewVersion=${NEW_VERSION}"
      info "${COMMAND}"
      eval ${COMMAND}
    fi
@@ -328,7 +328,7 @@ maven_update_parent_version() {
      info "${COMMAND}"
      eval ${COMMAND}
    else
-     COMMAND="mvn -B -s "${MAVEN_SETTINGS_PATH}/settings.xml" versions:update-parent -DnewVersion=${NEW_VERSION}"
+     COMMAND="mvn -B -s \"${MAVEN_SETTINGS_PATH}/settings.xml\" versions:update-parent -DnewVersion=${NEW_VERSION}"
      info "${COMMAND}"
      eval ${COMMAND}
    fi
