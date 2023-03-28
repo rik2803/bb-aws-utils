@@ -596,6 +596,9 @@ s3_deploy_download_tar_and_prepare_for_deploy() {
 
 s3_deploy_deploy() {
   install_awscli
+
+  local no_acl="${2:-0}"
+
   cd "${1:-workdir}" || fail "Directory ${1:-workdir} does not exist. Exiting ..."
 
   if [[ ${SERVICE_ACCOUNT} -eq 0 ]]; then
@@ -603,12 +606,18 @@ s3_deploy_deploy() {
     set_credentials "${AWS_ACCESS_KEY_ID_S3_TARGET}" "${AWS_SECRET_ACCESS_KEY_S3_TARGET}"
   fi
   info "${FUNCNAME[0]} - Deploy the payload to s3://${S3_DEST_BUCKET}/${S3_PREFIX:-} with ACL ${AWS_ACCESS_CONTROL:-private}"
-  aws s3 cp --quiet --acl "${AWS_ACCESS_CONTROL:-private}" --recursive . "s3://${S3_DEST_BUCKET}/${S3_PREFIX:-}"
+  if [[ ${no_acl} -eq 0 ]]; then
+    aws s3 cp --quiet --acl "${AWS_ACCESS_CONTROL:-private}" --recursive . "s3://${S3_DEST_BUCKET}/${S3_PREFIX:-}"
+  else
+    aws s3 cp --quiet --recursive . "s3://${S3_DEST_BUCKET}/${S3_PREFIX:-}"
+  fi
   cd - || fail "Previous (cd -) directory does not exist. Exiting ..."
 }
 
 s3_deploy() {
   install_awscli
+
+  local no_acl="${1:-0}"
 
   if [[ ${SERVICE_ACCOUNT} -eq 0 ]]; then
     info "${FUNCNAME[0]} - Set AWS credentials for artifact download (AWS_ACCESS_KEY_ID_S3_SOURCE and AWS_SECRET_ACCESS_KEY_S3_SOURCE)."
@@ -617,7 +626,7 @@ s3_deploy() {
 
   s3_deploy_download_tar_and_prepare_for_deploy
   info "${FUNCNAME[0]} - Start the deploy."
-  s3_deploy_deploy
+  s3_deploy_deploy "workdir" "${no_acl}"
   s3_cloudfront_invalidate
 }
 

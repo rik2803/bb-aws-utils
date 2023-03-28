@@ -928,3 +928,42 @@ aws_set_service_instance_count() {
     warning "Failed to restart service \"${service_name}\" in cluster \"${cluster_name}\" with instance count \"${instance_count}\"."
   fi
 }
+
+#######################################
+# Remove log groups that do not contain log streams
+# with lastEventTimestamp older than the number of days
+# passed as argument to the function (default 14).
+#
+# Globals:
+#
+# Arguments:
+#   Number of days (optional, default 14): Remove the log group
+#     if no log stream exists with lastEventTimestamp within the last
+#     n days.
+#
+# Returns:
+#
+#######################################
+aws_cleanup_log_groups() {
+  local nr_of_days
+  local latest_event_timestamp_reference
+  nr_of_days="${1:-14}"
+  latest_event_timestamp_reference=$(( ($(date +"%s") - (${nr_of_days} * 24 * 3600)) * 1000 ))
+
+  info "Start cleanup of CW LogGroups that have no log streams with lastEventTimestamp in the last ${nr_of_days} days."
+  for log_group_name in $(aws logs describe-log-groups | jq -r '.logGroups[].logGroupName'); do
+    info "Checking if ${log_group_name} is ready for deletion."
+    delete_log_stream="true"
+    for log_stream_last_event_time_stamp in $(aws logs describe-log-streams --log-group-name="${log_group_name}" | jq '.logStreams[].lastEventTimestamp'); do
+      if [[ ${log_stream_last_event_time_stamp} -gt latest_event_timestamp_reference ]]; then
+        info "Found a log stream in log group ${log_group_name} where lastEventTimestamp (${log_stream_last_event_time_stamp}) is within the last ${nr_of_days} days. The log group will not be deleted."
+        delete_log_stream="false"
+        break
+      fi
+    done
+    if [[ "${delete_log_stream}" = "true" ]]; then
+      info "Removing CW Log Group ${log_group_name}"
+      aws logs delete-log-group --log-group-name="${log_group_name}"
+    fi
+  done
+}
