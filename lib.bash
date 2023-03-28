@@ -607,8 +607,10 @@ s3_deploy_deploy() {
   fi
   info "${FUNCNAME[0]} - Deploy the payload to s3://${S3_DEST_BUCKET}/${S3_PREFIX:-} with ACL ${AWS_ACCESS_CONTROL:-private}"
   if [[ ${no_acl} -eq 0 ]]; then
+    info "${FUNCNAME[0]} - Deploy the payload to s3://${S3_DEST_BUCKET}/${S3_PREFIX:-} with ACL ${AWS_ACCESS_CONTROL:-private}"
     aws s3 cp --quiet --acl "${AWS_ACCESS_CONTROL:-private}" --recursive . "s3://${S3_DEST_BUCKET}/${S3_PREFIX:-}"
   else
+    info "${FUNCNAME[0]} - Deploy the payload to s3://${S3_DEST_BUCKET}/${S3_PREFIX:-} without ACL"
     aws s3 cp --quiet --recursive . "s3://${S3_DEST_BUCKET}/${S3_PREFIX:-}"
   fi
   cd - || fail "Previous (cd -) directory does not exist. Exiting ..."
