@@ -599,6 +599,8 @@ s3_deploy_deploy() {
 
   local no_acl="${2:-0}"
 
+  info "${FUNCNAME[0]} - no_acl=${no_acl}"
+
   cd "${1:-workdir}" || fail "Directory ${1:-workdir} does not exist. Exiting ..."
 
   if [[ ${SERVICE_ACCOUNT} -eq 0 ]]; then
@@ -627,7 +629,7 @@ s3_deploy() {
   fi
 
   s3_deploy_download_tar_and_prepare_for_deploy
-  info "${FUNCNAME[0]} - Start the deploy."
+  info "${FUNCNAME[0]} - Start the deploy with no_acl-${no_acl}."
   s3_deploy_deploy "workdir" "${no_acl}"
   s3_cloudfront_invalidate
 }
