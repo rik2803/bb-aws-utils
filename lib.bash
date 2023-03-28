@@ -607,7 +607,7 @@ s3_deploy_deploy() {
     info "${FUNCNAME[0]} - Set AWS credentials for deploy (AWS_ACCESS_KEY_ID_S3_TARGET and AWS_SECRET_ACCESS_KEY_S3_TARGET)."
     set_credentials "${AWS_ACCESS_KEY_ID_S3_TARGET}" "${AWS_SECRET_ACCESS_KEY_S3_TARGET}"
   fi
-  info "${FUNCNAME[0]} - Deploy the payload to s3://${S3_DEST_BUCKET}/${S3_PREFIX:-} with ACL ${AWS_ACCESS_CONTROL:-private}"
+
   if [[ ${no_acl} -eq 0 ]]; then
     info "${FUNCNAME[0]} - Deploy the payload to s3://${S3_DEST_BUCKET}/${S3_PREFIX:-} with ACL ${AWS_ACCESS_CONTROL:-private}"
     aws s3 cp --quiet --acl "${AWS_ACCESS_CONTROL:-private}" --recursive . "s3://${S3_DEST_BUCKET}/${S3_PREFIX:-}"
@@ -629,7 +629,7 @@ s3_deploy() {
   fi
 
   s3_deploy_download_tar_and_prepare_for_deploy
-  info "${FUNCNAME[0]} - Start the deploy with no_acl-${no_acl}."
+  info "${FUNCNAME[0]} - Start the deploy with no_acl=${no_acl}."
   s3_deploy_deploy "workdir" "${no_acl}"
   s3_cloudfront_invalidate
 }
