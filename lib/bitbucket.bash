@@ -438,7 +438,7 @@ bb_bump_service_version_in_awscdk_project() {
 
   info "Checking if branch ${current_branch} exists in ${AWS_CDK_PROJECT}."
   git_result=$(git ls-remote --heads git@bitbucket.org:${BITBUCKET_WORKSPACE}/${AWS_CDK_PROJECT}.git ${current_branch})
-  if -z ${git_result}; then
+  if [[ -z ${git_result} ]]; then
     info "Branch ${current_branch} does not exist yet. Creating it."
     git checkout -b ${current_branch}
   else
@@ -446,11 +446,11 @@ bb_bump_service_version_in_awscdk_project() {
     git checkout ${current_branch}
   fi
 
-  info "Changing version of service ${SERVICE_NAME} to ${project_version} in config/default.ts"
+  info "Changing version of service ${SERVICE_NAME} to ${project_version} in config/serviceVersions.json"
   jq ".serviceVersions.${SERVICE_NAME} = \"${project_version}\"" config/serviceVersions.json > config/serviceVersions.json.tmp && mv config/serviceVersions.json.tmp config/serviceVersions.json
 
   info "Committing changes"
-  git add config/serviceVersions.ts
+  git add config/serviceVersions.json
   git commit -m "${jira_issue} Bump ${SERVICE_NAME} version to ${project_version}"
   info "Pushing changes"
   git push
