@@ -175,7 +175,7 @@ const envConfig: VbsEnvConfig = {
 
 ### This function:
 
-* Creates the variable jira_issue with the value `PROJ-1234`, this is based on the branch name
+* Creates the variable `jira_issue` with the value `PROJ-1234`, this is based on the branch name
 * Gets the new version of the service using `maven` and saves it to `project_version`
 * Clones the `AWS_CDK_PROJECT` repository from BitBucket
 * Checks if the same branch exists in the `AWS_CDK_PROJECT` repository, if not it will create it and checkout the branch

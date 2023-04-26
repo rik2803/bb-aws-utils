@@ -432,12 +432,12 @@ bb_bump_service_version_in_awscdk_project() {
   info "Project Version: ${project_version}"
 
   info "Cloning ${AWS_CDK_PROJECT}"
-  git@bitbucket.org:${BITBUCKET_WORKSPACE}/${AWS_CDK_PROJECT}.git /${AWS_CDK_PROJECT}
+  git clone git@bitbucket.org:${BITBUCKET_WORKSPACE}/${AWS_CDK_PROJECT}.git /${AWS_CDK_PROJECT}
 
   cd /${AWS_CDK_PROJECT}
 
   info "Checking if branch ${current_branch} exists in ${AWS_CDK_PROJECT}."
-  git_result=$(git ls-remote --heads git@bitbucket.org:ixorcvba/${AWS_CDK_PROJECT}.git ${current_branch})
+  git_result=$(git ls-remote --heads git@bitbucket.org:${BITBUCKET_WORKSPACE}/${AWS_CDK_PROJECT}.git ${current_branch})
   if -z ${git_result}; then
     info "Branch ${current_branch} does not exist yet. Creating it."
     git checkout -b ${current_branch}
