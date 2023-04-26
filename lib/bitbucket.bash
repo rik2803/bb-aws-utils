@@ -417,6 +417,7 @@ bb_bump_service_version_in_awscdk_project() {
   info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
 
   install_jq
+  git_set_user_config
 
   jira_issue_regex="^feature/[A-Z]+-[0-9]+"
 
