@@ -399,3 +399,59 @@ EOF
     fail "An error occurred when triggering the pipeline"
   fi
 }
+
+#######################################
+# This function is used to bump the service version in the aws-cdk project.
+#
+# Expects:
+#   AWS_CDK_PROJECT: The CDK project to bump the version in
+#   SERVICE_NAME: The name of the service to bump the version for
+bb_bump_service_version_in_awscdk_project() {
+
+  local project_version
+  local current_branch
+  local jira_issue_regex
+  local jira_issue
+  local git_result
+
+  info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
+
+  install_jq
+
+  jira_issue_regex="^feature/[A-Z]+-[0-9]+"
+
+  check_envvar AWS_CDK_PROJECT R
+  check_envvar SERVICE_NAME R
+
+  current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+
+  jira_issue=$(echo "${current_branch}" | grep -Eo "${jira_issue_regex}" | sed 's/feature\///')
+
+  info "Retrieving project version."
+  project_version=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version -q -DforceStdout && mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+  info "Project Version: ${project_version}"
+
+  info "Cloning ${AWS_CDK_PROJECT}"
+  git clone git@bitbucket.org:${BITBUCKET_WORKSPACE}/${AWS_CDK_PROJECT}.git /${AWS_CDK_PROJECT}
+
+  cd /${AWS_CDK_PROJECT}
+
+  info "Checking if branch ${current_branch} exists in ${AWS_CDK_PROJECT}."
+  git_result=$(git ls-remote --heads git@bitbucket.org:${BITBUCKET_WORKSPACE}/${AWS_CDK_PROJECT}.git ${current_branch})
+  if -z ${git_result}; then
+    info "Branch ${current_branch} does not exist yet. Creating it."
+    git checkout -b ${current_branch}
+  else
+    info "Branch ${current_branch} already exists. Checking it out."
+    git checkout ${current_branch}
+  fi
+
+  info "Changing version of service ${SERVICE_NAME} to ${project_version} in config/default.ts"
+  jq ".serviceVersions.${SERVICE_NAME} = \"${project_version}\"" config/serviceVersions.json > config/serviceVersions.json.tmp && mv config/serviceVersions.json.tmp config/serviceVersions.json
+
+  info "Committing changes"
+  git add config/serviceVersions.ts
+  git commit -m "${jira_issue} Bump ${SERVICE_NAME} version to ${project_version}"
+  info "Pushing changes"
+  git push
+}
