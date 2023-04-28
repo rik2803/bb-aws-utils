@@ -413,6 +413,7 @@ bb_bump_service_version_in_awscdk_project() {
   local jira_issue_regex
   local jira_issue
   local git_result
+  local branch_created
 
   info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
 
@@ -442,6 +443,7 @@ bb_bump_service_version_in_awscdk_project() {
   if [[ -z ${git_result} ]]; then
     info "Branch ${current_branch} does not exist yet. Creating it."
     git checkout -b ${current_branch}
+    branch_created="true"
   else
     info "Branch ${current_branch} already exists. Checking it out."
     git checkout ${current_branch}
@@ -454,5 +456,9 @@ bb_bump_service_version_in_awscdk_project() {
   git add config/serviceVersions.json
   git commit -m "${jira_issue} Bump ${SERVICE_NAME} version to ${BITBUCKET_COMMIT}-${project_version}"
   info "Pushing changes"
-  git push
+  if [[ -z ${branch_created} ]]; then
+    git push
+  else
+    git push origin ${current_branch}
+  fi
 }
