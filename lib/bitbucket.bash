@@ -399,3 +399,22 @@ EOF
     fail "An error occurred when triggering the pipeline"
   fi
 }
+
+bb_start_and_monitor_pipeline_if_branch_exists() {
+
+  local target_repo_slug
+  local target_pipeline
+  local target_branch
+
+  [[ -n ${1} ]] && target_repo_slug=${1} || fail "target_repo_slug required"
+  [[ -n ${1} ]] && target_pipeline=${2} || fail "target_pipeline required"
+  [[ -n ${1} ]] && target_branch=${3} || fail "target_branch required"
+
+  if git ls-remote --exit-code --heads git@bitbucket.org:${BITBUCKET_WORKSPACE}/${target_repo_slug}.git ${target_branch}; then
+    info "Branch ${target_branch} exists for repo ${target_repo_slug}, triggering pipeline ${target_pipeline}"
+    bb_start_pipeline_for_repo ${target_repo_slug} ${target_pipeline} ${target_branch}
+    bb_monitor_running_pipeline ${target_repo_slug}
+  else
+    info "Branch ${target_branch} does not exist for repo ${target_repo_slug}, skipping this one"
+  fi
+}
