@@ -449,11 +449,11 @@ bb_bump_service_version_in_awscdk_project() {
     git checkout ${current_branch}
   fi
 
-  info "Changing version of service ${SERVICE_NAME} to ${BITBUCKET_COMMIT}-${project_version} in config/serviceVersions.json"
-  jq ".serviceVersions.${SERVICE_NAME} = \"${BITBUCKET_COMMIT}-${project_version}\"" config/serviceVersions.json > config/serviceVersions.json.tmp && mv config/serviceVersions.json.tmp config/serviceVersions.json
+  info "Changing version of service ${SERVICE_NAME} to ${BITBUCKET_COMMIT}-${project_version} in config/versions.json"
+  jq ".serviceVersions.${SERVICE_NAME} = \"${BITBUCKET_COMMIT}-${project_version}\"" config/versions.json > config/versions.json.tmp && mv config/versions.json.tmp config/versions.json
 
   info "Committing changes"
-  git add config/serviceVersions.json
+  git add config/versions.json
   git commit -m "${jira_issue} Bump ${SERVICE_NAME} version to ${BITBUCKET_COMMIT}-${project_version}"
   info "Pushing changes"
   if [[ -z ${branch_created} ]]; then

@@ -158,10 +158,10 @@ An overview of all allowed environment variables:
 }
 ```
 
-* Import the `serviceVersions.json` file in your `config/default.ts` file:
+* Import the `version.json` file in your `config/default.ts` file:
 
 ```typescript
-import {serviceVersions} from "./serviceVersions.json"
+import {serviceVersions} from "./versions.json"
 ````
 
 * Add the `serviceVersions` to the config of your `envConfig`:
@@ -179,7 +179,7 @@ const envConfig: VbsEnvConfig = {
 * Gets the new version of the service using `maven` and saves it to `project_version`
 * Clones the `AWS_CDK_PROJECT` repository from BitBucket
 * Checks if the same branch exists in the `AWS_CDK_PROJECT` repository, if not it will create it and checkout the branch
-* Changes the version of the service in `config/serviceVersions.json` to the new version
+* Changes the version of the service in `config/versions.json` to the new version
 * Commit and push the changes to the `AWS_CDK_PROJECT` repository
 
 ## Build a docker deploy image and deploy to AWS ECS Cluster Service
