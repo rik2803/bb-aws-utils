@@ -462,3 +462,64 @@ bb_bump_service_version_in_awscdk_project() {
     git push origin ${current_branch}
   fi
 }
+
+#######################################
+# This function is used to bump the config label in the aws-cdk project.
+#
+# Expects:
+#   AWS_CDK_PROJECT: The CDK project to bump the version in
+bb_bump_config_label_in_awscdk_project() {
+
+  local current_branch
+  local config_label
+  local jira_issue_regex
+  local jira_issue
+  local git_result
+  local branch_created
+
+  info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
+
+  install_jq
+  git_set_user_config
+
+  jira_issue_regex="^feature/[A-Z]+-[0-9]+"
+
+  check_envvar AWS_CDK_PROJECT R
+
+  current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+
+  jira_issue=$(echo "${current_branch}" | grep -Eo "${jira_issue_regex}" | sed 's/feature\///')
+
+  info "Retrieving config label."
+  config_label=$(git tag --points-at HEAD)
+  info "Config Label: ${config_label}"
+
+  info "Cloning ${AWS_CDK_PROJECT}"
+  git clone git@bitbucket.org:${BITBUCKET_WORKSPACE}/${AWS_CDK_PROJECT}.git /${AWS_CDK_PROJECT}
+
+  cd /${AWS_CDK_PROJECT}
+
+  info "Checking if branch ${current_branch} exists in ${AWS_CDK_PROJECT}."
+  git_result=$(git ls-remote --heads git@bitbucket.org:${BITBUCKET_WORKSPACE}/${AWS_CDK_PROJECT}.git ${current_branch})
+  if [[ -z ${git_result} ]]; then
+    info "Branch ${current_branch} does not exist yet. Creating it."
+    git checkout -b ${current_branch}
+    branch_created="true"
+  else
+    info "Branch ${current_branch} already exists. Checking it out."
+    git checkout ${current_branch}
+  fi
+
+  info "Changing config label to ${config_label} in config/versions.json"
+  jq ".configLabel = \"${config_label}\"" config/versions.json > config/versions.json.tmp && mv config/versions.json.tmp config/versions.json
+
+  info "Committing changes"
+  git add config/versions.json
+  git commit -m "${jira_issue} Bump config label to ${config_label}"
+  info "Pushing changes"
+  if [[ -z ${branch_created} ]]; then
+    git push
+  else
+    git push origin ${current_branch}
+  fi
+}
