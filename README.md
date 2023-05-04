@@ -134,6 +134,95 @@ An overview of all allowed environment variables:
 * `CLOUDFRONT_DISTRIBUTION_ID` (**optional**): When this variable is defined, the
   _CloudFront_ distribution with that name will be invalidated.
 
+## The `bb_bump_service_version_in_awscdk_project` function
+
+### Requirements:
+
+**Service Repository**
+
+* Evironment variable `AWS_CDK_PROJECT` must be set
+* Environment variable `SERVICE_NAME` must be set, this has to be like `myNewProjectService
+* The Jira issue must be in your branch name, like `feature/PROJ-1234-my-new-project`
+
+**AWS CDK Project Repository**
+
+* Add the following to your `tsconfig.json` file:
+
+```json
+{
+  "compilerOptions": {
+    ...
+    "resolveJsonModule": true
+  },
+  ...
+}
+```
+
+* Import the `versions.json` file in your `config/default.ts` file:
+
+```typescript
+import {serviceVersions} from "./versions.json"
+````
+
+* Add the `serviceVersions` to the `imageTag` of your service:
+
+```typescript
+imageTag: deferConfig(function() {return serviceVersions.serviceName}),
+```
+
+### This function:
+
+* Creates the variable `jira_issue` with the value `PROJ-1234`, this is based on the branch name
+* Gets the new version of the service using `maven` and saves it to `project_version`
+* Clones the `AWS_CDK_PROJECT` repository from BitBucket
+* Checks if the same branch exists in the `AWS_CDK_PROJECT` repository, if not it will create it and checkout the branch
+* Changes the version of the service in `config/versions.json` to the new version
+* Commit and push the changes to the `AWS_CDK_PROJECT` repository
+
+## The `bb_bump_config_label_in_awscdk_project` function
+
+### Requirements:
+
+**Service Repository**
+
+* Evironment variable `AWS_CDK_PROJECT` must be set
+* The Jira issue must be in your branch name, like `feature/PROJ-1234-my-new-project`
+
+**AWS CDK Project Repository**
+
+* Add the following to your `tsconfig.json` file:
+
+```json
+{
+  "compilerOptions": {
+    ...
+    "resolveJsonModule": true
+  },
+  ...
+}
+```
+
+* Import the `versions.json` file in your `config/default.ts` file:
+
+```typescript
+import {configLabel} from "./versions.json"
+````
+
+* Add the `configLabel` to the `springCloudConfigLabel` of your service:
+
+```typescript
+springCloudConfigLabel: deferConfig(function() {return configLabel}),
+```
+
+### This function:
+
+* Creates the variable `jira_issue` with the value `PROJ-1234`, this is based on the branch name
+* Gets the tag linked to the current commit usig `git tag --points-at HEAD` and saves it to `config_label`
+* Clones the `AWS_CDK_PROJECT` repository from BitBucket
+* Checks if the same branch exists in the `AWS_CDK_PROJECT` repository, if not it will create it and checkout the branch
+* Changes the config label in `config/versions.json` to the new config label
+* Commit and push the changes to the `AWS_CDK_PROJECT` repository
+
 ## Build a docker deploy image and deploy to AWS ECS Cluster Service
 
 The scripts are:

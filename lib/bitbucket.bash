@@ -399,6 +399,133 @@ EOF
     fail "An error occurred when triggering the pipeline"
   fi
 }
+#######################################
+# This function will check if the file config/versions.json has been changed
+# If it has, it will commit and push the changes
+#
+_bb_push_file_if_changed() {
+  local file
+  local string
+  local jira_issue
+  local branch_created
+  local branch_name
+  local clone_path
+
+  file="${1}"
+  string="${2:-NA}"
+  jira_issue="${3:-NA}"
+  branch_created="${4}"
+  branch_name="${5}"
+  clone_path="${6}"
+
+  git_set_user_config
+
+  cd "${clone_path}"
+
+  if git diff --exit-code "${file}" >/dev/null 2>&1; then
+      info "No changes, skipping commit"
+  else
+    info "File changed, committing and pushing ..."
+    git add "${file}"
+    git commit -m "${jira_issue} Bump config label to ${string}"
+    info "Pushing changes"
+    if [[ -z ${branch_created} ]]; then
+      git push
+    else
+      git push origin "${branch_name}"
+    fi
+  fi
+
+  cd -
+}
+
+_bb_clone_and_branch_repo() {
+  local repo
+  local jira_issue_regex
+  local git_result
+
+  git_set_user_config
+
+  repo="${1}"
+  jira_issue_regex="^feature/[A-Z]+-[0-9]+"
+  BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+  BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE=$(echo "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" | grep -Eo "${jira_issue_regex}" | sed 's/feature\///')
+  BB_CLONE_AND_BRANCH_REPO_CLONE_PATH="/${repo}"
+  info "Cloning ${repo} into ${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+  git clone "git@bitbucket.org:${BITBUCKET_WORKSPACE}/${repo}.git" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+  cd "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+
+  info "Checking if branch ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME} exists in ${repo}."
+  git_result=$(git ls-remote --heads git@bitbucket.org:${BITBUCKET_WORKSPACE}/${repo}.git ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME})
+  if [[ -z ${git_result} ]]; then
+    info "Branch ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME} does not exist yet. Creating it."
+    git checkout -b ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}
+    BB_CLONE_AND_BRANCH_REPO_BRANCH_CREATED=0
+  else
+    info "Branch ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME} already exists. Checking it out."
+    git checkout ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}
+    BB_CLONE_AND_BRANCH_REPO_BRANCH_CREATED=1
+  fi
+
+  check_envvar BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE R
+  check_envvar BB_CLONE_AND_BRANCH_REPO_BRANCH_CREATED R
+  check_envvar BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME R
+  check_envvar BB_CLONE_AND_BRANCH_REPO_CLONE_PATH R
+
+  cd -
+}
+
+#######################################
+# This function is used to bump the service version in the aws-cdk project.
+#
+# Expects:
+#   AWS_CDK_PROJECT: The CDK project to bump the version in
+#   SERVICE_NAME: The name of the service to bump the version for
+bb_bump_service_version_in_awscdk_project() {
+  check_envvar AWS_CDK_PROJECT R
+  check_envvar SERVICE_NAME R
+
+  local project_version
+
+  info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
+
+  info "Retrieving project version ..."
+  project_version=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version -q -DforceStdout && mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+  info "Project version: ${project_version}"
+
+  install_jq
+  _bb_clone_and_branch_repo "${AWS_CDK_PROJECT}"
+
+  info "Changing version of service ${SERVICE_NAME} to ${BITBUCKET_COMMIT}-${project_version} in config/versions.json"
+  jq ".serviceVersions.${SERVICE_NAME} = \"${BITBUCKET_COMMIT}-${project_version}\"" config/versions.json > config/versions.json.tmp && mv config/versions.json.tmp config/versions.json
+
+  _bb_push_file_if_changed "config/versions.json" "${project_version}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_CREATED}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+}
+
+#######################################
+# This function is used to bump the config label in the aws-cdk project.
+#
+# Expects:
+#   AWS_CDK_PROJECT: The CDK project to bump the version in
+bb_bump_config_label_in_awscdk_project() {
+  check_envvar AWS_CDK_PROJECT R
+
+  local config_label
+
+  info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
+
+  info "Retrieving config label."
+  config_label=$(git tag --points-at HEAD)
+  info "Config Label: ${config_label}"
+
+  install_jq
+  _bb_clone_and_branch_repo "${AWS_CDK_PROJECT}"
+
+  info "Changing config label to ${config_label} in config/versions.json"
+  jq ".configLabel = \"${config_label}\"" config/versions.json > config/versions.json.tmp && mv config/versions.json.tmp config/versions.json
+
+  _bb_push_file_if_changed "config/versions.json" "${config_label}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_CREATED}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+}
 
 #######################################
 # This function is used to start a given pipeline on a given branch if it exists.
