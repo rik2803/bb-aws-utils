@@ -399,6 +399,90 @@ EOF
     fail "An error occurred when triggering the pipeline"
   fi
 }
+#######################################
+# This function will check if the file config/versions.json has been changed
+# If it has, it will commit and push the changes
+#
+_bb_push_file_if_changed() {
+
+  local file
+  local extra_commit_string
+  local version
+  local jira_issue
+  local branch_name
+  local clone_path
+
+  file="${1}"
+  extra_commit_string="${2:-NA}"
+  version="${3:-NA}"
+  jira_issue="${4}"
+  branch_name="${5}"
+  clone_path="${6}"
+
+  _bb_retry_push() {
+      git reset HEAD~ || { warning "Failed during git reset"; return 1; }
+      git stash || { warning "Failed during git stash"; return 1; }
+      git pull || { warning "Failed during git pull"; return 1; }
+      git stash pop || { warning "Failed during git stash pop"; return 1; }
+      git commit -m "${jira_issue} ${extra_commit_string} ${version}" "${file}" || { warning "Failed during git commit"; return 1; }
+      git push origin "${branch_name}" || { warning "Failed during git push"; return 1; }
+      return 0
+  }
+
+  git_set_user_config
+
+  cd "${clone_path}"
+
+  if git diff --exit-code "${file}" >/dev/null 2>&1; then
+      info "No changes, skipping commit"
+  else
+    info "File changed, committing and pushing ..."
+    git commit -m "${jira_issue} ${extra_commit_string} ${version}" "${file}"
+    info "Trying to push changes ..."
+    if ! git push origin "${branch_name}"; then
+      warning "Push failed, trying a second time ..."
+      if ! _bb_retry_push "${jira_issue}" "${branch_name}" "${version}"; then
+        warning "First retry failed, trying a third time ..."
+        _bb_retry_push "${jira_issue}" "${branch_name}" "${version}"
+      fi
+    fi
+  fi
+
+  cd -
+}
+
+_bb_clone_and_branch_repo() {
+  local repo
+  local jira_issue_regex
+  local git_result
+
+  git_set_user_config
+
+  repo="${1}"
+  jira_issue_regex="^feature/[A-Z]+-[0-9]+"
+  BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+  BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE=$(echo "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" | grep -Eo "${jira_issue_regex}" | sed 's/feature\///')
+  BB_CLONE_AND_BRANCH_REPO_CLONE_PATH="/${repo}"
+  info "Cloning ${repo} into ${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+  git clone "git@bitbucket.org:${BITBUCKET_WORKSPACE}/${repo}.git" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+  cd "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+
+  info "Checking if branch ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME} exists in ${repo}."
+  git_result=$(git ls-remote --heads git@bitbucket.org:${BITBUCKET_WORKSPACE}/${repo}.git ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME})
+  if [[ -z ${git_result} ]]; then
+    info "Branch ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME} does not exist yet. Creating it."
+    git checkout -b ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}
+  else
+    info "Branch ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME} already exists. Checking it out."
+    git checkout ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}
+  fi
+
+  check_envvar BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE R
+  check_envvar BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME R
+  check_envvar BB_CLONE_AND_BRANCH_REPO_CLONE_PATH R
+
+  cd -
+}
 
 #######################################
 # This function is used to bump the service version in the aws-cdk project.
@@ -407,58 +491,122 @@ EOF
 #   AWS_CDK_PROJECT: The CDK project to bump the version in
 #   SERVICE_NAME: The name of the service to bump the version for
 bb_bump_service_version_in_awscdk_project() {
-
-  local project_version
-  local current_branch
-  local jira_issue_regex
-  local jira_issue
-  local git_result
-  local branch_created
-
-  info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
-
-  install_jq
-  git_set_user_config
-
-  jira_issue_regex="^feature/[A-Z]+-[0-9]+"
-
   check_envvar AWS_CDK_PROJECT R
   check_envvar SERVICE_NAME R
 
-  current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+  local project_version
 
-  jira_issue=$(echo "${current_branch}" | grep -Eo "${jira_issue_regex}" | sed 's/feature\///')
+  info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
 
-  info "Retrieving project version."
+  info "Retrieving project version ..."
   project_version=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version -q -DforceStdout && mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-  info "Project Version: ${project_version}"
+  info "Project version: ${project_version}"
 
-  info "Cloning ${AWS_CDK_PROJECT}"
-  git clone git@bitbucket.org:${BITBUCKET_WORKSPACE}/${AWS_CDK_PROJECT}.git /${AWS_CDK_PROJECT}
+  install_jq
+  _bb_clone_and_branch_repo "${AWS_CDK_PROJECT}"
 
-  cd /${AWS_CDK_PROJECT}
+  cd -
+  info "Changing version of service ${SERVICE_NAME} to ${BITBUCKET_COMMIT}-${project_version} in config/versions.json"
+  jq ".serviceVersions.${SERVICE_NAME} = \"${BITBUCKET_COMMIT}-${project_version}\"" config/versions.json > config/versions.json.tmp && mv config/versions.json.tmp config/versions.json
+  cd -
 
-  info "Checking if branch ${current_branch} exists in ${AWS_CDK_PROJECT}."
-  git_result=$(git ls-remote --heads git@bitbucket.org:${BITBUCKET_WORKSPACE}/${AWS_CDK_PROJECT}.git ${current_branch})
-  if [[ -z ${git_result} ]]; then
-    info "Branch ${current_branch} does not exist yet. Creating it."
-    git checkout -b ${current_branch}
-    branch_created="true"
+  _bb_push_file_if_changed "config/versions.json" "Bump ${SERVICE_NAME} to " "${BITBUCKET_COMMIT}-${project_version}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+}
+
+#######################################
+# This function is used to bump the config label in the aws-cdk project.
+#
+# Expects:
+#   AWS_CDK_PROJECT: The CDK project to bump the version in
+bb_bump_config_label_in_awscdk_project() {
+  check_envvar AWS_CDK_PROJECT R
+
+  local config_label
+
+  info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
+
+  info "Retrieving config label."
+  config_label=$(git tag --points-at HEAD)
+  info "Config Label: ${config_label}"
+
+  install_jq
+  _bb_clone_and_branch_repo "${AWS_CDK_PROJECT}"
+
+  cd -
+  info "Changing config label to ${config_label} in config/versions.json"
+  jq ".configLabel = \"${config_label}\"" config/versions.json > config/versions.json.tmp && mv config/versions.json.tmp config/versions.json
+  cd -
+
+  _bb_push_file_if_changed "config/versions.json" "Bump config label to " "${config_label}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+}
+
+#######################################
+# This function is used to start a given pipeline on a given branch if it exists.
+# It will also check the latest commit on that branch for successful builds, if a successful build is already present, nothing happens.
+#
+# Expects:
+#   BB_USER: a Bitbucket user with pipeline start permissions on the remote repo
+#   BB_APP_PASSWORD: the app password for BB_USER
+#
+# Globals:
+#
+# Arguments:
+#   target_repo_slug (required): The slug of the repo to start a pipeline for
+#   target_pipeline (required): The pipeline to start on the target repo
+#   target_branch (required): The branch to start the pipeline for on the target repo, if this branch doesn't exists, nothing happens
+#
+# Returns:
+#
+#######################################
+bb_start_and_monitor_pipeline_if_branch_exists() {
+
+  local target_repo_slug
+  local target_pipeline
+  local target_branch
+
+  local repo_url
+  local branch_url
+  local latest_build_url
+  local build_statuses_url
+
+  local response_body
+  local latest_build_status
+
+  [[ -n ${1} ]] && target_repo_slug=${1} || fail "target_repo_slug required"
+  [[ -n ${1} ]] && target_pipeline=${2} || fail "target_pipeline required"
+  [[ -n ${1} ]] && target_branch=${3} || fail "target_branch required"
+
+  check_envvar BB_USER R
+  check_envvar BB_APP_PASSWORD R
+
+  install_jq
+
+  repo_url="https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${target_repo_slug}"
+  info "Checking repo URL ${repo_url}"
+  curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${repo_url}
+
+  branch_url=${repo_url}/refs/branches/${target_branch}
+  info "Checking branch ${branch_url}"
+  response_body=$(curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${branch_url})
+
+  if echo ${response_body} | jq -e .name; then
+    info "Branch ${target_branch} exists for repo ${target_repo_slug}, checking build status..."
+    build_statuses_url=$(echo "${response_body}" | jq --raw-output '.target.links.statuses.href')
+    response_body=$(curl --fail --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${build_statuses_url}?sort=-created_on)
+
+    latest_build_status=$(echo "${response_body}" | jq  --raw-output '.values[0].state')
+    latest_build_url=$(echo "${response_body}" | jq  --raw-output '.values[0].url')
+
+    info "Latest build for branch ${target_branch}: ${latest_build_url}"
+
+    if [[ ${latest_build_status} == "SUCCESSFUL" ]]; then
+      info "Latest build for branch ${target_branch} was successful, skipping..."
+    else
+      info "Latest build for branch ${target_branch} was not successful (status = ${latest_build_status}), triggering pipeline ${target_pipeline}"
+      bb_start_pipeline_for_repo ${target_repo_slug} ${target_pipeline} ${target_branch}
+      bb_monitor_running_pipeline ${target_repo_slug}
+    fi
   else
-    info "Branch ${current_branch} already exists. Checking it out."
-    git checkout ${current_branch}
-  fi
-
-  info "Changing version of service ${SERVICE_NAME} to ${BITBUCKET_COMMIT}-${project_version} in config/serviceVersions.json"
-  jq ".serviceVersions.${SERVICE_NAME} = \"${BITBUCKET_COMMIT}-${project_version}\"" config/serviceVersions.json > config/serviceVersions.json.tmp && mv config/serviceVersions.json.tmp config/serviceVersions.json
-
-  info "Committing changes"
-  git add config/serviceVersions.json
-  git commit -m "${jira_issue} Bump ${SERVICE_NAME} version to ${BITBUCKET_COMMIT}-${project_version}"
-  info "Pushing changes"
-  if [[ -z ${branch_created} ]]; then
-    git push
-  else
-    git push origin ${current_branch}
+    info "Branch ${target_branch} does not exist for repo ${target_repo_slug}, skipping this one"
   fi
 }
