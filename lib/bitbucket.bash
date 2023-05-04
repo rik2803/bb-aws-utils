@@ -403,22 +403,77 @@ EOF
 # This function will check if the file config/versions.json has been changed
 # If it has, it will commit and push the changes
 #
-push_version_json_changes() {
-  if git diff --exit-code config/versions.json >/dev/null 2>&1; then
+_bb_push_file_if_changed() {
+  local file
+  local string
+  local jira_issue
+  local branch_created
+  local branch_name
+  local clone_path
+
+  file="${1}"
+  string="${2:-NA}"
+  jira_issue="${3:-NA}"
+  branch_created="${4}"
+  branch_name="${5}"
+  clone_path="${6}"
+
+  git_set_user_config
+
+  cd "${clone_path}"
+
+  if git diff --exit-code "${file}" >/dev/null 2>&1; then
       info "No changes, skipping commit"
   else
     info "File changed, committing and pushing ..."
-    git add config/versions.json
-    git commit -m "${jira_issue} Bump config label to ${1}"
+    git add "${file}"
+    git commit -m "${jira_issue} Bump config label to ${string}"
     info "Pushing changes"
     if [[ -z ${branch_created} ]]; then
       git push
     else
-      git push origin ${current_branch}
+      git push origin "${branch_name}"
     fi
   fi
+
+  cd -
 }
 
+_bb_clone_and_branch_repo() {
+  local repo
+  local jira_issue_regex
+  local git_result
+
+  git_set_user_config
+
+  repo="${1}"
+  jira_issue_regex="^feature/[A-Z]+-[0-9]+"
+  BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+  BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE=$(echo "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" | grep -Eo "${jira_issue_regex}" | sed 's/feature\///')
+  BB_CLONE_AND_BRANCH_REPO_CLONE_PATH="/${repo}"
+  info "Cloning ${repo} into ${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+  git clone "git@bitbucket.org:${BITBUCKET_WORKSPACE}/${repo}.git" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+  cd "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+
+  info "Checking if branch ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME} exists in ${repo}."
+  git_result=$(git ls-remote --heads git@bitbucket.org:${BITBUCKET_WORKSPACE}/${repo}.git ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME})
+  if [[ -z ${git_result} ]]; then
+    info "Branch ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME} does not exist yet. Creating it."
+    git checkout -b ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}
+    BB_CLONE_AND_BRANCH_REPO_BRANCH_CREATED=0
+  else
+    info "Branch ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME} already exists. Checking it out."
+    git checkout ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}
+    BB_CLONE_AND_BRANCH_REPO_BRANCH_CREATED=1
+  fi
+
+  check_envvar BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE R
+  check_envvar BB_CLONE_AND_BRANCH_REPO_BRANCH_CREATED R
+  check_envvar BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME R
+  check_envvar BB_CLONE_AND_BRANCH_REPO_CLONE_PATH R
+
+  cd -
+}
 
 #######################################
 # This function is used to bump the service version in the aws-cdk project.
@@ -427,52 +482,24 @@ push_version_json_changes() {
 #   AWS_CDK_PROJECT: The CDK project to bump the version in
 #   SERVICE_NAME: The name of the service to bump the version for
 bb_bump_service_version_in_awscdk_project() {
-
-  local project_version
-  local current_branch
-  local jira_issue_regex
-  local jira_issue
-  local git_result
-  local branch_created
-
-  info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
-
-  install_jq
-  git_set_user_config
-
-  jira_issue_regex="^feature/[A-Z]+-[0-9]+"
-
   check_envvar AWS_CDK_PROJECT R
   check_envvar SERVICE_NAME R
 
-  current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+  local project_version
 
-  jira_issue=$(echo "${current_branch}" | grep -Eo "${jira_issue_regex}" | sed 's/feature\///')
+  info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
 
-  info "Retrieving project version."
+  info "Retrieving project version ..."
   project_version=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version -q -DforceStdout && mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-  info "Project Version: ${project_version}"
+  info "Project version: ${project_version}"
 
-  info "Cloning ${AWS_CDK_PROJECT}"
-  git clone git@bitbucket.org:${BITBUCKET_WORKSPACE}/${AWS_CDK_PROJECT}.git /${AWS_CDK_PROJECT}
-
-  cd /${AWS_CDK_PROJECT}
-
-  info "Checking if branch ${current_branch} exists in ${AWS_CDK_PROJECT}."
-  git_result=$(git ls-remote --heads git@bitbucket.org:${BITBUCKET_WORKSPACE}/${AWS_CDK_PROJECT}.git ${current_branch})
-  if [[ -z ${git_result} ]]; then
-    info "Branch ${current_branch} does not exist yet. Creating it."
-    git checkout -b ${current_branch}
-    branch_created="true"
-  else
-    info "Branch ${current_branch} already exists. Checking it out."
-    git checkout ${current_branch}
-  fi
+  install_jq
+  _bb_clone_and_branch_repo "${AWS_CDK_PROJECT}"
 
   info "Changing version of service ${SERVICE_NAME} to ${BITBUCKET_COMMIT}-${project_version} in config/versions.json"
   jq ".serviceVersions.${SERVICE_NAME} = \"${BITBUCKET_COMMIT}-${project_version}\"" config/versions.json > config/versions.json.tmp && mv config/versions.json.tmp config/versions.json
 
-  push_version_json_changes ${project_version}
+  _bb_push_file_if_changed "config/versions.json" "${project_version}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_CREATED}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
 }
 
 #######################################
@@ -481,49 +508,21 @@ bb_bump_service_version_in_awscdk_project() {
 # Expects:
 #   AWS_CDK_PROJECT: The CDK project to bump the version in
 bb_bump_config_label_in_awscdk_project() {
-
-  local current_branch
-  local config_label
-  local jira_issue_regex
-  local jira_issue
-  local git_result
-  local branch_created
-
-  info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
-
-  install_jq
-  git_set_user_config
-
-  jira_issue_regex="^feature/[A-Z]+-[0-9]+"
-
   check_envvar AWS_CDK_PROJECT R
 
-  current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+  local config_label
 
-  jira_issue=$(echo "${current_branch}" | grep -Eo "${jira_issue_regex}" | sed 's/feature\///')
+  info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
 
   info "Retrieving config label."
   config_label=$(git tag --points-at HEAD)
   info "Config Label: ${config_label}"
 
-  info "Cloning ${AWS_CDK_PROJECT}"
-  git clone git@bitbucket.org:${BITBUCKET_WORKSPACE}/${AWS_CDK_PROJECT}.git /${AWS_CDK_PROJECT}
-
-  cd /${AWS_CDK_PROJECT}
-
-  info "Checking if branch ${current_branch} exists in ${AWS_CDK_PROJECT}."
-  git_result=$(git ls-remote --heads git@bitbucket.org:${BITBUCKET_WORKSPACE}/${AWS_CDK_PROJECT}.git ${current_branch})
-  if [[ -z ${git_result} ]]; then
-    info "Branch ${current_branch} does not exist yet. Creating it."
-    git checkout -b ${current_branch}
-    branch_created="true"
-  else
-    info "Branch ${current_branch} already exists. Checking it out."
-    git checkout ${current_branch}
-  fi
+  install_jq
+  _bb_clone_and_branch_repo "${AWS_CDK_PROJECT}"
 
   info "Changing config label to ${config_label} in config/versions.json"
   jq ".configLabel = \"${config_label}\"" config/versions.json > config/versions.json.tmp && mv config/versions.json.tmp config/versions.json
 
-  push_version_json_changes ${config_label}
+  _bb_push_file_if_changed "config/versions.json" "${config_label}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_CREATED}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
 }
