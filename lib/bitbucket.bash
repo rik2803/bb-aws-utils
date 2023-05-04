@@ -400,13 +400,31 @@ EOF
   fi
 }
 
+#######################################
+# This function is used to start a given pipeline on a given branch if it exists.
+# It will also check the latest commit on that branch for successful builds, if a successful build is already present, nothing happens.
+#
+# Expects:
+#   BB_USER: a Bitbucket user with pipeline start permissions on the remote repo
+#   BB_APP_PASSWORD: the app password for BB_USER
+#
+# Globals:
+#
+# Arguments:
+#   target_repo_slug (required): The slug of the repo to start a pipeline for
+#   target_pipeline (required): The pipeline to start on the target repo
+#   target_branch (required): The branch to start the pipeline for on the target repo, if this branch doesn't exists, nothing happens
+#
+# Returns:
+#
+#######################################
 bb_start_and_monitor_pipeline_if_branch_exists() {
 
   local target_repo_slug
   local target_pipeline
   local target_branch
 
-  local rest_url_base
+  local repo_url
   local branch_url
   local latest_build_url
   local build_statuses_url
@@ -423,8 +441,11 @@ bb_start_and_monitor_pipeline_if_branch_exists() {
 
   install_jq
 
-  rest_url_base="https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${target_repo_slug}"
-  branch_url=${rest_url_base}/refs/branches/${target_branch}
+  repo_url="https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${target_repo_slug}"
+  info "Checking repo URL ${repo_url}"
+  curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${repo_url}
+
+  branch_url=${repo_url}/refs/branches/${target_branch}
   info "Checking branch ${branch_url}"
   response_body=$(curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${branch_url})
 
