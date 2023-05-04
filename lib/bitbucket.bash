@@ -399,6 +399,26 @@ EOF
     fail "An error occurred when triggering the pipeline"
   fi
 }
+#######################################
+# This function will check if the file config/versions.json has been changed
+# If it has, it will commit and push the changes
+#
+push_version_json_changes() {
+  if git diff --exit-code config/versions.json >/dev/null 2>&1; then
+      info "No changes, skipping commit"
+  else
+    info "File changed, committing and pushing ..."
+    git add config/versions.json
+    git commit -m "${jira_issue} Bump config label to ${1}"
+    info "Pushing changes"
+    if [[ -z ${branch_created} ]]; then
+      git push
+    else
+      git push origin ${current_branch}
+    fi
+  fi
+}
+
 
 #######################################
 # This function is used to bump the service version in the aws-cdk project.
@@ -452,15 +472,7 @@ bb_bump_service_version_in_awscdk_project() {
   info "Changing version of service ${SERVICE_NAME} to ${BITBUCKET_COMMIT}-${project_version} in config/versions.json"
   jq ".serviceVersions.${SERVICE_NAME} = \"${BITBUCKET_COMMIT}-${project_version}\"" config/versions.json > config/versions.json.tmp && mv config/versions.json.tmp config/versions.json
 
-  info "Committing changes"
-  git add config/versions.json
-  git commit -m "${jira_issue} Bump ${SERVICE_NAME} version to ${BITBUCKET_COMMIT}-${project_version}"
-  info "Pushing changes"
-  if [[ -z ${branch_created} ]]; then
-    git push
-  else
-    git push origin ${current_branch}
-  fi
+  push_version_json_changes ${project_version}
 }
 
 #######################################
@@ -513,13 +525,5 @@ bb_bump_config_label_in_awscdk_project() {
   info "Changing config label to ${config_label} in config/versions.json"
   jq ".configLabel = \"${config_label}\"" config/versions.json > config/versions.json.tmp && mv config/versions.json.tmp config/versions.json
 
-  info "Committing changes"
-  git add config/versions.json
-  git commit -m "${jira_issue} Bump config label to ${config_label}"
-  info "Pushing changes"
-  if [[ -z ${branch_created} ]]; then
-    git push
-  else
-    git push origin ${current_branch}
-  fi
+  push_version_json_changes ${config_label}
 }
