@@ -526,3 +526,74 @@ bb_bump_config_label_in_awscdk_project() {
 
   _bb_push_file_if_changed "config/versions.json" "${config_label}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_CREATED}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
 }
+
+#######################################
+# This function is used to start a given pipeline on a given branch if it exists.
+# It will also check the latest commit on that branch for successful builds, if a successful build is already present, nothing happens.
+#
+# Expects:
+#   BB_USER: a Bitbucket user with pipeline start permissions on the remote repo
+#   BB_APP_PASSWORD: the app password for BB_USER
+#
+# Globals:
+#
+# Arguments:
+#   target_repo_slug (required): The slug of the repo to start a pipeline for
+#   target_pipeline (required): The pipeline to start on the target repo
+#   target_branch (required): The branch to start the pipeline for on the target repo, if this branch doesn't exists, nothing happens
+#
+# Returns:
+#
+#######################################
+bb_start_and_monitor_pipeline_if_branch_exists() {
+
+  local target_repo_slug
+  local target_pipeline
+  local target_branch
+
+  local repo_url
+  local branch_url
+  local latest_build_url
+  local build_statuses_url
+
+  local response_body
+  local latest_build_status
+
+  [[ -n ${1} ]] && target_repo_slug=${1} || fail "target_repo_slug required"
+  [[ -n ${1} ]] && target_pipeline=${2} || fail "target_pipeline required"
+  [[ -n ${1} ]] && target_branch=${3} || fail "target_branch required"
+
+  check_envvar BB_USER R
+  check_envvar BB_APP_PASSWORD R
+
+  install_jq
+
+  repo_url="https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${target_repo_slug}"
+  info "Checking repo URL ${repo_url}"
+  curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${repo_url}
+
+  branch_url=${repo_url}/refs/branches/${target_branch}
+  info "Checking branch ${branch_url}"
+  response_body=$(curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${branch_url})
+
+  if echo ${response_body} | jq -e .name; then
+    info "Branch ${target_branch} exists for repo ${target_repo_slug}, checking build status..."
+    build_statuses_url=$(echo "${response_body}" | jq --raw-output '.target.links.statuses.href')
+    response_body=$(curl --fail --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${build_statuses_url}?sort=-created_on)
+
+    latest_build_status=$(echo "${response_body}" | jq  --raw-output '.values[0].state')
+    latest_build_url=$(echo "${response_body}" | jq  --raw-output '.values[0].url')
+
+    info "Latest build for branch ${target_branch}: ${latest_build_url}"
+
+    if [[ ${latest_build_status} == "SUCCESSFUL" ]]; then
+      info "Latest build for branch ${target_branch} was successful, skipping..."
+    else
+      info "Latest build for branch ${target_branch} was not successful (status = ${latest_build_status}), triggering pipeline ${target_pipeline}"
+      bb_start_pipeline_for_repo ${target_repo_slug} ${target_pipeline} ${target_branch}
+      bb_monitor_running_pipeline ${target_repo_slug}
+    fi
+  else
+    info "Branch ${target_branch} does not exist for repo ${target_repo_slug}, skipping this one"
+  fi
+}
