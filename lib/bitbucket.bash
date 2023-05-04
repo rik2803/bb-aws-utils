@@ -510,7 +510,7 @@ bb_bump_service_version_in_awscdk_project() {
   jq ".serviceVersions.${SERVICE_NAME} = \"${BITBUCKET_COMMIT}-${project_version}\"" config/versions.json > config/versions.json.tmp && mv config/versions.json.tmp config/versions.json
   cd -
 
-  _bb_push_file_if_changed "config/versions.json" "Bump ${SERVICE_NAME} to " "${project_version}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+  _bb_push_file_if_changed "config/versions.json" "Bump ${SERVICE_NAME} to " "${BITBUCKET_COMMIT}-${project_version}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
 }
 
 #######################################
