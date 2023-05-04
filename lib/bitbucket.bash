@@ -407,16 +407,14 @@ _bb_push_file_if_changed() {
   local file
   local string
   local jira_issue
-  local branch_created
   local branch_name
   local clone_path
 
   file="${1}"
   string="${2:-NA}"
-  jira_issue="${3:-NA}"
-  branch_created="${4}"
-  branch_name="${5}"
-  clone_path="${6}"
+  jira_issue="${3}"
+  branch_name="${4}"
+  clone_path="${5}"
 
   git_set_user_config
 
@@ -429,11 +427,7 @@ _bb_push_file_if_changed() {
     git add "${file}"
     git commit -m "${jira_issue} Bump config label to ${string}"
     info "Pushing changes"
-    if [[ -z ${branch_created} ]]; then
-      git push
-    else
-      git push origin "${branch_name}"
-    fi
+    git push origin "${branch_name}"
   fi
 
   cd -
@@ -460,15 +454,12 @@ _bb_clone_and_branch_repo() {
   if [[ -z ${git_result} ]]; then
     info "Branch ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME} does not exist yet. Creating it."
     git checkout -b ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}
-    BB_CLONE_AND_BRANCH_REPO_BRANCH_CREATED=0
   else
     info "Branch ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME} already exists. Checking it out."
     git checkout ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}
-    BB_CLONE_AND_BRANCH_REPO_BRANCH_CREATED=1
   fi
 
   check_envvar BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE R
-  check_envvar BB_CLONE_AND_BRANCH_REPO_BRANCH_CREATED R
   check_envvar BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME R
   check_envvar BB_CLONE_AND_BRANCH_REPO_CLONE_PATH R
 
@@ -499,7 +490,7 @@ bb_bump_service_version_in_awscdk_project() {
   info "Changing version of service ${SERVICE_NAME} to ${BITBUCKET_COMMIT}-${project_version} in config/versions.json"
   jq ".serviceVersions.${SERVICE_NAME} = \"${BITBUCKET_COMMIT}-${project_version}\"" config/versions.json > config/versions.json.tmp && mv config/versions.json.tmp config/versions.json
 
-  _bb_push_file_if_changed "config/versions.json" "${project_version}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_CREATED}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+  _bb_push_file_if_changed "config/versions.json" "${project_version}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
 }
 
 #######################################
@@ -524,7 +515,7 @@ bb_bump_config_label_in_awscdk_project() {
   info "Changing config label to ${config_label} in config/versions.json"
   jq ".configLabel = \"${config_label}\"" config/versions.json > config/versions.json.tmp && mv config/versions.json.tmp config/versions.json
 
-  _bb_push_file_if_changed "config/versions.json" "${config_label}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_CREATED}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+  _bb_push_file_if_changed "config/versions.json" "${config_label}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
 }
 
 #######################################
