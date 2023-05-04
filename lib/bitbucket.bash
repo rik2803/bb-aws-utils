@@ -404,17 +404,30 @@ EOF
 # If it has, it will commit and push the changes
 #
 _bb_push_file_if_changed() {
+
   local file
-  local string
+  local extra_commit_string
+  local version
   local jira_issue
   local branch_name
   local clone_path
 
   file="${1}"
-  string="${2:-NA}"
-  jira_issue="${3}"
-  branch_name="${4}"
-  clone_path="${5}"
+  extra_commit_string="${2:-NA}"
+  version="${3:-NA}"
+  jira_issue="${4}"
+  branch_name="${5}"
+  clone_path="${6}"
+
+  _bb_retry_push() {
+      git reset HEAD~ || { warning "Failed during git reset"; return 1; }
+      git stash || { warning "Failed during git stash"; return 1; }
+      git pull || { warning "Failed during git pull"; return 1; }
+      git stash pop || { warning "Failed during git stash pop"; return 1; }
+      git commit -m "${jira_issue} ${extra_commit_string} ${version}" "${file}" || { warning "Failed during git commit"; return 1; }
+      git push origin "${branch_name}" || { warning "Failed during git push"; return 1; }
+      return 0
+  }
 
   git_set_user_config
 
@@ -424,10 +437,15 @@ _bb_push_file_if_changed() {
       info "No changes, skipping commit"
   else
     info "File changed, committing and pushing ..."
-    git add "${file}"
-    git commit -m "${jira_issue} Bump config label to ${string}"
-    info "Pushing changes"
-    git push origin "${branch_name}"
+    git commit -m "${jira_issue} ${extra_commit_string} ${version}" "${file}"
+    info "Trying to push changes ..."
+    if ! git push origin "${branch_name}"; then
+      warning "Push failed, trying a second time ..."
+      if ! _bb_retry_push "${jira_issue}" "${branch_name}" "${version}"; then
+        warning "First retry failed, trying a third time ..."
+        _bb_retry_push "${jira_issue}" "${branch_name}" "${version}"
+      fi
+    fi
   fi
 
   cd -
@@ -492,7 +510,7 @@ bb_bump_service_version_in_awscdk_project() {
   jq ".serviceVersions.${SERVICE_NAME} = \"${BITBUCKET_COMMIT}-${project_version}\"" config/versions.json > config/versions.json.tmp && mv config/versions.json.tmp config/versions.json
   cd -
 
-  _bb_push_file_if_changed "config/versions.json" "${project_version}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+  _bb_push_file_if_changed "config/versions.json" "Bump ${SERVICE_NAME} to " "${project_version}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
 }
 
 #######################################
@@ -519,7 +537,7 @@ bb_bump_config_label_in_awscdk_project() {
   jq ".configLabel = \"${config_label}\"" config/versions.json > config/versions.json.tmp && mv config/versions.json.tmp config/versions.json
   cd -
 
-  _bb_push_file_if_changed "config/versions.json" "${config_label}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+  _bb_push_file_if_changed "config/versions.json" "Bump config label to " "${config_label}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
 }
 
 #######################################
