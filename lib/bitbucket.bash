@@ -420,6 +420,8 @@ bb_start_and_monitor_pipeline_if_branch_exists() {
   check_envvar BB_APP_PASSWORD R
 
   rest_url_base="https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${target_repo_slug}"
+  curl --fail --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${rest_url_base}/refs/branches/${target_branch}
+  info "curl rc = $?"
   response_body=$(curl --fail --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${rest_url_base}/refs/branches/${target_branch})
 
   if [[ $? -eq 0 ]]; then
