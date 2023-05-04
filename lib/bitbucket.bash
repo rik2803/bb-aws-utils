@@ -406,14 +406,39 @@ bb_start_and_monitor_pipeline_if_branch_exists() {
   local target_pipeline
   local target_branch
 
+  local rest_url_base
+  local response_body
+  local build_statuses_url
+  local latest_build_status
+  local latest_build_url
+
   [[ -n ${1} ]] && target_repo_slug=${1} || fail "target_repo_slug required"
   [[ -n ${1} ]] && target_pipeline=${2} || fail "target_pipeline required"
   [[ -n ${1} ]] && target_branch=${3} || fail "target_branch required"
 
-  if git ls-remote --exit-code --heads git@bitbucket.org:${BITBUCKET_WORKSPACE}/${target_repo_slug}.git ${target_branch}; then
-    info "Branch ${target_branch} exists for repo ${target_repo_slug}, triggering pipeline ${target_pipeline}"
-    bb_start_pipeline_for_repo ${target_repo_slug} ${target_pipeline} ${target_branch}
-    bb_monitor_running_pipeline ${target_repo_slug}
+  check_envvar BB_USER R
+  check_envvar BB_APP_PASSWORD R
+
+  rest_url_base="https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${target_repo_slug}"
+  response_body=$(curl --fail --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${rest_url_base}/refs/branches/${target_branch})
+
+  if [[ $? -eq 0 ]]; then
+    info "Branch ${target_branch} exists for repo ${target_repo_slug}, checking build status..."
+    build_statuses_url=$(echo "${response_body}" | jq --raw-output '.target.links.statuses.href')
+    response_body=$(curl --fail --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${build_statuses_url}?sort=-created_on)
+
+    latest_build_status=$(echo "${response_body}" | jq  --raw-output '.values[0].state')
+    latest_build_url=$(echo "${response_body}" | jq  --raw-output '.values[0].url')
+
+    info "Latest build for branch ${target_branch}: ${latest_build_url}"
+
+    if [[ ${latest_build_status} == "SUCCESSFUL" ]]; then
+      info "Latest build for branch ${target_branch} was successful, skipping..."
+    else
+      info "Latest build for branch ${target_branch} was not successful (status = ${latest_build_status}), triggering pipeline ${target_pipeline}"
+      bb_start_pipeline_for_repo ${target_repo_slug} ${target_pipeline} ${target_branch}
+      bb_monitor_running_pipeline ${target_repo_slug}
+    fi
   else
     info "Branch ${target_branch} does not exist for repo ${target_repo_slug}, skipping this one"
   fi
