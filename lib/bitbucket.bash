@@ -407,10 +407,12 @@ bb_start_and_monitor_pipeline_if_branch_exists() {
   local target_branch
 
   local rest_url_base
-  local response_body
-  local build_statuses_url
-  local latest_build_status
+  local branch_url
   local latest_build_url
+  local build_statuses_url
+
+  local response_body
+  local latest_build_status
 
   [[ -n ${1} ]] && target_repo_slug=${1} || fail "target_repo_slug required"
   [[ -n ${1} ]] && target_pipeline=${2} || fail "target_pipeline required"
@@ -419,13 +421,14 @@ bb_start_and_monitor_pipeline_if_branch_exists() {
   check_envvar BB_USER R
   check_envvar BB_APP_PASSWORD R
 
-  rest_url_base="https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${target_repo_slug}"
-  info "Getting ${rest_url_base}/refs/branches/${target_branch}"
-  curl --fail -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${rest_url_base}/refs/branches/${target_branch}
-  info "curl rc = $?"
-  response_body=$(curl --fail --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${rest_url_base}/refs/branches/${target_branch})
+  install_jq
 
-  if [[ $? -eq 0 ]]; then
+  rest_url_base="https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${target_repo_slug}"
+  branch_url=${rest_url_base}/refs/branches/${target_branch}
+  info "Checking branch ${branch_url}"
+  response_body=$(curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${branch_url})
+
+  if echo ${response_body} | jq -e .name; then
     info "Branch ${target_branch} exists for repo ${target_repo_slug}, checking build status..."
     build_statuses_url=$(echo "${response_body}" | jq --raw-output '.target.links.statuses.href')
     response_body=$(curl --fail --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${build_statuses_url}?sort=-created_on)
