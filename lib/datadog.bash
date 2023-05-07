@@ -14,8 +14,8 @@ datadog_deploy_monitors() {
     [[ -z "${BITBUCKET_DEPLOYMENT_ENVIRONMENT}" ]]; then
     info "datadog monitors: Monitors will not be deployed because:"
     info "                  DATADOG_MONITOR_AUTO_RUN is not set or 0 AND"
-    info "                  DATADOG_MONITOR_ENVIRONMENT is in the pipleine environment 0 AND"
-    info "                  This pipeline is not a BB deployment"
+    info "                  DATADOG_MONITOR_ENVIRONMENT is in the pipeline environment 0 AND"
+    info "                  This pipeline is not a BB deployment (i.e. BITBUCKET_DEPLOYMENT_ENVIRONMENT not set by BB)"
     return 0
   fi
 

@@ -8,7 +8,7 @@ CW_ALARMS=NA
 # shellcheck source=lib/load.bash
 [[ -e ${LIB_DIR}/load.bash ]] && source ${LIB_DIR}/load.bash
 
-### To make sure everything keeps working after February 1 (see
+### To make sure everything keeps working after February 1 2019 (see
 ### https://community.atlassian.com/t5/Bitbucket-Pipelines-articles/Pushing-back-to-your-repository/ba-p/958407)
 ### we explicitly set the repo origin to ${BITBUCKET_GIT_SSH_ORIGIN} unless the envvar ${BB_USE_HTTP_ORIGIN}
 ### is set
