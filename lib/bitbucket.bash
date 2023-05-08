@@ -526,7 +526,7 @@ bb_bump_config_label_in_awscdk_project() {
   info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
 
   info "Retrieving config label."
-  config_label=$(git tag --points-at HEAD)
+  config_label=$(git tag --points-at HEAD | tail -1)
   info "Config Label: ${config_label}"
 
   install_jq
