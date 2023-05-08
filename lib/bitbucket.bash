@@ -526,7 +526,7 @@ bb_bump_config_label_in_awscdk_project() {
   info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
 
   info "Retrieving config label."
-  config_label=$(git tag --points-at HEAD)
+  config_label=$(git tag --points-at HEAD | tail -1)
   info "Config Label: ${config_label}"
 
   install_jq
@@ -610,3 +610,37 @@ bb_start_and_monitor_pipeline_if_branch_exists() {
     info "Branch ${target_branch} does not exist for repo ${target_repo_slug}, skipping this one"
   fi
 }
+
+#######################################
+# This function is used to check if the given branch exists in a repo.
+#
+# Expects:
+#   repo_slug: The repo slug to check the branch for
+#   branch_name: The branch name to check for
+#
+# Globals:
+#
+# Arguments:
+#
+# Returns:
+#   - 0 if the branch exists
+#   - 1 if it doesn't
+#
+#######################################
+bb_branch_exists_in_repo() {
+
+  local repo_slug
+  local branch_name
+
+  [[ -n ${1} ]] && repo_slug=${1} || fail "repo_slug required"
+  [[ -n ${2} ]] && branch_name=${2} || fail "branch_name required"
+
+  if git ls-remote --exit-code --heads "git@bitbucket.org:ixorcvba/${repo_slug}.git" "${branch_name}"; then
+    info "Branch ${branch_name} exists for repo ${repo_slug}"
+    return 0
+  else
+    info "Branch ${branch_name} does not exist for repo ${repo_slug}"
+    return 1
+  fi
+}
+
