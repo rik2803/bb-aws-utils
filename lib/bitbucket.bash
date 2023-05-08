@@ -301,7 +301,7 @@ bb_monitor_running_pipeline() {
 # Globals:
 #
 # Arguments:
-#   remote_repo_slug (required): The slug of the repo to start apipeline for
+#   remote_repo_slug (required): The slug of the repo to start a pipeline for
 #   pattern (default: build_and_deploy): The "pattern" of the pipeline to start on the remote repo. Can be the name
 #       of a branch when the fourth argument (remote_repo_selector_type) is "branch", or the name of a custom
 #       pipeline if remote_repo_selector_type is absent.
@@ -309,6 +309,7 @@ bb_monitor_running_pipeline() {
 #       of the remote branch determined by the envvar REMOTE_REPO_COMMIT_HASH
 #   remote_repo_selector_type: Should be "branch" is the remote pipeline is to start on the branch determined by
 #       remote_repo_branch
+#   build_variables: A list of variables to pass to the remote pipeline. The format is "key1=value1;key2=value2"
 # Returns:
 #
 #######################################
@@ -319,6 +320,8 @@ bb_start_pipeline_for_repo() {
   local remote_repo_slug
   local curl_result
   local remote_repo_branch
+  local build_variables
+  local build_variables_json
 
   info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
 
@@ -331,6 +334,18 @@ bb_start_pipeline_for_repo() {
   pattern="${2:-build_and_deploy}"
   remote_repo_branch="${3:-}"
   remote_repo_selector_type="${4:-custom}"
+  build_variables="${5:-}" # format is key1=value1;key2=value2
+
+  # Format build variables into json
+  if [[ -n "${build_variables}" ]]; then
+    build_variables_json="["
+    for var in $(echo "${build_variables}" | tr ';' '\n'); do
+      build_variables_json="${build_variables_json} {\"key\": \"$(echo "${var}" | cut -d ':' -f 1)\", \"value\": \"$(echo "${var}" | cut -d ':' -f 2)\"},"
+    done
+    build_variables_json=$(echo "${build_variables_json}]" | sed 's/,]/]/')
+  else
+    build_variables_json="[]"
+  fi
 
   rest_url="https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${remote_repo_slug}/pipelines/"
 
@@ -372,7 +387,8 @@ EOF
       "type": "${remote_repo_selector_type}",
       "pattern": "${pattern}"
     }
-  }
+  },
+  "variables": ${build_variables_json}
 }
 EOF
 
