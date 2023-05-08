@@ -340,7 +340,7 @@ bb_start_pipeline_for_repo() {
   if [[ -n "${build_variables}" ]]; then
     build_variables_json="["
     for var in $(echo "${build_variables}" | tr ';' '\n'); do
-      build_variables_json="${build_variables_json} {\"key\": \"$(echo "${var}" | cut -d ':' -f 1)\", \"value\": \"$(echo "${var}" | cut -d ':' -f 2)\"},"
+      build_variables_json="${build_variables_json} {\"key\": \"$(echo "${var}" | cut -d '=' -f 1)\", \"value\": \"$(echo "${var}" | cut -d '=' -f 2)\"},"
     done
     build_variables_json=$(echo "${build_variables_json}]" | sed 's/,]/]/')
   else
