@@ -635,7 +635,7 @@ bb_branch_exists_in_repo() {
   [[ -n ${1} ]] && repo_slug=${1} || fail "repo_slug required"
   [[ -n ${2} ]] && branch_name=${2} || fail "branch_name required"
 
-  if git ls-remote --exit-code --heads git@bitbucket.org:ixorcvba/${repo_slug}.git ${branch_name} ]]; then
+  if git ls-remote --exit-code --heads "git@bitbucket.org:ixorcvba/${repo_slug}.git" "${branch_name}"; then
     info "Branch ${branch_name} exists for repo ${repo_slug}"
     return 0
   else
