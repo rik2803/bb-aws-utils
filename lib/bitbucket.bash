@@ -655,7 +655,7 @@ bb_start_and_monitor_build_pipeline() {
   info "Checking repo URL ${repo_url}"
   curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${repo_url}
 
-  if ([[ "${BUILD_TYPE}" == "RELEASE" ]] && latest_commit_message_starts_with ${target_repo_slug} ${target_branch}) || \
+  if ([[ "${BUILD_TYPE}" == "RELEASE" ]] && latest_commit_message_starts_with ${target_repo_slug} "Merged in ${target_branch}") || \
      ([[ "${BUILD_TYPE}" == "SNAPSHOT" ]] && bb_branch_exists_in_repo ${target_repo_slug} ${target_branch});
   then
 
