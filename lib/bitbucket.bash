@@ -637,7 +637,7 @@ bb_bump_config_label_in_awscdk_project() {
 # Returns:
 #
 #######################################
-bb_start_and_monitor_pipeline_if_branch_exists() {
+bb_start_and_monitor_snapshot_pipeline() {
 
   local target_repo_slug
   local target_pipeline
@@ -651,12 +651,13 @@ bb_start_and_monitor_pipeline_if_branch_exists() {
   local response_body
   local latest_build_status
 
-  [[ -n ${1} ]] && target_repo_slug=${1} || fail "target_repo_slug required"
-  [[ -n ${1} ]] && target_pipeline=${2} || fail "target_pipeline required"
-  [[ -n ${1} ]] && target_branch=${3} || fail "target_branch required"
-
   check_envvar BB_USER R
   check_envvar BB_APP_PASSWORD R
+  check_envvar BITBUCKET_BRANCH R
+
+  [[ -n ${1} ]] && target_repo_slug=${1} || fail "target_repo_slug required"
+  target_pipeline=${2:-"snapshot_deploy"}
+  target_branch=${BITBUCKET_BRANCH}
 
   install_jq
 
@@ -664,12 +665,11 @@ bb_start_and_monitor_pipeline_if_branch_exists() {
   info "Checking repo URL ${repo_url}"
   curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${repo_url}
 
-  branch_url=${repo_url}/refs/branches/${target_branch}
-  info "Checking branch ${branch_url}"
-  response_body=$(curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${branch_url})
+  if bb_branch_exists_in_repo ${target_repo_slug} ${target_branch}; then
 
-  if echo ${response_body} | jq -e .name; then
-    info "Branch ${target_branch} exists for repo ${target_repo_slug}, checking build status..."
+    branch_url=${repo_url}/refs/branches/${target_branch}
+    response_body=$(curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${branch_url})
+
     build_statuses_url=$(echo "${response_body}" | jq --raw-output '.target.links.statuses.href')
     response_body=$(curl --fail --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${build_statuses_url}?sort=-created_on)
 
@@ -685,8 +685,7 @@ bb_start_and_monitor_pipeline_if_branch_exists() {
       bb_start_pipeline_for_repo ${target_repo_slug} ${target_pipeline} ${target_branch}
       bb_monitor_running_pipeline ${target_repo_slug}
     fi
-  else
-    info "Branch ${target_branch} does not exist for repo ${target_repo_slug}, skipping this one"
+
   fi
 }
 
