@@ -697,7 +697,13 @@ latest_commit_message_starts_with() {
 
   last_message=$(echo "${response_body}" | jq --raw-output '.target.message')
 
-  return "${last_message}" == "${prefix}"*
+  info "Checking commit message ${last_message} starts with ${prefix}"
+
+  if [[ "${last_message}" == "${prefix}"* ]]; then
+    return 0
+  else
+    return 1
+  fi
 }
 
 #######################################
