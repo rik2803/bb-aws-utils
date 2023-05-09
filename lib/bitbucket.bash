@@ -434,7 +434,7 @@ _bb_push_file_if_changed() {
   version="${3:-NA}"
   jira_issue="${4}"
   branch_name="${5}"
-  clone_path="${6}"
+  clone_path="${6:-${BITBUCKET_CLONE_DIR}}"
 
   _bb_retry_push() {
       git reset HEAD~ || { warning "Failed during git reset"; return 1; }
