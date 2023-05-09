@@ -619,6 +619,26 @@ bb_bump_config_label_in_awscdk_project() {
   _bb_push_file_if_changed "config/versions.json" "Bump config label to " "${config_label}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
 }
 
+#######################################
+# This is a generic function to be used for triggering snapshot or release builds based on BUILD_TYPE env var.
+#
+# - Snapshot builds will trigger pipeline `snapshot_deploy` on the according feature branch if it exists (and doesn't have a successful build yet)
+# - Release builds will trigger pipeline `release_deploy` on the master branch if the latest commit was a merge commit for this feature
+#
+# Expects:
+#   BB_USER: a Bitbucket user with pipeline start permissions on the remote repo
+#   BB_APP_PASSWORD: the app password for BB_USER
+#   BUILD_TYPE: The differentiator between snapshot and release builds (SNAPSHOT/RELEASE)
+#   BITBUCKET_BRANCH: Needs to be set, the feature branch identifier is the correlation between all module builds
+#
+# Globals:
+#
+# Arguments:
+#   target_repo_slug (required): The slug of the repo to start a pipeline for
+#
+# Returns:
+#
+#######################################
 bb_start_and_monitor_build_pipeline() {
 
   local target_repo_slug
