@@ -636,6 +636,7 @@ bb_start_and_monitor_build_pipeline() {
   check_envvar BB_USER R
   check_envvar BB_APP_PASSWORD R
   check_envvar BUILD_TYPE R
+  check_envvar BITBUCKET_BRANCH R
 
   [[ -n ${1} ]] && target_repo_slug=${1} || fail "target_repo_slug required"
   if  [[ "${BUILD_TYPE}" == "RELEASE" ]]; then
@@ -643,7 +644,6 @@ bb_start_and_monitor_build_pipeline() {
     target_pipeline="release_deploy"
     target_branch="master"
   else
-    check_envvar BITBUCKET_BRANCH R
 
     target_pipeline="snapshot_deploy"
     target_branch="${BITBUCKET_BRANCH}"
@@ -674,7 +674,7 @@ bb_start_and_monitor_build_pipeline() {
       info "Latest build for branch ${target_branch} was successful, skipping..."
     else
       info "Latest build for branch ${target_branch} was not successful (status = ${latest_build_status}), triggering pipeline ${target_pipeline}"
-      bb_start_pipeline_for_repo ${target_repo_slug} ${target_pipeline} ${target_branch}
+      bb_start_pipeline_for_repo ${target_repo_slug} ${target_pipeline} ${target_branch} "custom" "AWS_CDK_BRANCH_TO_BUMP=${BITBUCKET_BRANCH}"
       bb_monitor_running_pipeline ${target_repo_slug}
     fi
 
@@ -697,13 +697,9 @@ latest_commit_message_starts_with() {
 
   last_message=$(echo "${response_body}" | jq --raw-output '.target.message')
 
-  info "Checking commit message ${last_message} starts with ${prefix}"
+  info "Checking whether commit message ${last_message} starts with ${prefix}"
 
-  if [[ "${last_message}" == "${prefix}"* ]]; then
-    return 0
-  else
-    return 1
-  fi
+  [[ "${last_message}" == "${prefix}"* ]]
 }
 
 #######################################
