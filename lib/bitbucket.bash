@@ -301,7 +301,7 @@ bb_monitor_running_pipeline() {
 # Globals:
 #
 # Arguments:
-#   remote_repo_slug (required): The slug of the repo to start apipeline for
+#   remote_repo_slug (required): The slug of the repo to start a pipeline for
 #   pattern (default: build_and_deploy): The "pattern" of the pipeline to start on the remote repo. Can be the name
 #       of a branch when the fourth argument (remote_repo_selector_type) is "branch", or the name of a custom
 #       pipeline if remote_repo_selector_type is absent.
@@ -309,6 +309,7 @@ bb_monitor_running_pipeline() {
 #       of the remote branch determined by the envvar REMOTE_REPO_COMMIT_HASH
 #   remote_repo_selector_type: Should be "branch" is the remote pipeline is to start on the branch determined by
 #       remote_repo_branch
+#   build_variables: A list of variables to pass to the remote pipeline. The format is "key1=value1;key2=value2"
 # Returns:
 #
 #######################################
@@ -319,6 +320,9 @@ bb_start_pipeline_for_repo() {
   local remote_repo_slug
   local curl_result
   local remote_repo_branch
+  local remote_repo_selector_type
+  local build_variables
+  local build_variables_json
 
   info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
 
@@ -331,6 +335,18 @@ bb_start_pipeline_for_repo() {
   pattern="${2:-build_and_deploy}"
   remote_repo_branch="${3:-}"
   remote_repo_selector_type="${4:-custom}"
+  build_variables="${5:-}" # format is key1=value1;key2=value2
+
+  # Format build variables into json
+  if [[ -n "${build_variables}" ]]; then
+    build_variables_json="["
+    for var in $(echo "${build_variables}" | tr ';' '\n'); do
+      build_variables_json="${build_variables_json} {\"key\": \"$(echo "${var}" | cut -d '=' -f 1)\", \"value\": \"$(echo "${var}" | cut -d '=' -f 2)\"},"
+    done
+    build_variables_json=$(echo "${build_variables_json}]" | sed 's/,]/]/')
+  else
+    build_variables_json="[]"
+  fi
 
   rest_url="https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${remote_repo_slug}/pipelines/"
 
@@ -372,7 +388,8 @@ EOF
       "type": "${remote_repo_selector_type}",
       "pattern": "${pattern}"
     }
-  }
+  },
+  "variables": ${build_variables_json}
 }
 EOF
 
@@ -451,24 +468,47 @@ _bb_push_file_if_changed() {
   cd -
 }
 
+#######################################
+# This function is used to clone another repo and create a branch that matches the branch of the
+# repo in which the pipeline is running.
+#
+# If the branch of the current repo is `master` or `main`, the branch creation will be skipped.
+#
+# Expects:
+#
+# Globals:
+#
+# Arguments:
+#
+# Returns:
+#
+#######################################
 _bb_clone_and_branch_repo() {
-  local repo
+  local repo_slug
   local jira_issue_regex
   local git_result
 
   git_set_user_config
 
-  repo="${1}"
+  repo_slug="${1}"
+  branch_to_create_if_on_master_or_main="${2:-}"
+
   jira_issue_regex="^feature/[A-Z]+-[0-9]+"
-  BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+
+  if [[ -n ${branch_to_create_if_on_master_or_main} ]]; then
+    BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME="${branch_to_create_if_on_master_or_main}"
+  else
+    BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+  fi
+
   BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE=$(echo "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" | grep -Eo "${jira_issue_regex}" | sed 's/feature\///')
-  BB_CLONE_AND_BRANCH_REPO_CLONE_PATH="/${repo}"
-  info "Cloning ${repo} into ${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
-  git clone "git@bitbucket.org:${BITBUCKET_WORKSPACE}/${repo}.git" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+  BB_CLONE_AND_BRANCH_REPO_CLONE_PATH="/${repo_slug}"
+  info "Cloning ${repo_slug} into ${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+  git clone "git@bitbucket.org:${BITBUCKET_WORKSPACE}/${repo_slug}.git" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
   cd "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
 
-  info "Checking if branch ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME} exists in ${repo}."
-  git_result=$(git ls-remote --heads git@bitbucket.org:${BITBUCKET_WORKSPACE}/${repo}.git ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME})
+  info "Checking if branch ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME} exists in ${repo_slug}."
+  git_result=$(git ls-remote --heads git@bitbucket.org:${BITBUCKET_WORKSPACE}/${repo_slug}.git ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME})
   if [[ -z ${git_result} ]]; then
     info "Branch ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME} does not exist yet. Creating it."
     git checkout -b ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}
@@ -490,27 +530,53 @@ _bb_clone_and_branch_repo() {
 # Expects:
 #   AWS_CDK_PROJECT: The CDK project to bump the version in
 #   SERVICE_NAME: The name of the service to bump the version for
+#
+# Expects:
+#  branch_to_create_if_on_master_or_main (optional): If the branch is master or main, this branch will be created
+#    and checked out by _bb_clone_and_branch_repo. If not, a branch with the name of the current branch will be created.
+#
+# Globals:
+#
+# Arguments:
+#
+# Returns:
+#
+#######################################
 bb_bump_service_version_in_awscdk_project() {
   check_envvar AWS_CDK_PROJECT R
   check_envvar SERVICE_NAME R
 
   local project_version
+  local version_to_bump_to
+  local branch_to_create_if_on_master_or_main
 
+  branch_to_create_if_on_master_or_main="${1:-}"
   info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
 
   info "Retrieving project version ..."
   project_version=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version -q -DforceStdout && mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
   info "Project version: ${project_version}"
 
+  info "If branch is master or main, use RELEASE_VERSION as version to bump to, otherwise use ${BITBUCKET_COMMIT}-${project_version}"
+  if [[ "${BITBUCKET_BRANCH}" == "master" || "${BITBUCKET_BRANCH}" == "main" ]]; then
+    info "Branch is master or main, using RELEASE_VERSION as version to bump to"
+    check_envvar RELEASE_VERSION R
+    [[ -n ${branch_to_create_if_on_master_or_main} ]] || fail "branch_to_create_if_on_master_or_main required but not passed in function bb_bump_service_version_in_awscdk_project"
+    version_to_bump_to="${RELEASE_VERSION}"
+  else
+    info "Branch is not master or main, using ${BITBUCKET_COMMIT}-${project_version} as version to bump to"
+    version_to_bump_to="${BITBUCKET_COMMIT}-${project_version}"
+  fi
+
   install_jq
-  _bb_clone_and_branch_repo "${AWS_CDK_PROJECT}"
+  _bb_clone_and_branch_repo "${AWS_CDK_PROJECT}" "${branch_to_create_if_on_master_or_main}"
 
   cd -
-  info "Changing version of service ${SERVICE_NAME} to ${BITBUCKET_COMMIT}-${project_version} in config/versions.json"
-  jq ".serviceVersions.${SERVICE_NAME} = \"${BITBUCKET_COMMIT}-${project_version}\"" config/versions.json > config/versions.json.tmp && mv config/versions.json.tmp config/versions.json
+  info "Changing version of service ${SERVICE_NAME} to ${version_to_bump_to} in config/versions.json"
+  jq ".serviceVersions.${SERVICE_NAME} = \"${version_to_bump_to}\"" config/versions.json > config/versions.json.tmp && mv config/versions.json.tmp config/versions.json
   cd -
 
-  _bb_push_file_if_changed "config/versions.json" "Bump ${SERVICE_NAME} to " "${BITBUCKET_COMMIT}-${project_version}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+  _bb_push_file_if_changed "config/versions.json" "Bump ${SERVICE_NAME} to " "${version_to_bump_to}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
 }
 
 #######################################
@@ -518,11 +584,24 @@ bb_bump_service_version_in_awscdk_project() {
 #
 # Expects:
 #   AWS_CDK_PROJECT: The CDK project to bump the version in
+#
+# Expects:
+#  branch_to_create_if_on_master_or_main (optional): If the branch is master or main, this branch will be created
+#    and checked out by _bb_clone_and_branch_repo. If not, a branch with the name of the current branch will be created.
+# Globals:
+#
+# Arguments:
+#
+# Returns:
+#
+#######################################
 bb_bump_config_label_in_awscdk_project() {
   check_envvar AWS_CDK_PROJECT R
 
   local config_label
+  local branch_to_create_if_on_master_or_main
 
+  branch_to_create_if_on_master_or_main="${1:-}"
   info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
 
   info "Retrieving config label."
@@ -530,7 +609,7 @@ bb_bump_config_label_in_awscdk_project() {
   info "Config Label: ${config_label}"
 
   install_jq
-  _bb_clone_and_branch_repo "${AWS_CDK_PROJECT}"
+  _bb_clone_and_branch_repo "${AWS_CDK_PROJECT}" "${branch_to_create_if_on_master_or_main}"
 
   cd -
   info "Changing config label to ${config_label} in config/versions.json"
