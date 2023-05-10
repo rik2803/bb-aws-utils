@@ -675,7 +675,7 @@ bb_start_and_monitor_build_pipeline() {
   info "Checking repo URL ${repo_url}"
   curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${repo_url}
 
-  if ([[ "${BUILD_TYPE}" == "RELEASE" ]] && latest_commit_message_starts_with ${target_repo_slug} ${target_branch} "Merged in ${target_branch}") || \
+  if ([[ "${BUILD_TYPE}" == "RELEASE" ]] && ! latest_commit_message_starts_with ${target_repo_slug} ${target_branch} "[skip ci]prepare for next development iteration") || \
      ([[ "${BUILD_TYPE}" == "SNAPSHOT" ]] && bb_branch_exists_in_repo ${target_repo_slug} ${target_branch});
   then
 
@@ -697,7 +697,8 @@ bb_start_and_monitor_build_pipeline() {
       bb_start_pipeline_for_repo ${target_repo_slug} ${target_pipeline} ${target_branch} "custom" "AWS_CDK_BRANCH_TO_BUMP=${BITBUCKET_BRANCH}"
       bb_monitor_running_pipeline ${target_repo_slug}
     fi
-
+  else
+    info "Nothing to be done for ${BUILD_TYPE} build!"
   fi
 }
 
