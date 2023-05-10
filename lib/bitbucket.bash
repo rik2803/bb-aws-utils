@@ -434,7 +434,7 @@ _bb_push_file_if_changed() {
   version="${3:-NA}"
   jira_issue="${4}"
   branch_name="${5}"
-  clone_path="${6}"
+  clone_path="${6:-${BITBUCKET_CLONE_DIR}}"
 
   _bb_retry_push() {
       git reset HEAD~ || { warning "Failed during git reset"; return 1; }
@@ -620,24 +620,26 @@ bb_bump_config_label_in_awscdk_project() {
 }
 
 #######################################
-# This function is used to start a given pipeline on a given branch if it exists.
-# It will also check the latest commit on that branch for successful builds, if a successful build is already present, nothing happens.
+# This is a generic function to be used for triggering snapshot or release builds based on BUILD_TYPE env var.
+#
+# - Snapshot builds will trigger pipeline `snapshot_deploy` on the according feature branch if it exists (and doesn't have a successful build yet)
+# - Release builds will trigger pipeline `release_deploy` on the master branch if the latest commit was a merge commit for this feature
 #
 # Expects:
 #   BB_USER: a Bitbucket user with pipeline start permissions on the remote repo
 #   BB_APP_PASSWORD: the app password for BB_USER
+#   BUILD_TYPE: The differentiator between snapshot and release builds (SNAPSHOT/RELEASE)
+#   BITBUCKET_BRANCH: Needs to be set, the feature branch identifier is the correlation between all module builds
 #
 # Globals:
 #
 # Arguments:
 #   target_repo_slug (required): The slug of the repo to start a pipeline for
-#   target_pipeline (required): The pipeline to start on the target repo
-#   target_branch (required): The branch to start the pipeline for on the target repo, if this branch doesn't exists, nothing happens
 #
 # Returns:
 #
 #######################################
-bb_start_and_monitor_pipeline_if_branch_exists() {
+bb_start_and_monitor_build_pipeline() {
 
   local target_repo_slug
   local target_pipeline
@@ -651,12 +653,21 @@ bb_start_and_monitor_pipeline_if_branch_exists() {
   local response_body
   local latest_build_status
 
-  [[ -n ${1} ]] && target_repo_slug=${1} || fail "target_repo_slug required"
-  [[ -n ${1} ]] && target_pipeline=${2} || fail "target_pipeline required"
-  [[ -n ${1} ]] && target_branch=${3} || fail "target_branch required"
-
   check_envvar BB_USER R
   check_envvar BB_APP_PASSWORD R
+  check_envvar BUILD_TYPE R
+  check_envvar BITBUCKET_BRANCH R
+
+  [[ -n ${1} ]] && target_repo_slug=${1} || fail "target_repo_slug required"
+  if  [[ "${BUILD_TYPE}" == "RELEASE" ]]; then
+
+    target_pipeline="release_deploy"
+    target_branch="master"
+  else
+
+    target_pipeline="snapshot_deploy"
+    target_branch="${BITBUCKET_BRANCH}"
+  fi
 
   install_jq
 
@@ -664,12 +675,16 @@ bb_start_and_monitor_pipeline_if_branch_exists() {
   info "Checking repo URL ${repo_url}"
   curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${repo_url}
 
-  branch_url=${repo_url}/refs/branches/${target_branch}
-  info "Checking branch ${branch_url}"
-  response_body=$(curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${branch_url})
+  if ([[ "${BUILD_TYPE}" == "RELEASE" ]] && \
+            (latest_commit_message_starts_with ${target_repo_slug} ${target_branch} "Merged in ${BITBUCKET_BRANCH}" || \
+             latest_commit_message_starts_with ${target_repo_slug} ${target_branch} "[version-bump]")) || \
+     ([[ "${BUILD_TYPE}" == "SNAPSHOT" ]] && \
+            bb_branch_exists_in_repo ${target_repo_slug} ${target_branch});
+  then
 
-  if echo ${response_body} | jq -e .name; then
-    info "Branch ${target_branch} exists for repo ${target_repo_slug}, checking build status..."
+    branch_url=${repo_url}/refs/branches/${target_branch}
+    response_body=$(curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${branch_url})
+
     build_statuses_url=$(echo "${response_body}" | jq --raw-output '.target.links.statuses.href')
     response_body=$(curl --fail --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${build_statuses_url}?sort=-created_on)
 
@@ -682,12 +697,33 @@ bb_start_and_monitor_pipeline_if_branch_exists() {
       info "Latest build for branch ${target_branch} was successful, skipping..."
     else
       info "Latest build for branch ${target_branch} was not successful (status = ${latest_build_status}), triggering pipeline ${target_pipeline}"
-      bb_start_pipeline_for_repo ${target_repo_slug} ${target_pipeline} ${target_branch}
+      bb_start_pipeline_for_repo ${target_repo_slug} ${target_pipeline} ${target_branch} "custom" "AWS_CDK_BRANCH_TO_BUMP=${BITBUCKET_BRANCH}"
       bb_monitor_running_pipeline ${target_repo_slug}
     fi
   else
-    info "Branch ${target_branch} does not exist for repo ${target_repo_slug}, skipping this one"
+    info "Nothing to be done for ${BUILD_TYPE} build!"
   fi
+}
+
+latest_commit_message_starts_with() {
+  local repo_slug
+  local branch_name
+  local prefix
+  local response_body
+  local last_message
+
+  [[ -n ${1} ]] && repo_slug=${1} || fail "repo_slug required"
+  [[ -n ${2} ]] && branch_name=${2} || fail "branch_name required"
+  [[ -n ${3} ]] && prefix=${3} || fail "prefix required"
+
+  branch_url="https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${repo_slug}/refs/branches/${branch_name}"
+  response_body=$(curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${branch_url})
+
+  last_message=$(echo "${response_body}" | jq --raw-output '.target.message')
+
+  info "Checking whether commit message ${last_message} starts with ${prefix}"
+
+  [[ "${last_message}" == "${prefix}"* ]]
 }
 
 #######################################
