@@ -557,12 +557,12 @@ bb_bump_service_version_in_awscdk_project() {
   project_version=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version -q -DforceStdout && mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
   info "Project version: ${project_version}"
 
-  info "If branch is master or main, use RELEASE_VERSION as version to bump to, otherwise use ${BITBUCKET_COMMIT}-${project_version}"
+  info "If branch is master or main, use RELEASE_VERSION_TO_BUMP as version to bump to, otherwise use ${BITBUCKET_COMMIT}-${project_version}"
   if [[ "${BITBUCKET_BRANCH}" == "master" || "${BITBUCKET_BRANCH}" == "main" ]]; then
-    info "Branch is master or main, using RELEASE_VERSION as version to bump to"
-    check_envvar RELEASE_VERSION R
+    info "Branch is master or main, using RELEASE_VERSION_TO_BUMP as version to bump to"
+    check_envvar RELEASE_VERSION_TO_BUMP R
     [[ -n ${branch_to_create_if_on_master_or_main} ]] || fail "branch_to_create_if_on_master_or_main required but not passed in function bb_bump_service_version_in_awscdk_project"
-    version_to_bump_to="${RELEASE_VERSION}"
+    version_to_bump_to="${RELEASE_VERSION_TO_BUMP}"
   else
     info "Branch is not master or main, using ${BITBUCKET_COMMIT}-${project_version} as version to bump to"
     version_to_bump_to="${BITBUCKET_COMMIT}-${project_version}"
