@@ -151,8 +151,10 @@ maven_get_next_release_version() {
   maven_set_version_vars
   if maven_minor_bump; then
     RELEASE_VERSION="${MAVEN_MAJOR}.${MAVEN_NEXT_MINOR}.0"
+    RELEASE_VERSION_TO_BUMP="${MAVEN_MAJOR}.${MAVEN_NEXT_MINOR}.0"
   else
     RELEASE_VERSION="${MAVEN_MAJOR}.${MAVEN_MINOR}.${MAVEN_INCR}"
+    RELEASE_VERSION_TO_BUMP="${MAVEN_MAJOR}.${MAVEN_MINOR}.${MAVEN_INCR}"
   fi
   info "Release version is ${RELEASE_VERSION}"
 }
