@@ -309,7 +309,7 @@ maven_is_maven_project() {
 maven_update_property_version() {
    export ORIGINAL_VERSION=$(mvn help:evaluate -Dexpression=${VERSION_PROPERTY} -q -DforceStdout)
    if [[ "${NEW_VERSION}" == "latest" ]]; then
-     COMMAND="mvn -B -s "${MAVEN_SETTINGS_PATH}/settings.xml" versions:update-property -Dproperty=${VERSION_PROPERTY} -DallowSnapshots=false -DallowDowngrade=true"
+     COMMAND="mvn -B -s \"${MAVEN_SETTINGS_PATH}/settings.xml\" versions:update-property -Dproperty=${VERSION_PROPERTY} -DallowSnapshots=false -DallowDowngrade=true"
      info "${COMMAND}"
      eval ${COMMAND}
    else
@@ -324,7 +324,7 @@ maven_update_property_version() {
 maven_update_parent_version() {
    export ORIGINAL_VERSION=$(mvn help:evaluate -Dexpression=project.parent.version -q -DforceStdout)
    if [[ "${NEW_VERSION}" == "latest" ]]; then
-     COMMAND="mvn -B -s "${MAVEN_SETTINGS_PATH}/settings.xml" versions:update-parent -DallowSnapshots=false -DallowDowngrade=true"
+     COMMAND="mvn -B -s \"${MAVEN_SETTINGS_PATH}/settings.xml\" versions:update-parent -DallowSnapshots=false -DallowDowngrade=true"
      info "${COMMAND}"
      eval ${COMMAND}
    else
