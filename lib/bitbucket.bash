@@ -675,8 +675,11 @@ bb_start_and_monitor_build_pipeline() {
   info "Checking repo URL ${repo_url}"
   curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${repo_url}
 
-  if ([[ "${BUILD_TYPE}" == "RELEASE" ]] && ! latest_commit_message_starts_with ${target_repo_slug} ${target_branch} "[skip ci]prepare for next development iteration") || \
-     ([[ "${BUILD_TYPE}" == "SNAPSHOT" ]] && bb_branch_exists_in_repo ${target_repo_slug} ${target_branch});
+  if ([[ "${BUILD_TYPE}" == "RELEASE" ]] && \
+            (latest_commit_message_starts_with ${target_repo_slug} ${target_branch} "Merged in ${BITBUCKET_BRANCH}" || \
+             latest_commit_message_starts_with ${target_repo_slug} ${target_branch} "[version-bump]")) || \
+     ([[ "${BUILD_TYPE}" == "SNAPSHOT" ]] && \
+            bb_branch_exists_in_repo ${target_repo_slug} ${target_branch});
   then
 
     branch_url=${repo_url}/refs/branches/${target_branch}
