@@ -676,8 +676,8 @@ bb_start_and_monitor_build_pipeline() {
   curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${repo_url}
 
   if ([[ "${BUILD_TYPE}" == "RELEASE" ]] && \
-            (latest_commit_message_starts_with ${target_repo_slug} ${target_branch} "Merged in ${BITBUCKET_BRANCH}" || \
-             latest_commit_message_starts_with ${target_repo_slug} ${target_branch} "[version-bump]")) || \
+            (bb_latest_commit_message_contains ${target_repo_slug} ${target_branch} "Merged in ${BITBUCKET_BRANCH}" || \
+             bb_latest_commit_message_contains ${target_repo_slug} ${target_branch} "[version-bump]")) || \
      ([[ "${BUILD_TYPE}" == "SNAPSHOT" ]] && \
             bb_branch_exists_in_repo ${target_repo_slug} ${target_branch});
   then
@@ -705,7 +705,7 @@ bb_start_and_monitor_build_pipeline() {
   fi
 }
 
-latest_commit_message_starts_with() {
+bb_latest_commit_message_contains() {
   local repo_slug
   local branch_name
   local prefix
@@ -723,7 +723,7 @@ latest_commit_message_starts_with() {
 
   info "Checking whether commit message ${last_message} starts with ${prefix}"
 
-  [[ "${last_message}" == "${prefix}"* ]]
+  [[ "${last_message}" == *"${prefix}"* ]]
 }
 
 #######################################
