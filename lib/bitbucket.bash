@@ -493,7 +493,7 @@ _bb_clone_and_branch_repo() {
   repo_slug="${1}"
   branch_to_create_if_on_master_or_main="${2:-}"
 
-  jira_issue_regex="^feature/[A-Z]+-[0-9]+"
+  jira_issue_regex="^(.*)/[A-Z]+-[0-9]+"
 
   if [[ -n ${branch_to_create_if_on_master_or_main} ]]; then
     BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME="${branch_to_create_if_on_master_or_main}"
@@ -501,7 +501,7 @@ _bb_clone_and_branch_repo() {
     BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
   fi
 
-  BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE=$(echo "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" | grep -Eo "${jira_issue_regex}" | sed 's/feature\///')
+  BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE=$(echo "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" | grep -Eo "${jira_issue_regex}" | sed 's/.*\///')
   BB_CLONE_AND_BRANCH_REPO_CLONE_PATH="/${repo_slug}"
   info "Cloning ${repo_slug} into ${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
   git clone "git@bitbucket.org:${BITBUCKET_WORKSPACE}/${repo_slug}.git" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
