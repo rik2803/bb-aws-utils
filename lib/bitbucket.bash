@@ -475,7 +475,7 @@ _bb_clone_and_branch_repo() {
   repo_slug="${1}"
   branch_to_create_if_on_master_or_main="${2:-}"
 
-  jira_issue_regex="^feature/[A-Z]+-[0-9]+"
+  jira_issue_regex="^(.*)/[A-Z]+-[0-9]+"
 
   if [[ -n ${branch_to_create_if_on_master_or_main} ]]; then
     BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME="${branch_to_create_if_on_master_or_main}"
@@ -483,7 +483,7 @@ _bb_clone_and_branch_repo() {
     BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
   fi
 
-  BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE=$(echo "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" | grep -Eo "${jira_issue_regex}" | sed 's/feature\///')
+  BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE=$(echo "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" | grep -Eo "${jira_issue_regex}" | sed 's/.*\///')
   BB_CLONE_AND_BRANCH_REPO_CLONE_PATH="/${repo_slug}"
   info "Cloning ${repo_slug} into ${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
   git clone "git@bitbucket.org:${BITBUCKET_WORKSPACE}/${repo_slug}.git" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
@@ -532,8 +532,14 @@ bb_bump_service_version_in_awscdk_project() {
   local version_to_bump_to
   local branch_to_create_if_on_master_or_main
 
-  branch_to_create_if_on_master_or_main="${1:-}"
+  branch_to_create_if_on_master_or_main="${1}"
   info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
+
+  if [[ -z "${branch_to_create_if_on_master_or_main}" ]]
+  then
+     info "No branch to bump specified, skipping..."
+     return 0
+  fi
 
   info "Retrieving project version ..."
   project_version=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version -q -DforceStdout && mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
