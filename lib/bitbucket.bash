@@ -550,8 +550,14 @@ bb_bump_service_version_in_awscdk_project() {
   local version_to_bump_to
   local branch_to_create_if_on_master_or_main
 
-  branch_to_create_if_on_master_or_main="${1:-}"
+  branch_to_create_if_on_master_or_main="${1}"
   info "${FUNCNAME[0]} - Entering ${FUNCNAME[0]}"
+
+  if [[ -z "${branch_to_create_if_on_master_or_main}" ]]
+  then
+     info "No branch to bump specified, skipping..."
+     return 0
+  fi
 
   info "Retrieving project version ..."
   project_version=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version -q -DforceStdout && mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
