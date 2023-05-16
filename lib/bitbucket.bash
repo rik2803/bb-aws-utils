@@ -436,16 +436,6 @@ _bb_push_file_if_changed() {
   branch_name="${5}"
   clone_path="${6:-${BITBUCKET_CLONE_DIR}}"
 
-  _bb_retry_push() {
-      git reset HEAD~ || { warning "Failed during git reset"; return 1; }
-      git stash || { warning "Failed during git stash"; return 1; }
-      git pull || { warning "Failed during git pull"; return 1; }
-      git stash pop || { warning "Failed during git stash pop"; return 1; }
-      git commit -m "${jira_issue} ${extra_commit_string} ${version}" "${file}" || { warning "Failed during git commit"; return 1; }
-      git push origin "${branch_name}" || { warning "Failed during git push"; return 1; }
-      return 0
-  }
-
   git_set_user_config
 
   cd "${clone_path}"
@@ -455,14 +445,6 @@ _bb_push_file_if_changed() {
   else
     info "File changed, committing and pushing ..."
     git commit -m "${jira_issue} ${extra_commit_string} ${version}" "${file}"
-    info "Trying to push changes ..."
-    if ! git push origin "${branch_name}"; then
-      warning "Push failed, trying a second time ..."
-      if ! _bb_retry_push "${jira_issue}" "${branch_name}" "${version}"; then
-        warning "First retry failed, trying a third time ..."
-        _bb_retry_push "${jira_issue}" "${branch_name}" "${version}"
-      fi
-    fi
   fi
 
   cd -
@@ -574,12 +556,11 @@ bb_bump_service_version_in_awscdk_project() {
     version_to_bump_to="${BITBUCKET_COMMIT}-${project_version}"
   fi
 
-  install_jq
   _bb_clone_and_branch_repo "${AWS_CDK_PROJECT}" "${branch_to_create_if_on_master_or_main}"
 
   cd -
-  info "Changing version of service ${SERVICE_NAME} to ${version_to_bump_to} in config/versions.json"
-  jq ".serviceVersions.${SERVICE_NAME} = \"${version_to_bump_to}\"" config/versions.json > config/versions.json.tmp && mv config/versions.json.tmp config/versions.json
+  info "Changing version of service ${SERVICE_NAME} to ${version_to_bump_to} in config/serviceVersions.d"
+  echo "{ \"serviceName\": \"${SERVICE_NAME}\", \"serviceVersion\": \"${version_to_bump_to}\" }" > "${SERVICE_NAME}.json"
   cd -
 
   _bb_push_file_if_changed "config/versions.json" "Bump ${SERVICE_NAME} to " "${version_to_bump_to}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
@@ -614,12 +595,11 @@ bb_bump_config_label_in_awscdk_project() {
   config_label=$(git tag --points-at HEAD | tail -1)
   info "Config Label: ${config_label}"
 
-  install_jq
   _bb_clone_and_branch_repo "${AWS_CDK_PROJECT}" "${branch_to_create_if_on_master_or_main}"
 
   cd -
-  info "Changing config label to ${config_label} in config/versions.json"
-  jq ".configLabel = \"${config_label}\"" config/versions.json > config/versions.json.tmp && mv config/versions.json.tmp config/versions.json
+  info "Changing config label to ${config_label} in config/configLabel.json"
+  echo "{ \"configLabel\": \"${config_label}\" }" > config/configLabel.json
   cd -
 
   _bb_push_file_if_changed "config/versions.json" "Bump config label to " "${config_label}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
