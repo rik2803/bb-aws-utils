@@ -16,6 +16,8 @@
 [[ -z ${LIB_DATADOG_LOADED} ]] && source ${LIB_DIR:-lib}/datadog.bash   || true
 # shellcheck source=../../bb-aws-utils/lib/snyk.bash
 [[ -z ${LIB_SNYK_LOADED} ]] && source ${LIB_DIR:-lib}/snyk.bash   || true
+# shellcheck source=../../bb-aws-utils/lib/slack.bash
+[[ -z ${LIB_SLACK_LOADED} ]] && source ${LIB_DIR:-lib}/slack.bash   || true
 # shellcheck source=../../bb-aws-utils/lib/maven.bash
 [[ -z ${LIB_DOCKER_LOADED} ]]    && source ${LIB_DIR:-lib}/docker.bash      || true
 # shellcheck source=../../bb-aws-utils/lib/git.bash
