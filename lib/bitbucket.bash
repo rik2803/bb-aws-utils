@@ -445,6 +445,11 @@ _bb_push_file_if_changed() {
   else
     info "File changed, committing and pushing ..."
     git commit -m "${jira_issue} ${extra_commit_string} ${version}" "${file}"
+    if ! git push origin "${branch_name}"; then
+      warning "Push ${branch_name} to origin failed."
+    else
+      info "Push ${branch_name} to origin successful."
+    fi
   fi
 
   cd -
