@@ -39,8 +39,10 @@ slack_post_message_using_webhook() {
 }
 EOM
 
-  curl -X POST "${SLACK_WEBHOOK_URL}" \
+  info "Before curl"
+  curl --verbose -X POST "${SLACK_WEBHOOK_URL}" \
    -H 'Content-Type: application/json' \
    -d "${json_string}"
+  info "After curl"
 
 }
