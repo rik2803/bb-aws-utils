@@ -24,13 +24,13 @@ slack_post_message_using_webhook() {
 {
    "attachments":[
       {
-         "fallback": "${fallback}",
-         "pretext": "${pretext}",
-         "color": "${status}",
+         "fallback": "fallback",
+         "pretext": "pretext",
+         "color": "status",
          "fields": [
             {
-               "title": "${title}",
-               "value": "${value}",
+               "title": "title",
+               "value": "value",
                "short": false
             }
          ]
