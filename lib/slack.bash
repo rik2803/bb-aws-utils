@@ -22,16 +22,16 @@ slack_post_message_using_webhook() {
 
   json_string="\
 {\
-   "attachments":[\
+   \attachments\":[\
       {\
-         "fallback": "fallback",\
-         "pretext": "pretext",\
-         "color": "status",\
-         "fields": [\
+         \"fallback\": \"fallback\",\
+         \"pretext\": \"pretext\",\
+         \"color\": \"status\",\
+         \"fields\": [\
             {\
-               "title": "title",\
-               "value": "value",\
-               "short": false\
+               \"title\": \"title\",\
+               \"value\": \"value\",\
+               \"short\": false\
             }\
          ]\
       }\
