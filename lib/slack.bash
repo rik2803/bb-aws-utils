@@ -13,12 +13,14 @@ slack_post_message_using_webhook() {
   local fallback
   local pretext
   local json_string
+  local curl-args
 
   title="${1:-No Title}"
   value="${2:-No value}"
   status="${3:-warning}"
   fallback="${4:-No fallback}"
   pretext="${5:-No pretext}"
+  curl_args=""
 
   json_string=""
   json_string="${json_string}{"
@@ -38,8 +40,11 @@ slack_post_message_using_webhook() {
   json_string="${json_string} ]"
   json_string="${json_string}}"
 
+  if is_debug_enabled; then
+     curl_args="${curl_args} --verbose"
+  fi
 
-  curl --verbose -X POST "${SLACK_WEBHOOK_URL}" \
+  curl ${curl-args} -X POST "${SLACK_WEBHOOK_URL}" \
    -H 'Content-Type: application/json' \
    -d "${json_string}"
 
