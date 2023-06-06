@@ -20,24 +20,24 @@ slack_post_message_using_webhook() {
   fallback="${4:-No fallback}"
   pretext="${5:-No pretext}"
 
-  read -r -d '' json_string << EOM
-{
-   "attachments":[
-      {
-         "fallback": "fallback",
-         "pretext": "pretext",
-         "color": "status",
-         "fields": [
-            {
-               "title": "title",
-               "value": "value",
-               "short": false
-            }
-         ]
-      }
-   ]
-}
-EOM
+  json_string="\
+{\
+   "attachments":[\
+      {\
+         "fallback": "fallback",\
+         "pretext": "pretext",\
+         "color": "status",\
+         "fields": [\
+            {\
+               "title": "title",\
+               "value": "value",\
+               "short": false\
+            }\
+         ]\
+      }\
+   ]\
+}"
+
 
   info "Before curl"
   curl --verbose -X POST "${SLACK_WEBHOOK_URL}" \
