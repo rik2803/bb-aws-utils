@@ -22,7 +22,7 @@ slack_post_message_using_webhook() {
 
   json_string="\
 {\
-   \attachments\":[\
+   \"attachments\":[\
       {\
          \"fallback\": \"fallback\",\
          \"pretext\": \"pretext\",\
