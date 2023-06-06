@@ -20,29 +20,27 @@ slack_post_message_using_webhook() {
   fallback="${4:-No fallback}"
   pretext="${5:-No pretext}"
 
-  json_string="\
-{\
-   \"attachments\":[\
-      {\
-         \"fallback\": \"fallback\",\
-         \"pretext\": \"pretext\",\
-         \"color\": \"status\",\
-         \"fields\": [\
-            {\
-               \"title\": \"title\",\
-               \"value\": \"value\",\
-               \"short\": false\
-            }\
-         ]\
-      }\
-   ]\
-}"
+  json_string=""
+  json_string="${json_string}{"
+  json_string="${json_string} \"attachments\":["
+  json_string="${json_string}    {"
+  json_string="${json_string}       \"fallback\": \"${fallback}\","
+  json_string="${json_string}       \"pretext\": \"${pretext}\","
+  json_string="${json_string}       \"color\": \"${status}\","
+  json_string="${json_string}       \"fields\": ["
+  json_string="${json_string}          {"
+  json_string="${json_string}             \"title\": \"${title}\","
+  json_string="${json_string}             \"value\": \"${value}\","
+  json_string="${json_string}             \"short\": false"
+  json_string="${json_string}          }"
+  json_string="${json_string}       ]"
+  json_string="${json_string}    }"
+  json_string="${json_string} ]"
+  json_string="${json_string}}"
 
 
-  info "Before curl"
   curl --verbose -X POST "${SLACK_WEBHOOK_URL}" \
    -H 'Content-Type: application/json' \
    -d "${json_string}"
-  info "After curl"
 
 }
