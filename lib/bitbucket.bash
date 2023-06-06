@@ -445,6 +445,11 @@ _bb_push_file_if_changed() {
   else
     info "File changed, committing and pushing ..."
     git commit -m "${jira_issue} ${extra_commit_string} ${version}" "${file}"
+    if ! git push origin "${branch_name}"; then
+      warning "Push ${branch_name} to origin failed."
+    else
+      info "Push ${branch_name} to origin successful."
+    fi
   fi
 
   cd -
@@ -560,10 +565,10 @@ bb_bump_service_version_in_awscdk_project() {
 
   cd -
   info "Changing version of service ${SERVICE_NAME} to ${version_to_bump_to} in config/serviceVersions.d"
-  echo "{ \"serviceName\": \"${SERVICE_NAME}\", \"serviceVersion\": \"${version_to_bump_to}\" }" > "${SERVICE_NAME}.json"
+  echo "{ \"serviceName\": \"${SERVICE_NAME}\", \"serviceVersion\": \"${version_to_bump_to}\" }" > "config/serviceVersions.d/${SERVICE_NAME}.json"
   cd -
 
-  _bb_push_file_if_changed "config/versions.json" "Bump ${SERVICE_NAME} to " "${version_to_bump_to}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+  _bb_push_file_if_changed "config/serviceVersions.d/${SERVICE_NAME}.json" "Bump ${SERVICE_NAME} to " "${version_to_bump_to}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
 }
 
 #######################################
@@ -602,7 +607,7 @@ bb_bump_config_label_in_awscdk_project() {
   echo "{ \"configLabel\": \"${config_label}\" }" > config/configLabel.json
   cd -
 
-  _bb_push_file_if_changed "config/versions.json" "Bump config label to " "${config_label}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+  _bb_push_file_if_changed "config/configLabel.json" "Bump config label to " "${config_label}" "${BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE}" "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
 }
 
 #######################################
