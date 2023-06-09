@@ -445,14 +445,33 @@ _bb_push_file_if_changed() {
   else
     info "File changed, committing and pushing ..."
     git commit -m "${jira_issue} ${extra_commit_string} ${version}" "${file}"
+    if git pull; then
+      info "Pull successful."
+    else
+      fail "Pull failed. Exiting ..."
+    fi
     if ! git push origin "${branch_name}"; then
-      warning "Push ${branch_name} to origin failed."
+      fail "Push ${branch_name} to origin failed. Exiting ..."
     else
       info "Push ${branch_name} to origin successful."
     fi
   fi
 
   cd -
+}
+
+bb_push_file_to_current_branch_on_change() {
+  local file
+  local extra_commit_string
+
+  if [[ -z "${BITBUCKET_BRANCH}" ]]; then
+    fail "BITBUCKET_BRANCH is not set. This function can only be used for pipelines started on a branch. Exiting ..."
+  fi
+
+  file="${1}"
+  extra_commit_string="${2:-NA}"
+
+  _bb_push_file_if_changed "${file}" "${extra_commit_string}" "" "" "${BITBUCKET_BRANCH}"
 }
 
 #######################################
@@ -491,7 +510,11 @@ _bb_clone_and_branch_repo() {
   BB_CLONE_AND_BRANCH_REPO_JIRA_ISSUE=$(echo "${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME}" | grep -Eo "${jira_issue_regex}" | sed 's/.*\///')
   BB_CLONE_AND_BRANCH_REPO_CLONE_PATH="/${repo_slug}"
   info "Cloning ${repo_slug} into ${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
-  git clone "git@bitbucket.org:${BITBUCKET_WORKSPACE}/${repo_slug}.git" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+  if git clone "git@bitbucket.org:${BITBUCKET_WORKSPACE}/${repo_slug}.git" "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"; then
+    info "Successfully cloned ${repo_slug} to ${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
+  else
+    fail "Failed to clone ${repo_slug} to ${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}. Exiting ..."
+  fi
   cd "${BB_CLONE_AND_BRANCH_REPO_CLONE_PATH}"
 
   info "Checking if branch ${BB_CLONE_AND_BRANCH_REPO_BRANCH_NAME} exists in ${repo_slug}."
@@ -547,8 +570,11 @@ bb_bump_service_version_in_awscdk_project() {
   fi
 
   info "Retrieving project version ..."
-  project_version=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version -q -DforceStdout && mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-  info "Project version: ${project_version}"
+  if project_version=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version -q -DforceStdout && mvn help:evaluate -Dexpression=project.version -q -DforceStdout); then
+    info "Project version: ${project_version}"
+  else
+    fail "Failed to retrieve project version. Exiting ..."
+  fi
 
   info "If branch is master or main, use RELEASE_VERSION_TO_BUMP as version to bump to, otherwise use ${BITBUCKET_COMMIT}-${project_version}"
   if [[ "${BITBUCKET_BRANCH}" == "master" || "${BITBUCKET_BRANCH}" == "main" ]]; then
@@ -651,11 +677,9 @@ bb_start_and_monitor_build_pipeline() {
 
   [[ -n ${1} ]] && target_repo_slug=${1} || fail "target_repo_slug required"
   if  [[ "${BUILD_TYPE}" == "RELEASE" ]]; then
-
     target_pipeline="release_deploy"
     target_branch="master"
   else
-
     target_pipeline="snapshot_deploy"
     target_branch="${BITBUCKET_BRANCH}"
   fi
@@ -672,7 +696,6 @@ bb_start_and_monitor_build_pipeline() {
      ([[ "${BUILD_TYPE}" == "SNAPSHOT" ]] && \
             bb_branch_exists_in_repo ${target_repo_slug} ${target_branch});
   then
-
     branch_url=${repo_url}/refs/branches/${target_branch}
     response_body=$(curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${branch_url})
 
@@ -708,7 +731,12 @@ bb_latest_commit_message_contains() {
   [[ -n ${3} ]] && prefix=${3} || fail "prefix required"
 
   branch_url="https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${repo_slug}/refs/branches/${branch_name}"
-  response_body=$(curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${branch_url})
+
+  if response_body=$(curl --silent -u "${BB_USER}:${BB_APP_PASSWORD}" --location ${branch_url}); then
+    info "Checking if branch ${branch_name} exists in repo ${repo_slug}"
+  else
+    fail "Curl command to check branch ${branch_name} in repo ${repo_slug} failed, exiting ..."
+  fi
 
   last_message=$(echo "${response_body}" | jq --raw-output '.target.message')
 
