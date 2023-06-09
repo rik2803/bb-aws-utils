@@ -460,6 +460,20 @@ _bb_push_file_if_changed() {
   cd -
 }
 
+bb_push_file_to_current_branch_on_change() {
+  local file
+  local extra_commit_string
+
+  if [[ -z "${BITBUCKET_BRANCH}" ]]; then
+    fail "BITBUCKET_BRANCH is not set. This function can only be used for pipelines started on a branch. Exiting ..."
+  fi
+
+  file="${1}"
+  extra_commit_string="${2:-NA}"
+
+  _bb_push_file_if_changed "${file}" "${extra_commit_string}" "" "" "${BITBUCKET_BRANCH}"
+}
+
 #######################################
 # This function is used to clone another repo and create a branch that matches the branch of the
 # repo in which the pipeline is running.
