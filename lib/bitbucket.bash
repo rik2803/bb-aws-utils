@@ -445,7 +445,7 @@ _bb_push_file_if_changed() {
   else
     info "File changed, committing and pushing ..."
     git commit -m "${jira_issue} ${extra_commit_string} ${version}" "${file}"
-    if git pull; then
+    if git pull --no-rebase --no-edit; then
       info "Pull successful."
     else
       fail "Pull failed. Exiting ..."
