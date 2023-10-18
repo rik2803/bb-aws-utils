@@ -103,6 +103,7 @@ aws_s3_create_artifact() {
 #     * BITBUCKET_COMMIT: provided by BitBucket pipelines
 #
 # Arguments:
+#     * ACL: optional, defaults to bucket-owner-full-control. For example private or public-read.
 #
 # Outputs:
 #
@@ -114,8 +115,14 @@ aws_s3_create_artifact() {
 aws_s3_upload_artifact() {
   check_envvar ARTIFACT_BUCKET R
 
+  local acl="bucket-owner-full-control"
+
+  if [[ -n "${1}" ]]; then
+    acl="${1}"
+  fi
+
   info "Starting upload of $(aws_s3_generate_zip_filename) to S3 bucket ${ARTIFACT_BUCKET}"
-  if aws s3 cp ${AWS_S3_CLI_OPTS} --acl bucket-owner-full-control "${BITBUCKET_CLONE_DIR}/$(aws_s3_generate_zip_filename)" "s3://${ARTIFACT_BUCKET}/$(aws_s3_generate_zip_filename)"; then
+  if aws s3 cp ${AWS_S3_CLI_OPTS} --acl "${acl}" "${BITBUCKET_CLONE_DIR}/$(aws_s3_generate_zip_filename)" "s3://${ARTIFACT_BUCKET}/$(aws_s3_generate_zip_filename)"; then
     success "Successfully copied $(aws_s3_generate_zip_filename) to s3://${ARTIFACT_BUCKET}/$(aws_s3_generate_zip_filename)"
   else
     fail "An error occurred while copying $(aws_s3_generate_zip_filename) to s3://${ARTIFACT_BUCKET}/$(aws_s3_generate_zip_filename)"
@@ -240,6 +247,7 @@ aws_s3_deploy_artifact() {
   info "Recursively deploy the content of workdir to s3://${dest_bucket}/${S3_DEST_PREFIX:-}."
   (cd workdir && aws s3 cp ${AWS_S3_CLI_OPTS} --acl private --recursive . "s3://${dest_bucket}/${S3_DEST_PREFIX:-}")
   success "Deploy was successful."
+
   info "Cleaning up ..."
   rm -rf workdir
   success "Successfully cleaned up workdir"
