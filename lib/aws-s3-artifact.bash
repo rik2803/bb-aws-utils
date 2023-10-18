@@ -211,8 +211,7 @@ aws_s3_update_artifact() {
 #     * AWS_SSM_S3_DEST_BUCKET: Should be set in pipeline or in pipeline variable
 #
 # Arguments:
-#     * Relative path of the file to add
-#     * Path of the file inside the ZIP (without the filename)
+#     * The ACL to set on the uploaded files (defaults to private)
 #
 # Outputs:
 #
@@ -224,6 +223,11 @@ aws_s3_deploy_artifact() {
   install_zip
 
   local dest_bucket
+  local acl="private"
+
+  if [[ -n "${1}" ]]; then
+    acl="${1}"
+  fi
 
   aws_s3_download_artifact "$(aws_s3_generate_zip_filename)" "$(aws_s3_generate_zip_filename)"
   if [[ -n "${S3_DEST_BUCKET}" ]]; then
@@ -238,7 +242,7 @@ aws_s3_deploy_artifact() {
   info "Unzip the zipfile in workdir"
   (mkdir workdir && cd workdir && unzip "${BITBUCKET_CLONE_DIR}/$(aws_s3_generate_zip_filename)")
   info "Recursively deploy the content of workdir to s3://${dest_bucket}/${S3_DEST_PREFIX:-}."
-  (cd workdir && aws s3 cp ${AWS_S3_CLI_OPTS} --acl private --recursive . "s3://${dest_bucket}/${S3_DEST_PREFIX:-}")
+  (cd workdir && aws s3 cp ${AWS_S3_CLI_OPTS} --acl "${acl}" --recursive . "s3://${dest_bucket}/${S3_DEST_PREFIX:-}")
   success "Deploy was successful."
   info "Cleaning up ..."
   rm -rf workdir
