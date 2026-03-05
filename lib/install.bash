@@ -84,8 +84,8 @@ install_awscli() {
 
   if [[ ${AWSCLI_INSTALLED} -eq 0 ]]; then
     mkdir -p /tmp
-    install_sw curl
-    install_zip
+    command -v curl >/dev/null 2>&1 || install_sw curl
+    command -v unzip >/dev/null 2>&1 || install_sw unzip
     run_cmd curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
     run_cmd unzip -q /tmp/awscliv2.zip -d /tmp
     run_cmd /tmp/aws/install
